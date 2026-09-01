@@ -1,0 +1,46 @@
+% solutions/<ledger-id>.tex  — copy this file, rename to the ledger id (e.g. thm-foo.tex).
+% A standalone proof dossier. Inherits shared/preamble.tex (macros, theorem envs, biblatex)
+% via the subfiles class, so it compiles on its own AND lifts into main.tex unchanged:
+%   cd solutions && latexmk -pdf -outdir=../build <id>.tex
+%                                                    (standalone; cross-module \ref -> "??")
+%   \subfile{solutions/<id>}  in main.tex              (later, once accepted)
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+% === SOLUTION HEADER (proof provenance) =====================================
+%   ledger-node : <id>                 research/program/ledger.yaml id this discharges
+%   refines     : <label>              \label in modules/... (the statement sharpened)
+%   bounded_by  : obs:...              obstruction(s) the statement must respect
+%   checked_by  : none | agent | human | lean  (none = not yet a proof)
+%   author      : <agent or name>
+%   reviewer    : <distinct agent or human; required for checked_by: agent>
+%   review      : research/reviews/<report>.md  (structured type: proof-review, verdict: pass)
+%   date        : YYYY-MM-DD
+% ============================================================================
+
+\section*{Solution: \textit{<short target name>}}
+\label{sec:sol-<id>}
+
+\paragraph{Refined statement.}
+% State the sharp current form — not an obsolete loose open form. Cite the manuscript
+% target it sharpens with \ref{<label>}, and note which obstruction shapes it.
+
+\begin{theorem}[refined form of \ref{<label>}]
+\label{thm:sol-<id>}
+  % ... the precise theorem ...
+\end{theorem}
+
+\begin{proof}
+  % Natural-language proof. Self-contained: state imported results with \cite and used
+  % manuscript lemmas with \ref. A Lean proof, when it exists, lives beside this file as
+  % <id>.lean and is recorded by checked_by: lean. Agent certification requires
+  % an independent reviewer and a persisted report under research/reviews/. Numerical
+  % diagnostics may motivate the statement but cannot justify any step of this proof.
+\end{proof}
+
+\paragraph{Obstructions respected.}
+% One line per bounded_by obstruction: why this statement form does not violate it.
+
+% No \printbibliography here (matches modules/*.tex): main.tex prints the single shared
+% bibliography. Standalone, \cite shows "[?]" and \ref shows "??" — expected.
+\end{document}

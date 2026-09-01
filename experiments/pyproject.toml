@@ -1,0 +1,30 @@
+[project]
+name = "numerics"
+version = "0.1.0"
+description = "Numerical channel for this repository's research program: guides and refutes; never proves."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+]
+
+[project.scripts]
+numerics = "numerics.__main__:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["numerics"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+markers = [
+    "slow: expensive Monte Carlo or high-resolution numerical regression",
+]

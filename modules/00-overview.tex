@@ -1,0 +1,52 @@
+% modules/00-overview.tex — seed module for the template's worked example.
+%
+% Every \label here is a ledger node id in research/program/ledger.yaml. Delete
+% this file and its three nodes once the repository has real content; keep the
+% shape: an obstruction that fences the search, an open question, and a proved
+% statement that carries a dossier under solutions/.
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+\section{Orientation}
+\label{sec:overview}
+
+Replace this module. It exists so that a freshly cloned template is green under
+every validator, and so that each artifact genre has one worked example to copy.
+
+\subsection{An obstruction}
+
+An obstruction is a fence: a statement violating it is wrong by construction, so
+it is read \emph{before} a proof is attempted or a numerical run is spent
+(\texttt{CLAUDE.md} constraint 5). Every obstruction node needs a heading in
+\texttt{research/program/obstructions.md}, which the checker enforces.
+
+\begin{remark}[worked example of an obstruction]
+\label{obs:example}
+  A finite battery of instances cannot establish a universal statement. Numerical
+  agreement across every instance tried constrains nothing about the untried
+  ones, so no run --- however large --- discharges this fence.
+\end{remark}
+
+\subsection{An open question}
+
+\begin{question}
+\label{q:example}
+  Replace this with the question the repository is actually organized around.
+  An \texttt{open} node is one nobody has discharged; it carries no proof
+  provenance, and saying it is ``probably true'' is not a ledger classification.
+\end{question}
+
+\subsection{A proved statement}
+
+\begin{proposition}
+\label{prop:example}
+  Let $a_1,\dots,a_n$ be real numbers and let $\bar a = n^{-1}\sum_{i=1}^n a_i$.
+  Then $\sum_{i=1}^n (a_i - \bar a)^2 = \sum_{i=1}^n a_i^2 - n \bar a^2$.
+\end{proposition}
+
+The proof is a standalone dossier, \texttt{solutions/prop-example.tex}, certified
+by an independent review under \texttt{research/reviews/}. The manuscript states
+the result; the dossier is what a reviewer or Lean checks
+(\texttt{solutions/README.md}).
+
+\end{document}

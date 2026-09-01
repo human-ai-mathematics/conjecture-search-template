@@ -1,0 +1,52 @@
+# The claim graph for this repository's program. Statements live in modules/;
+# the field-level schema is research/ledger-schema.md and the workflow is
+# research/program/README.md.
+#
+# One repository, one program, one ledger (CLAUDE.md constraint 1). Every edit
+# funnels through a single orchestrator, and `python3 scripts/check_ledger.py`
+# must return 0 errors afterwards.
+#
+# The three nodes below are the template's worked example: an obstruction that
+# fences the search, an open question, and a proved statement with a certified
+# dossier. Delete them, modules/00-overview.tex, solutions/prop-example.tex and
+# research/reviews/2026-09-01-prop-example-proof-review.md in one commit once
+# this repository has real content.
+
+meta:
+  program: program        # rename to this program's id; it prefixes checker output
+  scope: >-
+    One sentence naming the class of objects this ledger's nodes range over, so a
+    reader can tell at a glance whether a statement belongs here.
+
+nodes:
+
+  # ---------------------------------------------------------------------------
+  # OBSTRUCTIONS — every one needs a heading in obstructions.md
+  # ---------------------------------------------------------------------------
+  - id: obs:example
+    kind: obstruction
+    status: open
+    file: modules/00-overview.tex
+    statement: "A finite battery of instances cannot establish a universal statement; numerical agreement over the instances tried constrains nothing about the untried ones."
+
+  # ---------------------------------------------------------------------------
+  # OPEN TARGETS
+  # ---------------------------------------------------------------------------
+  - id: q:example
+    kind: question
+    status: open
+    file: modules/00-overview.tex
+    statement: "Placeholder for the question this repository is organized around. Replace it with a precise statement someone could prove or refute."
+    bounded_by: [obs:example]
+
+  # ---------------------------------------------------------------------------
+  # ESTABLISHED
+  # ---------------------------------------------------------------------------
+  - id: prop:example
+    kind: proposition
+    status: proved
+    file: modules/00-overview.tex
+    statement: "For real a_1..a_n with mean abar, sum_i (a_i - abar)^2 = sum_i a_i^2 - n abar^2."
+    solution: solutions/prop-example.tex
+    checked_by: agent
+    review: research/reviews/2026-09-01-prop-example-proof-review.md

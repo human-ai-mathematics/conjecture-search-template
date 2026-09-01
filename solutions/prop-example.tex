@@ -1,0 +1,52 @@
+% solutions/prop-example.tex — worked example dossier for the template.
+% Delete with modules/00-overview.tex once this repository has a real proof.
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+% === SOLUTION HEADER (proof provenance) =====================================
+%   ledger-node : prop:example        research/program/ledger.yaml id this discharges
+%   refines     : prop:example        \label in modules/ (the statement proved)
+%   bounded_by  : (none)              obstruction(s) the statement must respect
+%   checked_by  : agent               none | agent | human | lean
+%   author      : /root/template_author
+%   reviewer    : /root/template_reviewer
+%   review      : research/reviews/2026-09-01-prop-example-proof-review.md
+%   date        : 2026-09-01
+% ============================================================================
+
+\section*{Solution: the centred sum of squares}
+\label{sec:sol-prop-example}
+
+\paragraph{Refined statement.}
+This is the statement of \ref{prop:example} verbatim; nothing is strengthened. A
+real dossier states the sharp current form and says which obstruction shapes it.
+
+\begin{theorem}[form of \ref{prop:example}]
+\label{thm:sol-prop-example}
+  Let $a_1,\dots,a_n \in \R$ with $n \ge 1$, and set $\bar a = n^{-1}\sum_{i=1}^n a_i$.
+  Then
+  \[
+    \sum_{i=1}^n (a_i - \bar a)^2 \;=\; \sum_{i=1}^n a_i^2 \;-\; n\,\bar a^2 .
+  \]
+\end{theorem}
+
+\begin{proof}
+  Expand the square termwise:
+  \[
+    \sum_{i=1}^n (a_i - \bar a)^2
+      = \sum_{i=1}^n a_i^2 - 2\bar a \sum_{i=1}^n a_i + n \bar a^2 .
+  \]
+  By the definition of $\bar a$ we have $\sum_{i=1}^n a_i = n \bar a$, so the
+  middle term equals $-2 n \bar a^2$. Hence the right-hand side is
+  $\sum_{i=1}^n a_i^2 - 2n\bar a^2 + n\bar a^2 = \sum_{i=1}^n a_i^2 - n\bar a^2$,
+  which is the claim. Every step is an identity in $\R$; no hypothesis beyond
+  $n \ge 1$ is used, and none is used implicitly.
+\end{proof}
+
+\paragraph{Obstructions respected.}
+None apply: the statement is a finite algebraic identity, and \ref{obs:example}
+fences universal claims argued from finite batteries, which this proof does not do.
+
+% No \printbibliography here (matches modules/*.tex): main.tex prints the single
+% shared bibliography. Standalone, \cite shows "[?]" and \ref shows "??" — expected.
+\end{document}
