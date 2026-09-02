@@ -2,7 +2,7 @@
 
 This directory holds persisted review provenance. Reports have one of two explicit types:
 
-| `type` | purpose | may certify `checked_by: agent`? |
+| `type` | purpose | may certify `proofs[].mode: agent`? |
 |---|---|---|
 | `proof-review` | Independent review of one or more standalone proof dossiers | yes |
 | `audit` | Historical, diagnostic, editorial, literature, or control-plane review | no |

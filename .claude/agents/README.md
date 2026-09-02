@@ -59,7 +59,7 @@ orchestrator, not by a role saying "singleton" about itself.
 | `ledger` | orchestrator only |
 | `bibliography` | orchestrator only; literature scouts propose entries |
 | `manuscript` | orchestrator only; `latex-sync` audits and proposes patches |
-| `knowledge` | one `synthesizer` |
+| `instances` | one `synthesizer` |
 | `numerics-code` | one `numerics` whenever `experiments/numerics/**` changes |
 | `numerics-run:<target>:<profile>:<seed>` | parallel only for distinct stable runs |
 | `solution:<dossier>` | one `prover`; its reviewer uses a distinct agent identity |
@@ -74,6 +74,12 @@ Every role that creates an exploration receives a run id from the orchestrator a
 collision-resistant suffix and verify that the path does not exist. Never overwrite an earlier
 record.
 
+Each exploration opens with the front matter specified in `research/explorations/README.md` and
+validated by `check_ledger.py`: what it engaged, what it produced, and which `research/runs/`
+artifacts it cites. A tentative statement is recorded there as a `cand:` candidate and nowhere
+else (`CLAUDE.md` constraint 8); promoting one to a ledger node is
+the orchestrator's act, like any other ledger edit.
+
 ## Roster
 
 | role | writes | cardinality |
@@ -83,7 +89,7 @@ record.
 | [`prover`](prover.md) | one dossier; one new exploration | 1 per dossier |
 | [`refutation-seeker`](refutation-seeker.md) | one new exploration | N, one lens each |
 | [`proof-checker`](proof-checker.md) | one new review | 1 cold reviewer per dossier |
-| [`synthesizer`](synthesizer.md) | knowledge files; one new exploration | **singleton** |
+| [`synthesizer`](synthesizer.md) | `research/instances.md`; one new exploration | **singleton** |
 | [`latex-sync`](latex-sync.md) | nothing; patch proposal only | 1 |
 | [`janitor`](janitor.md) | nothing; proposal only | 1 |
 | [`proof-miner`](proof-miner.md) | one new exploration | N |
@@ -132,7 +138,7 @@ A numerical result never skips the proof path. An exact `numerics` witness is st
 
 Fan out across read-only scouting, independent gates in different routes, refutation lenses, and
 independent literature/mining questions. Do not fan out writes to a shared file. `numerics`
-package edits, bibliography edits, knowledge promotion, manuscript promotion, and ledger edits
+package edits, bibliography edits, instance curation, manuscript promotion, and ledger edits
 converge through their keys above.
 
 The `synthesizer` owns the mathematical merge barriers declared as program constraints in

@@ -26,8 +26,8 @@ facts, not opinions about how to proceed. Many scouts run in parallel; each is c
    `python3 scripts/check_ledger.py node <id>` for its derived consumers.
 2. Open the manuscript anchor: the node `id` is its LaTeX `\label` unless `label:` overrides it;
    the file is the node's `file`.
-3. Follow the whole `depends_on` closure and record each dependency's status.
-4. Read **every** `bounded_by` obstruction in the program obstruction file, in full.
+3. Follow `depends_on`, and separately record `assumes`, `implies`, and `refines`.
+4. Read every hard `bounded_by` and advisory `heuristic_barriers` obstruction in full.
 5. Read whatever navigation the program keeps under `research/program/` (route or
    target briefs, gating notes) for this node.
 6. Grep `research/explorations/` for prior attempts on this node and summarize their outcomes —
@@ -40,8 +40,8 @@ facts, not opinions about how to proceed. Many scouts run in parallel; each is c
 Return a compact brief, no preamble:
 
 - **Node** — id, kind, status, route/refines, one-line statement, manuscript path and label.
-- **Depends on** — each id with its status; flag anything not `proved`/`imported`.
-- **Fenced by** — each obstruction id with the shape it forbids, in one line each.
+- **Relations** — proof dependencies, implication antecedents/conclusions, and refinements.
+- **Barriers** — hard and advisory lists kept visibly separate.
 - **Already tried** — dated exploration files with their outcome; call out anything that would be
   a rerun.
 - **Artifacts** — dossier, review, run paths, or "none".

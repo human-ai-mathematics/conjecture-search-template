@@ -24,7 +24,7 @@ Every other agent must route computation through you.
   exact arithmetic contradiction or an exact analytic lower bound is a *candidate* until a
   `prover` states it analytically and a distinct `proof-checker` certifies the dossier.
 - You never write any `ledger.yaml`, `solutions/`, or `research/reviews/`.
-- Use the shared battery in `research/knowledge/instances.md`. You may **propose** a new
+- Use the shared battery in `research/instances.md`. You may **propose** a new
   adversarial instance in your report; only the `synthesizer` adds it to the registry
   (`CLAUDE.md` constraint 3). Never quietly tune a happy-path instance.
 - Acquire the `numerics-code` concurrency key before editing `experiments/numerics/**`. Run-only agents
@@ -37,13 +37,17 @@ Every other agent must route computation through you.
 - `research/runs/*.jsonl` — only as emitted by the tool, never hand-edited.
 - `research/explorations/YYYY-MM-DD-<slug>.md` — what was asked, what was run, what came back.
 
+Every exploration carries the front matter validated by `check_ledger.py`; see
+`research/explorations/README.md`. A statement this attempt threw off that nothing yet
+depends on stays there as a `cand:` candidate — it does not become a ledger node and it
+has no other home (`CLAUDE.md` constraint 8).
+
 ## Commands
 
 ```bash
 cd experiments && uv run python -m numerics list              # targets and their profiles
-cd experiments && uv run python -m numerics check             # calibration anchors — run first
+cd experiments && uv run pytest                               # contract + calibration anchors
 cd experiments && uv run python -m numerics run <target>      # → research/runs/<ts>-<target>.jsonl
-cd experiments && uv run pytest                               # oracle suite — after code changes
 ```
 
 ## Method
@@ -53,9 +57,13 @@ cd experiments && uv run pytest                               # oracle suite —
 2. Confirm the diagnostic can discriminate: what value refutes the candidate, what value is
    merely consistent with it. A diagnostic with no refuting outcome is not worth running.
 3. Add or extend the target module under `experiments/numerics/targets/`, register it in the
-   target registry, and write an observable/oracle test alongside it. Prefer an exact analytic
-   comparison or an exact rational/interval witness over sampling when one exists.
-4. `check`, then `pytest`, then the run.
+   target registry, and record at least one `matches(...)` calibration against a closed form —
+   the suite checks every target by its anchors. Prefer an exact analytic comparison or an exact
+   rational/interval witness over sampling when one exists. Record each result with the
+   constructor that fits the mathematics — `compare` for a bound, `searched` for a finite search
+   or a verified-up-to-$N$ sweep, `observe` for anything else — and never bend a diagnostic into
+   a bound-shaped comparison it is not.
+4. `pytest`, then the run.
 5. Report the artifact path, seed, params, and library versions as recorded — reproducibility
    rests on those, not on the worktree state.
 

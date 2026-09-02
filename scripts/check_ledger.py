@@ -6,23 +6,29 @@ isolated test fixtures):
 
 * ledger and node identities are unique (a second ledger is rejected: one
   repository owns exactly one program ledger);
-* dependency edges resolve, are acyclic, and do not let a proved node inherit an
-  open, refuted, conditional, or unreviewed-preprint premise;
-* every conditional node inherits at least one unresolved premise through
-  ``depends_on``; its assumption contract is derived rather than duplicated;
+* proof-dependency edges resolve, are acyclic, and do not let a proved node
+  inherit an open or refuted premise;
+* assumptions of proved implications live in ``assumes`` rather than
+  ``depends_on``, so the implication can be proved while its applicability is
+  reported as blocked;
 * nodes use an explicit, program-aware schema; their manuscript anchor exists in
-  the declared file, and every imported node cites existing BibTeX keys;
-* every ``bounded_by`` edge resolves to a same-ledger obstruction node.
+  the declared file, and every literature-provenance node cites existing BibTeX keys;
+* every ``bounded_by`` edge resolves to an established same-ledger obstruction,
+  while unproved method barriers use ``heuristic_barriers``;
+* every dated exploration declares front matter whose nodes, run artifacts and
+  candidate statements resolve, so the attempt log stays queryable rather than
+  becoming prose nothing reads.
 
-Intra-repository ``bridges: [program/id, ...]`` links are resolved against all
-loaded ledgers. Proof-plane ``solution:`` files are confined to ``solutions/`` and
-may certify either an unconditional proved node or a conditional implication.
-Agent identity and historical scope live in a persisted ``type: proof-review``
-report; human acceptance is named explicitly and Lean certification requires an
-adjacent ``.lean`` file. Every proved node carries certification, while every
-refuted node names a proved/imported refuter.
+Proof-plane ``proofs:`` records are confined to ``solutions/`` and may contain
+multiple independently certified agent, human, or future Lean proofs. Agent
+identity and historical scope live in a persisted
+``type: proof-review`` report; human acceptance is named explicitly and Lean
+certification currently requires an adjacent ``.lean`` file. Every internally
+proved node carries certification, while every refuted node names a proved
+refuter.
 
-Run from the repo root: ``python3 scripts/check_ledger.py [check|status|node ID]``.
+Run from the repo root:
+``python3 scripts/check_ledger.py [check|status|node ID|candidates]``.
 Exit 0 = clean, 1 = errors. Requires PyYAML.
 """
 from __future__ import annotations
@@ -47,8 +53,9 @@ KIND = {
     "theorem", "lemma", "proposition", "corollary", "definition", "assumption",
     "question", "conjecture", "obstruction", "example",
 }
-CHECKED_BY = {"agent", "human", "lean"}
-IMPORT_CLASSES = {"published", "preprint-unreviewed"}
+PROOF_MODES = {"agent", "human", "lean"}
+PROOF_FIELDS = {"artifact", "mode", "review", "accepted_by"}
+IMPORT_CLASSES = {"published", "preprint-unreviewed", "preprint-reviewed"}
 REVIEW_TYPES = {"proof-review", "audit"}
 REVIEW_COMMON_FIELDS = {"type", "date"}
 PROOF_REVIEW_FIELDS = REVIEW_COMMON_FIELDS | {
@@ -57,11 +64,12 @@ PROOF_REVIEW_FIELDS = REVIEW_COMMON_FIELDS | {
 
 # One logical-status vocabulary. Mathematical form belongs in ``kind``;
 # speculative prose is not a ledger classification.
-STATUSES = {"open", "conditional", "proved", "imported", "defined", "refuted"}
+STATUSES = {"open", "proved", "defined", "refuted"}
+PROVENANCE = {"internal", "literature"}
 
 # Unresolved premises are discovered recursively through the canonical
-# ``depends_on`` graph. Unreviewed preprints are handled separately below.
-UNRESOLVED_STATUSES = {"open", "conditional", "refuted"}
+# ``depends_on`` graph; an unreviewed preprint therefore has status ``open``.
+UNRESOLVED_STATUSES = {"open", "refuted"}
 
 # One repository, one program, one ledger (CLAUDE.md constraint 1). The program
 # names itself in ``meta.program``; the path is fixed so no configuration file
@@ -71,20 +79,40 @@ LEDGER_PATH = Path("research/program/ledger.yaml")
 # The repository bibliography, resolved relative to the repository root.
 BIBLIOGRAPHY = Path("references.bib")
 
-RESOLVE_FIELDS = ("depends_on", "refuted_by")
+# The append-only attempt log, and the run artifacts an attempt may cite.
+EXPLORATIONS = Path("research/explorations")
+RUNS = Path("research/runs")
 
-# ``route`` is accepted only when ``meta.route_policy`` declares a vocabulary;
-# ``refines`` is optional everywhere and validated against the manuscript labels.
+EXPLORATION_FIELDS = {"type", "date", "nodes", "outcome", "artifacts", "candidates", "retires"}
+EXPLORATION_REQUIRED = {"type", "date", "outcome"}
+
+# What the attempt produced, for the next agent deciding whether to repeat it.
+EXPLORATION_OUTCOMES = {"dead-end", "directional", "candidate", "proposed"}
+
+# A candidate is a statement someone thought worth writing down and nothing more:
+# no manuscript anchor, no node, no status (CLAUDE.md constraint 8). Its id is
+# namespaced so it can never be mistaken for a ledger node id.
+CANDIDATE_ID_RE = re.compile(r"^cand:[a-z0-9][a-z0-9-]*$")
+CANDIDATE_FIELDS = {"id", "statement"}
+
+RESOLVE_FIELDS = (
+    "depends_on", "assumes", "implies", "refines", "refuted_by",
+)
+
+# ``route`` is accepted only when ``meta.route_policy`` declares a vocabulary.
+# Frontier relations resolve inside the ledger but do not enter the proof DAG.
 NODE_FIELDS = {
-    "id", "kind", "status", "file", "label", "statement", "depends_on",
-    "bounded_by", "bridges", "references", "import_class", "solution",
-    "checked_by", "review", "accepted_by", "refuted_by", "route", "refines",
+    "id", "kind", "status", "provenance", "file", "label", "statement",
+    "depends_on", "assumes", "implies", "refines", "bounded_by",
+    "heuristic_barriers", "references", "import_class", "proofs",
+    "refuted_by", "route",
 }
 LIST_FIELDS = {
-    "depends_on", "bounded_by", "bridges", "references", "refuted_by",
+    "depends_on", "assumes", "implies", "refines", "bounded_by",
+    "heuristic_barriers", "references", "proofs", "refuted_by",
 }
 OBSOLETE_NODE_FIELDS = {
-    "assuming": "depends_on; conditional premises are derived from dependency closure",
+    "assuming": "assumes for antecedents of an implication",
     "discharged_by": "depends_on on the result that performs the discharge",
     "evidence": "a dated exploration plus an immutable research/runs artifact",
     "evidence_eligible": "a dated exploration plus an immutable research/runs artifact",
@@ -96,11 +124,16 @@ OBSOLETE_NODE_FIELDS = {
     "clearance": "the proof dossier/review discussion of bounded_by",
     "note": "the manuscript, route/target brief, or a dated exploration",
     "numerics": "the numerics implementation, instance registry, or a dated exploration",
-    "proof_file": "solution",
-    "proof_provenance": "solution plus checked_by certification",
+    "solution": "proofs with one artifact/mode record per active proof",
+    "checked_by": "proofs[].mode",
+    "review": "proofs[].review",
+    "accepted_by": "proofs[].accepted_by",
+    "proof_file": "proofs[].artifact",
+    "proof_provenance": "proofs with explicit certification records",
     "authored_by": "proof-review front matter",
     "reviewed_by": "proof-review front matter",
-    "related": "route documentation for non-logical relationships",
+    "related": "one of assumes, implies, refines, or route prose",
+    "bridges": "a precise same-ledger implication/refinement or prose for an external comparison",
     "unlocks": "depends_on on the consuming node, or prose for non-logical relationships",
 }
 BIB_ENTRY_RE = re.compile(r"@[A-Za-z]+\s*\{\s*([^,\s]+)\s*,")
@@ -142,29 +175,56 @@ def _review_string_set(metadata: dict, field: str, context: str,
     return result
 
 
-def _read_review_metadata(path: Path, root: Path, errors: list[str]) -> dict | None:
-    """Parse and validate the YAML front matter of one persisted review report."""
+def _read_front_matter(path: Path, noun: str, errors: list[str]) -> dict | None:
+    """Parse the leading YAML front matter of a persisted Markdown record.
+
+    Shared by the two record genres that carry machine-readable envelopes — review
+    reports and dated explorations — so the envelope is parsed one way everywhere.
+    """
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as exc:
-        errors.append(f"{path}: cannot read review report: {exc}")
+        errors.append(f"{path}: cannot read {noun}: {exc}")
         return None
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
-        errors.append(f"{path}: review report must start with YAML front matter")
+        errors.append(f"{path}: {noun} must start with YAML front matter")
         return None
     try:
         closing = next(index for index, line in enumerate(lines[1:], 1) if line.strip() == "---")
     except StopIteration:
-        errors.append(f"{path}: review front matter lacks a closing '---'")
+        errors.append(f"{path}: {noun} front matter lacks a closing '---'")
         return None
     try:
         raw = yaml.safe_load("\n".join(lines[1:closing])) or {}
     except yaml.YAMLError as exc:
-        errors.append(f"{path}: invalid review front matter: {exc}")
+        errors.append(f"{path}: invalid {noun} front matter: {exc}")
         return None
     if not isinstance(raw, dict):
-        errors.append(f"{path}: review front matter must be a mapping")
+        errors.append(f"{path}: {noun} front matter must be a mapping")
+        return None
+    return raw
+
+
+def _check_record_date(path: Path, raw: dict, errors: list[str]) -> str | None:
+    """A quoted ISO date that agrees with the filename prefix, for a dated record."""
+    value = raw.get("date")
+    if not isinstance(value, str):
+        errors.append(f"{path}.date: must be a quoted ISO date YYYY-MM-DD")
+        return None
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        errors.append(f"{path}.date: invalid ISO date '{value}'")
+    if not path.name.startswith(f"{value}-"):
+        errors.append(f"{path}.date: must match the filename prefix")
+    return value
+
+
+def _read_review_metadata(path: Path, root: Path, errors: list[str]) -> dict | None:
+    """Parse and validate the YAML front matter of one persisted review report."""
+    raw = _read_front_matter(path, "review report", errors)
+    if raw is None:
         return None
 
     report_type = raw.get("type")
@@ -177,16 +237,7 @@ def _read_review_metadata(path: Path, root: Path, errors: list[str]) -> dict | N
     for field in sorted(set(raw) - allowed):
         errors.append(f"{path}: field '{field}' is not valid for type {report_type}")
 
-    report_date = raw.get("date")
-    if not isinstance(report_date, str):
-        errors.append(f"{path}.date: must be a quoted ISO date YYYY-MM-DD")
-    else:
-        try:
-            date.fromisoformat(report_date)
-        except ValueError:
-            errors.append(f"{path}.date: invalid ISO date '{report_date}'")
-        if not path.name.startswith(f"{report_date}-"):
-            errors.append(f"{path}.date: must match the filename prefix")
+    report_date = _check_record_date(path, raw, errors)
 
     normalized = {"type": report_type, "date": report_date}
     if report_type == "audit":
@@ -235,7 +286,7 @@ def _read_review_metadata(path: Path, root: Path, errors: list[str]) -> dict | N
     return normalized
 
 
-def _validate_agent_reviews(root: Path, review_refs: dict[str, list[tuple[str, str, dict]]],
+def _validate_agent_reviews(root: Path, review_refs: dict[str, list[tuple[str, str, str]]],
                             errors: list[str]) -> None:
     """Validate review envelopes and containment of every active certification.
 
@@ -279,18 +330,197 @@ def _validate_agent_reviews(root: Path, review_refs: dict[str, list[tuple[str, s
             errors.append(f"{context}: type '{metadata.get('type')}' cannot certify a proof")
             continue
 
-        for program, nid, node in review_refs[review_ref]:
+        for program, nid, artifact_ref in review_refs[review_ref]:
             if nid not in metadata["nodes"]:
                 errors.append(
                     f"{context}.nodes: active [{program}] certification '{nid}' "
                     "is outside the report's declared historical scope"
                 )
-            solution = node.get("solution")
-            if isinstance(solution, str) and solution not in metadata["solutions"]:
+            if artifact_ref not in metadata["solutions"]:
                 errors.append(
                     f"{context}.solutions: active [{program}] certification '{nid}' uses "
-                    f"'{solution}', outside the report's declared historical scope"
+                    f"'{artifact_ref}', outside the report's declared historical scope"
                 )
+
+
+def _optional_string_list(raw: dict, field: str, context: str,
+                          errors: list[str]) -> list[str]:
+    """Validate one optional list of unique non-empty strings; absent means empty."""
+    if field not in raw:
+        return []
+    value = raw[field]
+    if not isinstance(value, list):
+        errors.append(f"{context}.{field}: must be a list")
+        return []
+    result: list[str] = []
+    for item in value:
+        if not isinstance(item, str) or not item.strip():
+            errors.append(f"{context}.{field}: entries must be non-empty strings")
+        elif item in result:
+            errors.append(f"{context}.{field}: duplicate entry '{item}'")
+        else:
+            result.append(item)
+    return result
+
+
+def _read_exploration_metadata(path: Path, errors: list[str]) -> dict | None:
+    """Parse and validate the front matter of one dated exploration.
+
+    The envelope exists so that the attempt log answers the question the next agent
+    actually has — has this node been attacked, and what came back — without anyone
+    reading every file. It records what the attempt engaged, not what it concluded:
+    conclusions are prose, and a conclusion that earns reuse becomes a ledger node.
+    """
+    context = str(path)
+    raw = _read_front_matter(path, "exploration", errors)
+    if raw is None:
+        return None
+    if raw.get("type") != "exploration":
+        errors.append(f"{context}.type: want 'exploration', got '{raw.get('type')}'")
+        return None
+    for field in sorted(set(raw) - EXPLORATION_FIELDS):
+        errors.append(f"{context}: field '{field}' is not valid for an exploration")
+    for field in sorted(EXPLORATION_REQUIRED - set(raw)):
+        errors.append(f"{context}: required field '{field}' is missing")
+
+    outcome = raw.get("outcome")
+    if "outcome" in raw and outcome not in EXPLORATION_OUTCOMES:
+        errors.append(
+            f"{context}.outcome: want one of {sorted(EXPLORATION_OUTCOMES)}, got '{outcome}'"
+        )
+
+    metadata = {
+        "path": path,
+        "date": _check_record_date(path, raw, errors),
+        "outcome": outcome,
+        "nodes": _optional_string_list(raw, "nodes", context, errors),
+        "artifacts": _optional_string_list(raw, "artifacts", context, errors),
+        "retires": _optional_string_list(raw, "retires", context, errors),
+        "candidates": [],
+    }
+
+    if "candidates" in raw:
+        value = raw["candidates"]
+        if not isinstance(value, list):
+            errors.append(f"{context}.candidates: must be a list")
+            value = []
+        for index, entry in enumerate(value):
+            where = f"{context}.candidates[{index}]"
+            if not isinstance(entry, dict):
+                errors.append(f"{where}: must be a mapping with 'id' and 'statement'")
+                continue
+            for field in sorted(set(entry) - CANDIDATE_FIELDS):
+                errors.append(f"{where}: unknown field '{field}'")
+            candidate_id = entry.get("id")
+            statement = entry.get("statement")
+            if not isinstance(candidate_id, str) or not CANDIDATE_ID_RE.match(candidate_id):
+                errors.append(f"{where}.id: want 'cand:<slug>', got '{candidate_id}'")
+                continue
+            if not isinstance(statement, str) or not statement.strip():
+                errors.append(f"{where}.statement: must be a non-empty string")
+                continue
+            metadata["candidates"].append({"id": candidate_id, "statement": statement})
+
+    declared = [entry["id"] for entry in metadata["candidates"]]
+    if bool(declared) != (outcome == "candidate"):
+        errors.append(
+            f"{context}: outcome 'candidate' and a non-empty 'candidates' list require "
+            "each other; every other outcome carries none"
+        )
+    if not metadata["nodes"] and not declared:
+        errors.append(
+            f"{context}: must name at least one ledger node in 'nodes' or propose a candidate"
+        )
+    return metadata
+
+
+def _validate_explorations(root: Path, node_ids: set[str], errors: list[str]) -> list[dict]:
+    """Validate every dated exploration and return the live candidate statements.
+
+    A candidate is retired by a later exploration naming it in ``retires``; the log
+    itself is never rewritten (CLAUDE.md constraint 7), so "live" is derived here
+    rather than recorded anywhere.
+    """
+    directory = root / EXPLORATIONS
+    if not directory.is_dir():
+        return []
+    runs_root = (root / RUNS).resolve()
+    declared: dict[str, dict] = {}
+    retired: dict[str, tuple[int, str]] = {}
+
+    for order, path in enumerate(sorted(directory.rglob("*.md"))):
+        if path.name == "README.md":
+            continue
+        metadata = _read_exploration_metadata(path, errors)
+        if metadata is None:
+            continue
+        context = str(path)
+        relative = path.resolve().relative_to(root.resolve()).as_posix()
+
+        for node_id in metadata["nodes"]:
+            if node_id not in node_ids:
+                errors.append(f"{context}.nodes: '{node_id}' is not a ledger node id")
+
+        for reference in metadata["artifacts"]:
+            where = f"{context}.artifacts"
+            artifact_path = Path(reference)
+            if artifact_path.is_absolute():
+                errors.append(f"{where}: want a repo-relative path, got '{reference}'")
+                continue
+            resolved = (root / artifact_path).resolve()
+            try:
+                resolved.relative_to(runs_root)
+            except ValueError:
+                errors.append(f"{where}: '{reference}' must be an artifact under {RUNS}/")
+                continue
+            if not resolved.is_file():
+                errors.append(f"{where}: '{reference}' does not exist")
+
+        for candidate in metadata["candidates"]:
+            candidate_id = candidate["id"]
+            if candidate_id in node_ids:
+                errors.append(
+                    f"{context}.candidates: '{candidate_id}' is already a ledger node; a "
+                    "candidate is not a node (CLAUDE.md constraint 8)"
+                )
+            elif candidate_id in declared:
+                errors.append(
+                    f"{context}.candidates: '{candidate_id}' was already proposed in "
+                    f"{declared[candidate_id]['source']}"
+                )
+            else:
+                declared[candidate_id] = {
+                    "id": candidate_id,
+                    "statement": candidate["statement"],
+                    "source": relative,
+                    "date": metadata["date"],
+                    "order": order,
+                }
+
+        for candidate_id in metadata["retires"]:
+            if candidate_id in {entry["id"] for entry in metadata["candidates"]}:
+                errors.append(
+                    f"{context}.retires: '{candidate_id}' is proposed by this same exploration"
+                )
+            elif candidate_id in retired:
+                errors.append(
+                    f"{context}.retires: '{candidate_id}' was already retired in "
+                    f"{retired[candidate_id][1]}"
+                )
+            else:
+                retired[candidate_id] = (order, relative)
+
+    for candidate_id, (order, source) in sorted(retired.items()):
+        if candidate_id not in declared:
+            errors.append(f"{source}.retires: '{candidate_id}' was never proposed")
+        elif declared[candidate_id]["order"] > order:
+            errors.append(
+                f"{source}.retires: '{candidate_id}' is retired before "
+                f"{declared[candidate_id]['source']} proposes it"
+            )
+
+    return [entry for candidate_id, entry in sorted(declared.items())
+            if candidate_id not in retired]
 
 
 def all_labels(root: Path = ROOT) -> set[str]:
@@ -320,18 +550,6 @@ def labels_in_file(path: Path) -> set[str]:
         return set(re.findall(r"\\label\{([^}]+)\}", path.read_text(encoding="utf-8")))
     except (OSError, UnicodeError):
         return set()
-
-
-def obstruction_ids_md(ledger_path: Path) -> set[str]:
-    """Return obstruction ids documented by headings in the sibling registry."""
-    path = ledger_path.with_name("obstructions.md")
-    if not path.exists():
-        return set()
-    return set(re.findall(
-        r"^#{2,6}\s+`?(obs:[A-Za-z0-9\-]+)`?\b",
-        path.read_text(encoding="utf-8"),
-        flags=re.MULTILINE,
-    ))
 
 
 def _load_ledger(path: Path, errors: list[str]) -> dict | None:
@@ -370,8 +588,8 @@ def _nodes_by_id(path: Path, doc: dict, errors: list[str]) -> dict[str, dict]:
 def _inherited_risks(start: str, nodes: dict[str, dict], unproved: set[str]):
     """Return unresolved dependency risks inherited by ``start``.
 
-    The traversal deliberately crosses intermediate proved/imported/conditional
-    nodes, so unresolved transitive premises are not hidden from an ancestor.
+    The traversal deliberately crosses intermediate nodes, so unresolved
+    transitive proof premises are not hidden from an ancestor.
     """
     found: dict[tuple[str, str], list[str]] = {}
 
@@ -392,9 +610,6 @@ def _inherited_risks(start: str, nodes: dict[str, dict], unproved: set[str]):
             status = nodes[dep].get("status")
             if isinstance(status, str) and status in unproved:
                 record(status, dep, dep_path)
-            if (status == "imported"
-                    and nodes[dep].get("import_class", "published") == "preprint-unreviewed"):
-                record("preprint-unreviewed", dep, dep_path)
             visit(dep, dep_path, next_stack)
 
     visit(start, [start], set())
@@ -445,106 +660,104 @@ def _validate_route_policy(program: str, meta: dict, nodes: dict[str, dict],
             )
 
 
+def _solution_artifact(root: Path, program: str, nid: str, reference: object,
+                       errors: list[str]) -> Path | None:
+    """Validate and return one natural-language proof dossier path."""
+    context = f"[{program}] {nid}.proofs[].artifact"
+    if not isinstance(reference, str) or not reference.strip():
+        errors.append(f"{context}: must be a non-empty repo-relative path")
+        return None
+    relative = Path(reference)
+    artifact = (root / relative).resolve()
+    solutions_root = (root / "solutions").resolve()
+    if relative.is_absolute():
+        errors.append(f"{context}: want a repo-relative path, got '{reference}'")
+        return None
+    try:
+        artifact.relative_to(solutions_root)
+    except ValueError:
+        errors.append(f"{context}: must stay under solutions/")
+        return None
+    if artifact.suffix != ".tex":
+        errors.append(f"{context}: '{reference}' must be a .tex dossier")
+    if not artifact.is_file():
+        errors.append(f"{context}: '{reference}' does not exist")
+        return None
+    try:
+        header = artifact.read_text(encoding="utf-8")[:2500]
+    except (OSError, UnicodeError) as exc:
+        errors.append(f"{context}: cannot read '{reference}': {exc}")
+        return None
+    if "ledger-node" not in header or not _mentions_token(header, nid):
+        errors.append(
+            f"{context}: dossier header does not enumerate the ledger node '{nid}'"
+        )
+    return artifact
+
+
 def _validate_certification(root: Path, program: str, nid: str, node: dict,
                             nodes: dict[str, dict],
-                            agent_review_refs: dict[str, list[tuple[str, str, dict]]],
+                            agent_review_refs: dict[str, list[tuple[str, str, str]]],
                             errors: list[str]) -> None:
-    """Validate proof/refutation provenance independently of logical graph checks."""
+    """Validate plural proof records and refutation provenance."""
     status = node.get("status")
-    solution = node.get("solution")
-    checked_by = node.get("checked_by")
-    certification_fields = ("solution", "checked_by", "review", "accepted_by")
-    certifiable_status = isinstance(status, str) and status in {"proved", "conditional"}
-    if not certifiable_status:
-        for proof_field in certification_fields:
-            if proof_field in node:
+    provenance = node.get("provenance")
+    raw_proofs = node.get("proofs")
+    if status == "proved" and provenance == "internal" and not raw_proofs:
+        errors.append(f"[{program}] {nid}: internally proved node requires a certified proof")
+    if status != "proved" and raw_proofs is not None:
+        errors.append(f"[{program}] {nid}.proofs: valid only with status proved")
+
+    if raw_proofs is not None:
+        if not isinstance(raw_proofs, list) or not raw_proofs:
+            errors.append(f"[{program}] {nid}.proofs: must be a non-empty list")
+            raw_proofs = []
+        seen_artifacts: set[str] = set()
+        for index, proof in enumerate(raw_proofs):
+            context = f"[{program}] {nid}.proofs[{index}]"
+            if not isinstance(proof, dict):
+                errors.append(f"{context}: must be a mapping")
+                continue
+            for field in sorted(set(proof) - PROOF_FIELDS):
+                errors.append(f"{context}: unknown field '{field}'")
+            artifact_ref = proof.get("artifact")
+            artifact = _solution_artifact(root, program, nid, artifact_ref, errors)
+            if isinstance(artifact_ref, str):
+                if artifact_ref in seen_artifacts:
+                    errors.append(f"{context}.artifact: duplicate active proof '{artifact_ref}'")
+                seen_artifacts.add(artifact_ref)
+            mode = proof.get("mode")
+            if mode not in PROOF_MODES:
                 errors.append(
-                    f"[{program}] {nid}.{proof_field}: proof certification metadata "
-                    "is valid only with status proved or conditional"
+                    f"{context}.mode: want one of {sorted(PROOF_MODES)}, got '{mode}'"
                 )
-    if status == "proved" and not solution:
-        errors.append(f"[{program}] {nid}: proved node requires a certified solution")
-    if status == "proved" and not checked_by:
-        errors.append(f"[{program}] {nid}: proved node requires checked_by")
-    if status == "conditional" and any(field in node for field in certification_fields):
-        if not solution or not checked_by:
-            errors.append(
-                f"[{program}] {nid}: a certified conditional implication requires "
-                "both solution and checked_by"
-            )
-    if checked_by is not None and (
-        not isinstance(checked_by, str) or checked_by not in CHECKED_BY
-    ):
-        errors.append(
-            f"[{program}] {nid}: bad checked_by '{checked_by}' "
-            f"(want one of {sorted(CHECKED_BY)})"
-        )
+                continue
 
-    if checked_by == "agent":
-        review = node.get("review")
-        if not isinstance(review, str) or not review.strip():
-            errors.append(f"[{program}] {nid}: checked_by agent requires a review report")
-        else:
-            agent_review_refs.setdefault(review, []).append((program, nid, node))
-        if not solution:
-            errors.append(f"[{program}] {nid}: checked_by agent requires a standalone solution")
-        if "accepted_by" in node:
-            errors.append(f"[{program}] {nid}.accepted_by: valid only with checked_by human")
-    elif checked_by == "human":
-        accepted_by = node.get("accepted_by")
-        if not isinstance(accepted_by, str) or not accepted_by.strip():
-            errors.append(f"[{program}] {nid}: checked_by human requires non-empty accepted_by")
-        if "review" in node:
-            errors.append(f"[{program}] {nid}.review: valid only with checked_by agent")
-    elif checked_by == "lean":
-        for field in ("review", "accepted_by"):
-            if field in node:
-                errors.append(f"[{program}] {nid}.{field}: not valid with checked_by lean")
-
-    if solution:
-        if not isinstance(solution, str):
-            errors.append(f"[{program}] {nid}.solution: path must be a string")
-        else:
-            relative_solution = Path(solution)
-            artifact = (root / relative_solution).resolve()
-            solutions_root = (root / "solutions").resolve()
-            if relative_solution.is_absolute():
-                errors.append(
-                    f"[{program}] {nid}.solution: want a repo-relative path, got '{solution}'"
-                )
-            else:
-                try:
-                    artifact.relative_to(solutions_root)
-                except ValueError:
-                    errors.append(f"[{program}] {nid}.solution: must stay under solutions/")
-                else:
-                    if artifact.suffix != ".tex":
-                        errors.append(f"[{program}] {nid}.solution: '{solution}' must be a .tex dossier")
-                    if not artifact.is_file():
-                        errors.append(f"[{program}] {nid}.solution: '{solution}' does not exist")
-                    else:
-                        try:
-                            solution_text = artifact.read_text(encoding="utf-8")
-                        except (OSError, UnicodeError) as exc:
-                            errors.append(f"[{program}] {nid}.solution: cannot read '{solution}': {exc}")
-                        else:
-                            header = solution_text[:2500]
-                            if "ledger-node" not in header or not _mentions_token(header, nid):
-                                errors.append(
-                                    f"[{program}] {nid}.solution: dossier header does not "
-                                    f"enumerate the ledger node '{nid}'"
-                                )
-                    if checked_by == "lean" and not artifact.with_suffix(".lean").is_file():
-                        errors.append(
-                            f"[{program}] {nid}: checked_by lean requires adjacent "
-                            f"'{artifact.with_suffix('.lean').name}'"
-                        )
-        if checked_by not in CHECKED_BY:
-            errors.append(
-                f"[{program}] {nid}: solution present but checked_by is '{checked_by}' "
-                "(want agent, human, or lean)"
-            )
-
+            review = proof.get("review")
+            accepted_by = proof.get("accepted_by")
+            if mode == "agent":
+                if not isinstance(review, str) or not review.strip():
+                        errors.append(f"{context}.review: mode agent requires a proof-review")
+                elif isinstance(artifact_ref, str):
+                    agent_review_refs.setdefault(review, []).append(
+                        (program, nid, artifact_ref)
+                    )
+                if accepted_by is not None:
+                    errors.append(f"{context}.accepted_by: valid only with mode human")
+            elif mode == "human":
+                if not isinstance(accepted_by, str) or not accepted_by.strip():
+                    errors.append(f"{context}.accepted_by: mode human requires a non-empty identity")
+                if review is not None:
+                    errors.append(f"{context}.review: valid only with mode agent")
+            elif mode == "lean":
+                for field, value in (("review", review), ("accepted_by", accepted_by)):
+                    if value is not None:
+                        errors.append(f"{context}.{field}: not valid with mode lean")
+                if artifact is not None and not artifact.with_suffix(".lean").is_file():
+                    errors.append(
+                        f"{context}: mode lean requires adjacent "
+                        f"'{artifact.with_suffix('.lean').name}'"
+                    )
     refuters = as_list(node.get("refuted_by"))
     if status == "refuted":
         if not refuters:
@@ -552,8 +765,8 @@ def _validate_certification(root: Path, program: str, nid: str, node: dict,
         dependencies = set(as_list(node.get("depends_on")))
         for ref in refuters:
             if isinstance(ref, str) and ref in nodes:
-                if nodes[ref].get("status") not in {"proved", "imported"}:
-                    errors.append(f"[{program}] {nid}.refuted_by: '{ref}' is not proved or imported")
+                if nodes[ref].get("status") != "proved":
+                    errors.append(f"[{program}] {nid}.refuted_by: '{ref}' is not proved")
                 if ref not in dependencies:
                     errors.append(
                         f"[{program}] {nid}.refuted_by: '{ref}' must also appear in depends_on"
@@ -578,7 +791,7 @@ def check_control_plane(research: Path = RESEARCH, root: Path | None = None,
     errors: list[str] = []
     ledgers: list[dict] = []
     program_paths: dict[str, Path] = {}
-    agent_review_refs: dict[str, list[tuple[str, str, dict]]] = {}
+    agent_review_refs: dict[str, list[tuple[str, str, str]]] = {}
     discovered_paths = sorted(research.rglob("ledger.yaml"))
     if configured_ledger is None:
         ledger_paths = discovered_paths
@@ -628,16 +841,6 @@ def check_control_plane(research: Path = RESEARCH, root: Path | None = None,
         obstruction_ids = {
             nid for nid, node in nodes.items() if node.get("kind") == "obstruction"
         }
-        documented_obstructions = obstruction_ids_md(path)
-        for nid in sorted(obstruction_ids - documented_obstructions):
-            errors.append(
-                f"[{program}] {nid}: obstruction node has no heading in "
-                f"{path.with_name('obstructions.md')}"
-            )
-        for nid in sorted(documented_obstructions - obstruction_ids):
-            errors.append(
-                f"[{program}] {nid}: obstruction heading has no same-ledger obstruction node"
-            )
         ledgers.append({
             "program": program,
             "path": path,
@@ -678,22 +881,32 @@ def check_control_plane(research: Path = RESEARCH, root: Path | None = None,
             for field in sorted(LIST_FIELDS & set(node)):
                 if not isinstance(node[field], list):
                     errors.append(f"[{program}] {nid}.{field}: must be a list")
-            for field in ("kind", "status", "file", "statement"):
+            for field in ("kind", "status", "provenance", "file", "statement"):
                 if field not in node:
                     errors.append(f"[{program}] {nid}: missing '{field}'")
             kind = node.get("kind")
             status = node.get("status")
+            provenance = node.get("provenance")
             if not isinstance(kind, str) or kind not in KIND:
                 errors.append(f"[{program}] {nid}: bad kind '{kind}'")
-            if status == "conjectured":
+            if isinstance(status, str) and status in {"conjectured", "conditional", "imported"}:
+                replacement = {
+                    "conjectured": "status open",
+                    "conditional": "status proved plus assumes for a proved implication",
+                    "imported": "provenance literature plus the claim's logical status",
+                }[status]
                 errors.append(
-                    f"[{program}] {nid}: status 'conjectured' is obsolete; use status 'open' "
-                    "and let kind describe the statement type"
+                    f"[{program}] {nid}: status '{status}' is obsolete; use {replacement}"
                 )
             elif not isinstance(status, str) or status not in STATUSES:
                 errors.append(
                     f"[{program}] {nid}: bad status '{status}' "
                     f"(want one of {sorted(STATUSES)})"
+                )
+            if not isinstance(provenance, str) or provenance not in PROVENANCE:
+                errors.append(
+                    f"[{program}] {nid}: bad provenance '{provenance}' "
+                    f"(want one of {sorted(PROVENANCE)})"
                 )
             if status == "defined" and kind != "definition":
                 errors.append(
@@ -704,10 +917,10 @@ def check_control_plane(research: Path = RESEARCH, root: Path | None = None,
                     f"[{program}] {nid}: kind definition requires status defined"
                 )
             import_class = node.get("import_class")
-            if status == "imported":
+            if provenance == "literature":
                 if import_class is None:
                     errors.append(
-                        f"[{program}] {nid}: imported node requires explicit import_class"
+                        f"[{program}] {nid}: literature node requires explicit import_class"
                     )
                 elif import_class not in IMPORT_CLASSES:
                     errors.append(
@@ -717,7 +930,7 @@ def check_control_plane(research: Path = RESEARCH, root: Path | None = None,
                 references = node.get("references")
                 if not isinstance(references, list) or not references:
                     errors.append(
-                        f"[{program}] {nid}: imported node requires non-empty references"
+                        f"[{program}] {nid}: literature node requires non-empty references"
                     )
                 else:
                     for reference in references:
@@ -736,10 +949,15 @@ def check_control_plane(research: Path = RESEARCH, root: Path | None = None,
                                 f"[{program}] {nid}.references: unknown BibTeX key "
                                 f"'{reference}'"
                             )
+                if import_class == "preprint-unreviewed" and status == "proved":
+                    errors.append(
+                        f"[{program}] {nid}: an unreviewed preprint cannot have status proved; "
+                        "use status open until its proof is reviewed"
+                    )
             elif import_class is not None:
-                errors.append(f"[{program}] {nid}: import_class is only valid with status imported")
+                errors.append(f"[{program}] {nid}: import_class is only valid with provenance literature")
             elif "references" in node:
-                errors.append(f"[{program}] {nid}: references is only valid with status imported")
+                errors.append(f"[{program}] {nid}: references is only valid with provenance literature")
 
             declared_file: Path | None = None
             if "file" in node:
@@ -804,33 +1022,33 @@ def check_control_plane(research: Path = RESEARCH, root: Path | None = None,
                     errors.append(f"[{program}] {nid}.bounded_by: references must be non-empty strings")
                 elif ref not in obstruction_ids:
                     errors.append(f"[{program}] {nid}.bounded_by: '{ref}' is not a declared obstruction")
-
-            if isinstance(node.get("refines"), list):
-                errors.append(f"[{program}] {nid}: 'refines' must be a single \\label, not a list")
-            elif node.get("refines"):
-                if not isinstance(node["refines"], str):
-                    errors.append(f"[{program}] {nid}.refines: must be a string \\label")
-                elif node["refines"] not in labels:
+                elif nodes[ref].get("status") != "proved":
                     errors.append(
-                        f"[{program}] {nid}.refines: '{node['refines']}' not found as a \\label"
+                        f"[{program}] {nid}.bounded_by: '{ref}' is not an established obstruction; "
+                        "use heuristic_barriers for an open barrier"
                     )
 
-            for ref in as_list(node.get("bridges")):
+            for ref in as_list(node.get("heuristic_barriers")):
                 if not isinstance(ref, str) or not ref.strip():
-                    errors.append(f"[{program}] {nid}.bridges: references must be non-empty strings")
-                elif ref not in qualified:
-                    errors.append(f"[{program}] {nid}.bridges: '{ref}' not found (want program/id)")
+                    errors.append(
+                        f"[{program}] {nid}.heuristic_barriers: references must be non-empty strings"
+                    )
+                elif ref not in obstruction_ids:
+                    errors.append(
+                        f"[{program}] {nid}.heuristic_barriers: '{ref}' is not a declared obstruction"
+                    )
+                elif nodes[ref].get("status") == "proved":
+                    errors.append(
+                        f"[{program}] {nid}.heuristic_barriers: '{ref}' is established; "
+                        "use bounded_by"
+                    )
+
+            if node.get("implies") and status != "proved":
+                errors.append(
+                    f"[{program}] {nid}.implies: only a proved implication may advertise conclusions"
+                )
 
         errors.extend(_acyclic(program, nodes))
-
-        for nid, node in nodes.items():
-            if node.get("status") != "conditional":
-                continue
-            if not _inherited_risks(nid, nodes, UNRESOLVED_STATUSES):
-                errors.append(
-                    f"[{program}] {nid} (conditional) must inherit an unresolved premise "
-                    "through depends_on"
-                )
 
         for nid, node in nodes.items():
             if node.get("status") != "proved":
@@ -842,7 +1060,10 @@ def check_control_plane(research: Path = RESEARCH, root: Path | None = None,
                 )
 
     _validate_agent_reviews(root, agent_review_refs, errors)
-    return {"errors": errors, "ledgers": ledgers, "labels": labels}
+    node_ids = qualified | {nid for ledger in ledgers for nid in ledger["nodes"]}
+    candidates = _validate_explorations(root, node_ids, errors)
+    return {"errors": errors, "ledgers": ledgers, "labels": labels,
+            "candidates": candidates}
 
 
 def _acyclic(program: str, nodes: dict[str, dict]) -> list[str]:
@@ -870,6 +1091,21 @@ def _acyclic(program: str, nodes: dict[str, dict]) -> list[str]:
     return errors
 
 
+def _applicability_blockers(node_id: str, nodes: dict[str, dict]) -> list[str]:
+    """Return unresolved antecedents without confusing them with proof gaps."""
+    blockers: set[str] = set()
+    for assumed in as_list(nodes[node_id].get("assumes")):
+        if not isinstance(assumed, str) or assumed not in nodes:
+            continue
+        if nodes[assumed].get("status") in UNRESOLVED_STATUSES:
+            blockers.add(assumed)
+        for _risk, target in _inherited_risks(
+            assumed, nodes, UNRESOLVED_STATUSES
+        ):
+            blockers.add(target)
+    return sorted(blockers)
+
+
 def _print_summary(report: dict) -> None:
     """Print the stable structural summary used by the historical default command."""
     ledgers = report["ledgers"]
@@ -882,17 +1118,39 @@ def _print_summary(report: dict) -> None:
         counts = Counter(str(node.get("status")) for node in ledger["nodes"].values())
         statuses = ", ".join(f"{key}={value}" for key, value in sorted(counts.items()))
         print(f"  [{ledger['program']}] {len(ledger['nodes'])} nodes — {statuses}")
+    live = report.get("candidates") or []
+    if live:
+        print(f"  {len(live)} live candidate(s) — see 'check_ledger.py candidates'")
+
+
+def _print_candidates(report: dict) -> None:
+    """List the candidate statements no exploration has retired yet.
+
+    These are not ledger nodes and carry no status. A stable, reusable candidate
+    earns a node and a manuscript statement by an orchestrator decision
+    (CLAUDE.md constraint 8).
+    """
+    live = report.get("candidates") or []
+    if not live:
+        print("No live candidate statements.")
+        return
+    for entry in live:
+        print(f"{entry['id']}  ({entry['date']}, {entry['source']})")
+        print(f"  {entry['statement']}")
 
 
 def _print_status(report: dict) -> None:
     """Print the unresolved frontier derived from ledger state."""
-    frontier_statuses = {"open", "conditional", "refuted"}
+    frontier_statuses = {"open", "refuted"}
     for ledger in sorted(report["ledgers"], key=lambda item: item["program"]):
         groups: dict[str, dict[str, list[str]]] = {}
         for nid, node in ledger["nodes"].items():
             status = node.get("status")
             if status not in frontier_statuses:
-                continue
+                if status == "proved" and _applicability_blockers(nid, ledger["nodes"]):
+                    status = "applicability-blocked"
+                else:
+                    continue
             group = str(node.get("route", ledger["program"]))
             groups.setdefault(group, {}).setdefault(str(status), []).append(nid)
         for group, statuses in sorted(groups.items()):
@@ -925,12 +1183,24 @@ def _print_node(report: dict, reference: str) -> bool:
         if nid in as_list(candidate.get("depends_on"))
     )
     print("used_by:", consumers or "[]")
+    for field, label in (
+        ("assumes", "assumed_by"),
+        ("implies", "implied_by"),
+        ("refines", "refined_by"),
+    ):
+        reverse = sorted(
+            candidate_id for candidate_id, candidate in ledger["nodes"].items()
+            if nid in as_list(candidate.get(field))
+        )
+        print(f"{label}:", reverse or "[]")
+    print("applicability_blocked_by:", _applicability_blockers(nid, ledger["nodes"]) or "[]")
     return True
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Validate and inspect the research control plane")
-    parser.add_argument("command", nargs="?", choices=("check", "status", "node"), default="check")
+    parser.add_argument("command", nargs="?",
+                        choices=("check", "status", "node", "candidates"), default="check")
     parser.add_argument("node_id", nargs="?", help="node id, optionally qualified as program/id")
     args = parser.parse_args(argv)
     if args.command != "node" and args.node_id:
@@ -944,6 +1214,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if args.command == "status":
         _print_status(report)
+    elif args.command == "candidates":
+        _print_candidates(report)
     elif args.command == "node":
         if not args.node_id:
             parser.error("node requires NODE_ID")

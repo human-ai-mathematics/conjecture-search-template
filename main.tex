@@ -4,11 +4,6 @@
 %
 %   latexmk -pdf -outdir=build main.tex
 %
-% Structure: group the modules with \partgroup dividers (shared/preamble.tex)
-% when the document is long enough to need them. The dividers carry no
-% numbering; section and \label identity --- and therefore every ledger node
-% id --- is unchanged by them.
-%
 % A \label in modules/ IS a ledger node id. Renaming one is a ledger edit:
 % it goes through the orchestrator, and scripts/check_ledger.py verifies that
 % every node's effective label still resolves in its declared file.
@@ -20,7 +15,7 @@
 
 \documentclass[11pt]{article}
 \usepackage{subfiles}
-\input{\subfix{shared/preamble.tex}}
+\input{\subfix{preamble.tex}}
 
 \title{<Document title>\\[0.4em]
 \large <one-line subtitle naming the object and the question>}

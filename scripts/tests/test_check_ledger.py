@@ -29,6 +29,7 @@ def node(node_id: str, *, status: str = "proved", kind: str = "theorem", **field
         "id": node_id,
         "kind": kind,
         "status": status,
+        "provenance": "internal",
         "file": "modules/test.tex",
         "statement": f"fixture statement for {node_id}",
     }
@@ -77,7 +78,9 @@ class CheckerFixture(unittest.TestCase):
         if certify_fixture_proofs:
             bare_proved = [
                 item for item in fixture_nodes
-                if item.get("status") == "proved" and "solution" not in item
+                if item.get("status") == "proved"
+                and item.get("provenance") == "internal"
+                and "proofs" not in item
             ]
             if bare_proved:
                 solution = f"solutions/fixture-{relative.replace('/', '-')}.tex"
@@ -88,22 +91,14 @@ class CheckerFixture(unittest.TestCase):
                     f"% ledger-nodes: {covered}\nstandalone fixture proofs\n"
                 )
                 for item in bare_proved:
-                    item["solution"] = solution
-                    item.setdefault("checked_by", "human")
-                    item.setdefault("accepted_by", "fixture human")
-        for item in fixture_nodes:
-            if item.get("checked_by") == "human":
-                item.setdefault("accepted_by", "fixture human")
+                    item["proofs"] = [{
+                        "artifact": solution,
+                        "mode": "human",
+                        "accepted_by": "fixture human",
+                    }]
         path.write_text(
             CHECKER.yaml.safe_dump({"meta": meta, "nodes": fixture_nodes}, sort_keys=False)
         )
-        obstruction_ids = [
-            item["id"] for item in fixture_nodes if item.get("kind") == "obstruction"
-        ]
-        if obstruction_ids:
-            path.with_name("obstructions.md").write_text(
-                "".join(f"## `{nid}`\n" for nid in obstruction_ids)
-            )
         return path
 
     def add_solution(self, name: str, *, node_ids: tuple[str, ...] = ()) -> str:
@@ -131,6 +126,39 @@ class CheckerFixture(unittest.TestCase):
                 "nodes": list(node_ids),
                 "solutions": list(solutions),
             })
+        path.write_text(
+            "---\n"
+            + CHECKER.yaml.safe_dump(metadata, sort_keys=False)
+            + "---\n\n"
+            + body
+        )
+        return relative
+
+    def add_run(self, name: str) -> str:
+        relative = f"research/runs/{name}"
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('{"_provenance": {"target": "fixture"}}\n')
+        return relative
+
+    def add_exploration(self, name: str, *, date: str = "2026-08-26",
+                        outcome: str = "dead-end", nodes: tuple[str, ...] = (),
+                        artifacts: tuple[str, ...] = (),
+                        candidates: tuple[dict, ...] = (),
+                        retires: tuple[str, ...] = (),
+                        front_matter: dict | None = None,
+                        body: str = "fixture exploration\n") -> str:
+        relative = f"research/explorations/{date}-{name}.md"
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        metadata: dict = {"type": "exploration", "date": date, "outcome": outcome}
+        for field, value in (("nodes", nodes), ("artifacts", artifacts),
+                             ("candidates", candidates), ("retires", retires)):
+            if value:
+                metadata[field] = [dict(item) if isinstance(item, dict) else item
+                                   for item in value]
+        if front_matter:
+            metadata.update(front_matter)
         path.write_text(
             "---\n"
             + CHECKER.yaml.safe_dump(metadata, sort_keys=False)
@@ -252,7 +280,7 @@ class CheckerHardeningTests(CheckerFixture):
 
         self.assertNotIn("conj:open: status", errors)
         self.assertIn(
-            "conj:legacy: status 'conjectured' is obsolete; use status 'open'",
+            "conj:legacy: status 'conjectured' is obsolete; use status open",
             errors,
         )
 
@@ -278,14 +306,15 @@ class CheckerHardeningTests(CheckerFixture):
             [
                 node(
                     "thm:import-good",
-                    status="imported",
+                    provenance="literature",
                     import_class="published",
                     references=["FixtureReference"],
                 ),
-                node("thm:import-missing", status="imported", references=[]),
+                node("thm:import-missing", status="open", provenance="literature", references=[]),
                 node(
                     "thm:import-unknown",
-                    status="imported",
+                    status="open",
+                    provenance="literature",
                     import_class="published",
                     references=["MissingReference"],
                 ),
@@ -300,14 +329,14 @@ class CheckerHardeningTests(CheckerFixture):
         errors = "\n".join(self.check()["errors"])
 
         self.assertNotIn("thm:import-good", errors)
-        self.assertIn("thm:import-missing: imported node requires explicit import_class", errors)
-        self.assertIn("thm:import-missing: imported node requires non-empty references", errors)
+        self.assertIn("thm:import-missing: literature node requires explicit import_class", errors)
+        self.assertIn("thm:import-missing: literature node requires non-empty references", errors)
         self.assertIn(
             "thm:import-unknown.references: unknown BibTeX key 'MissingReference'",
             errors,
         )
         self.assertIn(
-            "thm:local-with-reference: references is only valid with status imported",
+            "thm:local-with-reference: references is only valid with provenance literature",
             errors,
         )
 
@@ -367,62 +396,50 @@ class CheckerHardeningTests(CheckerFixture):
             errors,
         )
 
-    def test_conditional_contract_is_derived_and_recursive_proved_risks_fail(self):
+    def test_implication_truth_is_separate_from_applicability(self):
         nodes = [
             node("ass:x", status="open", kind="assumption"),
-            node("thm:empty", status="conditional"),
             node(
-                "thm:child",
-                status="conditional",
-                depends_on=["ass:x"],
+                "thm:reduction",
+                assumes=["ass:x"],
+                implies=["q:target"],
             ),
-            node(
-                "thm:parent",
-                status="conditional",
-                depends_on=["thm:child"],
-            ),
-            node("ass:h", status="open", kind="assumption"),
-            node(
-                "thm:middle",
-                status="imported",
-                import_class="published",
-                references=["FixtureReference"],
-                depends_on=["ass:h"],
-            ),
-            node("thm:top", depends_on=["thm:middle"]),
-            node("thm:direct", depends_on=["thm:child"]),
+            node("q:target", status="open", kind="conjecture"),
+            node("thm:uses-reduction", depends_on=["thm:reduction"]),
+            node("thm:bad-dependency", depends_on=["ass:x"]),
         ]
         self.add_ledger("main", "program", nodes)
 
         errors = "\n".join(self.check()["errors"])
 
-        self.assertIn(
-            "thm:empty (conditional) must inherit an unresolved premise through depends_on",
-            errors,
-        )
-        self.assertNotIn("thm:parent (conditional)", errors)
-        self.assertIn("thm:top (proved) inherits unresolved open 'ass:h'", errors)
-        self.assertIn("thm:direct (proved) inherits unresolved conditional 'thm:child'", errors)
-        self.assertIn("thm:direct (proved) inherits unresolved open 'ass:x'", errors)
+        self.assertNotIn("thm:reduction (proved) inherits", errors)
+        self.assertNotIn("thm:uses-reduction (proved) inherits", errors)
+        self.assertIn("thm:bad-dependency (proved) inherits unresolved open 'ass:x'", errors)
+        blockers = CHECKER._applicability_blockers("thm:reduction", {
+            item["id"]: item for item in nodes
+        })
+        self.assertEqual(blockers, ["ass:x"])
 
-    def test_unreviewed_preprint_is_an_inherited_assumption(self):
+    def test_unreviewed_preprint_cannot_be_claimed_proved(self):
         nodes = [
             node(
                 "thm:preprint",
-                status="imported",
+                status="open",
+                provenance="literature",
                 import_class="preprint-unreviewed",
                 references=["FixtureReference"],
             ),
             node(
                 "thm:published",
-                status="imported",
+                provenance="literature",
                 import_class="published",
                 references=["FixtureReference"],
             ),
             node(
-                "thm:conditional",
-                status="conditional",
-                depends_on=["thm:preprint"],
+                "thm:overclaimed-preprint",
+                provenance="literature",
+                import_class="preprint-unreviewed",
+                references=["FixtureReference"],
             ),
             node("thm:middle", depends_on=["thm:preprint"]),
             node("thm:top", depends_on=["thm:middle"]),
@@ -432,9 +449,9 @@ class CheckerHardeningTests(CheckerFixture):
 
         errors = "\n".join(self.check()["errors"])
 
-        self.assertIn("thm:middle (proved) inherits unresolved preprint-unreviewed 'thm:preprint'", errors)
-        self.assertIn("thm:top (proved) inherits unresolved preprint-unreviewed 'thm:preprint'", errors)
-        self.assertNotIn("thm:conditional (conditional)", errors)
+        self.assertIn("thm:middle (proved) inherits unresolved open 'thm:preprint'", errors)
+        self.assertIn("thm:top (proved) inherits unresolved open 'thm:preprint'", errors)
+        self.assertIn("thm:overclaimed-preprint: an unreviewed preprint cannot have status proved", errors)
         self.assertNotIn("thm:published-use (proved) inherits", errors)
 
     def test_numerical_and_narrative_ledger_fields_are_retired(self):
@@ -459,30 +476,28 @@ class CheckerHardeningTests(CheckerFixture):
             self.assertIn(f"q:retired.{field}: obsolete field", errors)
 
     def test_bounded_by_requires_ledger_obstruction_node(self):
-        path = self.add_ledger(
+        self.add_ledger(
             "main",
             "program",
             [
+                node("obs:established", kind="obstruction"),
                 node("obs:warning", status="open", kind="obstruction"),
-                node("thm:bounded", bounded_by=["obs:warning"]),
-                node("thm:heading-only", bounded_by=["obs:heading-only"]),
+                node("thm:bounded", bounded_by=["obs:established"]),
+                node("q:warned", status="open", kind="question", heuristic_barriers=["obs:warning"]),
+                node("q:bad-hard", status="open", kind="question", bounded_by=["obs:warning"]),
+                node("thm:non-obstruction", bounded_by=["thm:bounded"]),
                 node("thm:unknown", bounded_by=["obs:missing"]),
                 node("thm:old-mechanism", mechanism=["direct-excess"]),
             ],
-        )
-        path.with_name("obstructions.md").write_text(
-            "## `obs:warning`\n## `obs:heading-only`\n"
         )
 
         errors = "\n".join(self.check()["errors"])
 
         self.assertNotIn("thm:bounded.bounded_by", errors)
+        self.assertNotIn("q:warned.heuristic_barriers", errors)
+        self.assertIn("q:bad-hard.bounded_by: 'obs:warning' is not an established obstruction", errors)
         self.assertIn(
-            "thm:heading-only.bounded_by: 'obs:heading-only' is not a declared obstruction",
-            errors,
-        )
-        self.assertIn(
-            "obs:heading-only: obstruction heading has no same-ledger obstruction node",
+            "thm:non-obstruction.bounded_by: 'thm:bounded' is not a declared obstruction",
             errors,
         )
         self.assertIn("thm:unknown.bounded_by: 'obs:missing' is not a declared obstruction", errors)
@@ -512,21 +527,19 @@ class CheckerHardeningTests(CheckerFixture):
         nodes = [
             node(
                 "thm:agent-pass",
-                solution=solution,
-                checked_by="agent",
-                review=review,
+                proofs=[{"artifact": solution, "mode": "agent", "review": review}],
             ),
             node(
                 "thm:agent-self-review",
-                solution=solution,
-                checked_by="agent",
-                review=self_review,
+                proofs=[{"artifact": solution, "mode": "agent", "review": self_review}],
             ),
             node(
                 "thm:agent-missing-review",
-                solution=solution,
-                checked_by="agent",
-                review="research/reviews/missing.md",
+                proofs=[{
+                    "artifact": solution,
+                    "mode": "agent",
+                    "review": "research/reviews/missing.md",
+                }],
             ),
         ]
         self.add_ledger("main", "program", nodes)
@@ -569,21 +582,15 @@ class CheckerHardeningTests(CheckerFixture):
             [
                 node(
                     "thm:partial",
-                    solution=solution,
-                    checked_by="agent",
-                    review=partial,
+                    proofs=[{"artifact": solution, "mode": "agent", "review": partial}],
                 ),
                 node(
                     "thm:wrong-scope",
-                    solution=solution,
-                    checked_by="agent",
-                    review=wrong_scope,
+                    proofs=[{"artifact": solution, "mode": "agent", "review": wrong_scope}],
                 ),
                 node(
                     "thm:wrong-reviewer",
-                    solution=solution,
-                    checked_by="agent",
-                    review=wrong_reviewer,
+                    proofs=[{"artifact": solution, "mode": "agent", "review": wrong_reviewer}],
                 ),
             ],
         )
@@ -610,9 +617,7 @@ class CheckerHardeningTests(CheckerFixture):
             "program",
             [node(
                 "thm:contract",
-                solution=solution,
-                checked_by="agent",
-                review=review,
+                proofs=[{"artifact": solution, "mode": "agent", "review": review}],
             )],
         )
 
@@ -655,15 +660,11 @@ class CheckerHardeningTests(CheckerFixture):
             [
                 node(
                     "thm:audit",
-                    solution=solution,
-                    checked_by="agent",
-                    review=audit,
+                    proofs=[{"artifact": solution, "mode": "agent", "review": audit}],
                 ),
                 node(
                     "thm:outside",
-                    solution=solution,
-                    checked_by="agent",
-                    review=outside,
+                    proofs=[{"artifact": solution, "mode": "agent", "review": outside}],
                 ),
             ],
         )
@@ -707,12 +708,12 @@ class CheckerHardeningTests(CheckerFixture):
 
         errors = "\n".join(self.check()["errors"])
 
-        self.assertIn("thm:missing: proved node requires a certified solution", errors)
+        self.assertIn("thm:missing: internally proved node requires a certified proof", errors)
         self.assertIn(
-            "thm:narrative-only: proved node requires a certified solution", errors
+            "thm:narrative-only: internally proved node requires a certified proof", errors
         )
         self.assertIn(
-            "thm:numerics-only: proved node requires a certified solution", errors
+            "thm:numerics-only: internally proved node requires a certified proof", errors
         )
         self.assertIn(
             "thm:narrative-only.proof_provenance: obsolete field",
@@ -766,21 +767,23 @@ class CheckerHardeningTests(CheckerFixture):
             [
                 node(
                     "thm:human",
-                    solution=human_solution,
-                    checked_by="human",
-                    accepted_by="",
+                    proofs=[{
+                        "artifact": human_solution,
+                        "mode": "human",
+                        "accepted_by": "",
+                    }],
                 ),
-                node("thm:lean", solution=lean_solution, checked_by="lean"),
+                node("thm:lean", proofs=[{"artifact": lean_solution, "mode": "lean"}]),
             ],
         )
 
         errors = "\n".join(self.check()["errors"])
-        self.assertIn("thm:human: checked_by human requires non-empty accepted_by", errors)
-        self.assertIn("thm:lean: checked_by lean requires adjacent 'lean-proof.lean'", errors)
+        self.assertIn("thm:human.proofs[0].accepted_by: mode human requires a non-empty identity", errors)
+        self.assertIn("thm:lean.proofs[0]: mode lean requires adjacent 'lean-proof.lean'", errors)
 
         (self.root / lean_solution).with_suffix(".lean").write_text("-- fixture\n")
         errors = "\n".join(self.check()["errors"])
-        self.assertNotIn("thm:lean: checked_by lean", errors)
+        self.assertNotIn("thm:lean.proofs[0]: mode lean", errors)
 
     def test_solution_path_is_confined_to_tex_dossiers(self):
         self.module.write_text("% ledger-node: thm:outside\n\\label{thm:outside}\n")
@@ -789,13 +792,16 @@ class CheckerHardeningTests(CheckerFixture):
             "program",
             [node(
                 "thm:outside",
-                solution="modules/test.tex",
-                checked_by="human",
+                proofs=[{
+                    "artifact": "modules/test.tex",
+                    "mode": "human",
+                    "accepted_by": "fixture human",
+                }],
             )],
         )
 
         errors = "\n".join(self.check()["errors"])
-        self.assertIn("thm:outside.solution: must stay under solutions/", errors)
+        self.assertIn("thm:outside.proofs[].artifact: must stay under solutions/", errors)
 
     def test_legacy_proof_exception_fields_are_forbidden(self):
         for field in ("legacy_r2_debt", "legacy_proved_without_solution"):
@@ -813,9 +819,9 @@ class CheckerHardeningTests(CheckerFixture):
 
     def test_status_vocabulary_is_shared_and_minimal(self):
         self.assertEqual(CHECKER.STATUSES, {
-            "open", "conditional", "proved", "imported", "defined", "refuted",
+            "open", "proved", "defined", "refuted",
         })
-        self.assertEqual(CHECKER.UNRESOLVED_STATUSES, {"open", "conditional", "refuted"})
+        self.assertEqual(CHECKER.UNRESOLVED_STATUSES, {"open", "refuted"})
 
     def test_kind_vocabulary_is_shared_and_minimal(self):
         self.assertEqual(CHECKER.KIND, {
@@ -882,7 +888,7 @@ class CheckerHardeningTests(CheckerFixture):
 
         errors = "\n".join(self.check()["errors"])
 
-        self.assertIn("def:proved: proved node requires a certified solution", errors)
+        self.assertIn("def:proved: internally proved node requires a certified proof", errors)
         self.assertIn("def:proved: kind definition requires status defined", errors)
         self.assertNotIn("def:defined", errors)
 
@@ -936,9 +942,9 @@ class CheckerHardeningTests(CheckerFixture):
 
         errors = "\n".join(self.check()["errors"])
 
-        self.assertIn("thm:proof-file.proof_file: obsolete field; use solution", errors)
+        self.assertIn("thm:proof-file.proof_file: obsolete field; use proofs[].artifact", errors)
         self.assertIn(
-            "thm:narrative.proof_provenance: obsolete field; use solution plus checked_by",
+            "thm:narrative.proof_provenance: obsolete field; use proofs with explicit certification records",
             errors,
         )
 
@@ -949,14 +955,31 @@ class CheckerHardeningTests(CheckerFixture):
         self.add_ledger(
             "main",
             "program",
-            [node("thm:missing-from-header", solution=solution, checked_by="human")],
+            [node("thm:missing-from-header", proofs=[{
+                "artifact": solution,
+                "mode": "human",
+                "accepted_by": "fixture human",
+            }])],
         )
 
         errors = "\n".join(self.check()["errors"])
 
         self.assertIn("dossier header does not enumerate", errors)
 
-    def test_certified_conditional_and_bounded_open_node_pass(self):
+    def test_multiple_independent_proofs_may_coexist(self):
+        first = self.add_solution("first-proof", node_ids=("thm:two-proofs",))
+        second = self.add_solution("second-proof", node_ids=("thm:two-proofs",))
+        self.add_ledger("main", "program", [node(
+            "thm:two-proofs",
+            proofs=[
+                {"artifact": first, "mode": "human", "accepted_by": "reader one"},
+                {"artifact": second, "mode": "human", "accepted_by": "reader two"},
+            ],
+        )])
+
+        self.assertEqual(self.check()["errors"], [])
+
+    def test_certified_implication_and_heuristic_barrier_pass(self):
         solution = self.add_solution("conditional-proof", node_ids=("thm:conditional",))
         review = self.add_review(
             "conditional-proof-review",
@@ -968,17 +991,15 @@ class CheckerHardeningTests(CheckerFixture):
             node("obs:warning", status="open", kind="obstruction"),
             node(
                 "thm:conditional",
-                status="conditional",
-                depends_on=["ass:x"],
-                solution=solution,
-                checked_by="agent",
-                review=review,
+                assumes=["ass:x"],
+                implies=["q:open"],
+                proofs=[{"artifact": solution, "mode": "agent", "review": review}],
             ),
             node(
                 "q:open",
                 status="open",
                 kind="question",
-                bounded_by=["obs:warning"],
+                heuristic_barriers=["obs:warning"],
             ),
         ]
         self.add_ledger(
@@ -1064,6 +1085,129 @@ class CheckerHardeningTests(CheckerFixture):
         self.assertIn("[program] q:frontier", detail.stdout)
         self.assertIn("depends_on:", detail.stdout)
         self.assertIn("used_by: []", detail.stdout)
+
+
+    # --- the attempt log ---------------------------------------------------------------
+
+    def test_exploration_requires_a_typed_dated_envelope(self):
+        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        directory = self.root / "research/explorations"
+        directory.mkdir(parents=True)
+        (directory / "2026-08-26-bare.md").write_text("# no front matter\n")
+        (directory / "README.md").write_text("navigation, not an attempt\n")
+        self.add_exploration("wrong-outcome", nodes=("q:open",), outcome="promising")
+        self.add_exploration("stale-date", nodes=("q:open",),
+                             front_matter={"date": "2026-08-25"})
+        self.add_exploration("extra-field", nodes=("q:open",),
+                             front_matter={"verdict": "pass"})
+        self.add_exploration("engages-nothing")
+
+        errors = "\n".join(self.check()["errors"])
+
+        self.assertIn("2026-08-26-bare.md: exploration must start with YAML front matter", errors)
+        self.assertIn("outcome: want one of", errors)
+        self.assertIn("date: must match the filename prefix", errors)
+        self.assertIn("field 'verdict' is not valid for an exploration", errors)
+        self.assertIn("must name at least one ledger node in 'nodes' or propose a candidate",
+                      errors)
+        self.assertNotIn("README.md", errors)
+
+    def test_exploration_nodes_and_cited_artifacts_must_resolve(self):
+        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        artifact = self.add_run("2026-08-26T000000Z-example.jsonl")
+        self.add_exploration("grounded", nodes=("q:open",), artifacts=(artifact,))
+        self.add_exploration("dangling", date="2026-08-27", nodes=("q:ghost",),
+                             artifacts=("research/runs/missing.jsonl", "solutions/aside.jsonl"))
+
+        errors = "\n".join(self.check()["errors"])
+
+        self.assertIn("nodes: 'q:ghost' is not a ledger node id", errors)
+        self.assertIn("'research/runs/missing.jsonl' does not exist", errors)
+        self.assertIn("'solutions/aside.jsonl' must be an artifact under research/runs/", errors)
+        self.assertNotIn("2026-08-26-grounded.md", errors)
+
+    def test_candidate_list_and_candidate_outcome_require_each_other(self):
+        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_exploration("claims-none", nodes=("q:open",), outcome="candidate")
+        self.add_exploration("unflagged", date="2026-08-27", nodes=("q:open",),
+                             outcome="dead-end",
+                             candidates=({"id": "cand:quiet", "statement": "S"},))
+
+        errors = "\n".join(self.check()["errors"])
+
+        self.assertEqual(errors.count("outcome 'candidate' and a non-empty 'candidates' list"), 2)
+
+    def test_candidate_ids_are_namespaced_unique_and_never_ledger_nodes(self):
+        self.add_ledger("program", "program", [
+            node("q:open", status="open", kind="question"),
+            node("cand:collide", status="open", kind="question"),
+        ])
+        self.add_exploration("first", outcome="candidate",
+                             candidates=({"id": "cand:same", "statement": "S"},))
+        self.add_exploration("second", date="2026-08-27", outcome="candidate",
+                             candidates=(
+                                 {"id": "cand:same", "statement": "S again"},
+                                 {"id": "cand:collide", "statement": "already a node"},
+                                 {"id": "Bad Id", "statement": "wrong shape"},
+                                 {"id": "cand:untyped", "statement": ""},
+                             ))
+
+        errors = "\n".join(self.check()["errors"])
+
+        self.assertIn("'cand:same' was already proposed in "
+                      "research/explorations/2026-08-26-first.md", errors)
+        self.assertIn("'cand:collide' is already a ledger node", errors)
+        self.assertIn("id: want 'cand:<slug>', got 'Bad Id'", errors)
+        self.assertIn("statement: must be a non-empty string", errors)
+
+    def test_a_candidate_stays_live_until_a_later_exploration_retires_it(self):
+        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_exploration("propose", outcome="candidate", candidates=(
+            {"id": "cand:alpha", "statement": "A"},
+            {"id": "cand:beta", "statement": "B"},
+        ))
+        self.add_exploration("kill", date="2026-08-27", nodes=("q:open",),
+                             retires=("cand:alpha",))
+
+        report = self.check()
+
+        self.assertEqual(report["errors"], [])
+        self.assertEqual([entry["id"] for entry in report["candidates"]], ["cand:beta"])
+        self.assertEqual(report["candidates"][0]["source"],
+                         "research/explorations/2026-08-26-propose.md")
+
+    def test_retiring_an_unproposed_or_not_yet_proposed_candidate_fails(self):
+        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_exploration("early", nodes=("q:open",),
+                             retires=("cand:later", "cand:ghost"))
+        self.add_exploration("later", date="2026-08-27", outcome="candidate",
+                             candidates=({"id": "cand:later", "statement": "L"},))
+        self.add_exploration("self-retiring", date="2026-08-28", outcome="candidate",
+                             candidates=({"id": "cand:self", "statement": "S"},),
+                             retires=("cand:self",))
+
+        errors = "\n".join(self.check()["errors"])
+
+        self.assertIn("'cand:ghost' was never proposed", errors)
+        self.assertIn("'cand:later' is retired before", errors)
+        self.assertIn("'cand:self' is proposed by this same exploration", errors)
+
+    def test_cli_lists_live_candidate_statements(self):
+        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_exploration("propose", outcome="candidate",
+                             candidates=({"id": "cand:alpha",
+                                          "statement": "the candidate statement"},))
+        script = self.research / "check_ledger.py"
+        script.write_text((REPO / "scripts/check_ledger.py").read_text())
+
+        result = subprocess.run(
+            [sys.executable, str(script), "candidates"], cwd=self.root,
+            capture_output=True, text=True, check=False,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("cand:alpha", result.stdout)
+        self.assertIn("the candidate statement", result.stdout)
 
 
 if __name__ == "__main__":

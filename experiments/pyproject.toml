@@ -3,7 +3,7 @@ name = "numerics"
 version = "0.1.0"
 description = "Numerical channel for this repository's research program: guides and refutes; never proves."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "numpy>=1.24",
 ]
@@ -25,6 +25,4 @@ packages = ["numerics"]
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-q"
-markers = [
-    "slow: expensive Monte Carlo or high-resolution numerical regression",
-]
+

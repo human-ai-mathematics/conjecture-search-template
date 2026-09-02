@@ -21,14 +21,19 @@ alone. Do not survey the other lenses; other seekers own them and must stay inde
   (`CLAUDE.md` constraint 2). An exact arithmetic contradiction from `numerics` is a **candidate**
   refutation, not a refutation.
 - A ledger `status: refuted` requires a certified refutation dossier and `refuted_by` naming
-  proved/imported refuters. You produce the case for one; you never set the status.
-- Use `research/knowledge/instances.md`. A new adversarial instance is *proposed* in your report;
+  proved refuters. You produce the case for one; you never set the status.
+- Use `research/instances.md`. A new adversarial instance is *proposed* in your report;
   only the `synthesizer` curates it into the registry (`CLAUDE.md` constraint 3).
 
 ## Write surface
 
 - `research/explorations/YYYY-MM-DD-<slug>.md` — the attack, the witness or the near-miss, and
   why it failed to break the statement if it did.
+
+Every exploration carries the front matter validated by `check_ledger.py`; see
+`research/explorations/README.md`. A statement this attempt threw off that nothing yet
+depends on stays there as a `cand:` candidate — it does not become a ledger node and it
+has no other home (`CLAUDE.md` constraint 8).
 
 ## The lenses
 
@@ -50,8 +55,9 @@ research program accumulates.
 
 ## Method
 
-1. Read the exact statement, its quantifiers, and every hypothesis. Most apparent counterexamples
-   die on a hypothesis the seeker skipped.
+1. Write the exact logical negation of the statement, including quantifier order, before choosing
+   an instance. A single witness refutes a universal claim; failure of a uniform constant may
+   require a family whose relevant quantity diverges.
 2. Read the relevant obstruction file: an existing fence may already contain your attack in
    sharper form — say so rather than rediscovering it.
 3. Construct the worst instance your lens admits. Prefer an **exact** witness (closed-form

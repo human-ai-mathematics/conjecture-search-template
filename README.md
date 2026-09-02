@@ -17,11 +17,15 @@ Five planes, each with one source of truth:
 | ledger | logical state and graph edges | [`research/program/ledger.yaml`](research/program/ledger.yaml) |
 | proofs | standalone, independently checkable dossiers | [`solutions/`](solutions/) |
 | numerics | provenance-stamped diagnostic artifacts | [`experiments/`](experiments/), [`research/runs/`](research/runs/) |
-| history | attempts, decisions, reviews — append-only | [`research/`](research/) |
+| history | attempts, candidates and reviews — append-only | [`research/`](research/), [`decisions/`](decisions/) |
 
 A `\label` in `modules/` **is** a ledger node id. That coupling is what
 [`scripts/check_ledger.py`](scripts/check_ledger.py) enforces, and it is why a statement cannot
 drift from its recorded status without something going red.
+
+A statement that has not earned a node yet is a *candidate*, and it lives in the front matter of
+the exploration that proposed it — never in a registry of its own
+([`CLAUDE.md`](CLAUDE.md) constraint 8).
 
 The contribution rules are in [`CLAUDE.md`](CLAUDE.md); `AGENTS.md` is a symlink to it, so Claude
 Code and Codex receive the same contract. Agent roles and their write permissions are in
@@ -33,10 +37,11 @@ Code and Codex receive the same contract. Agent roles and their write permission
 ./scripts/check.sh                        # everything, in the order that fails fastest
 ./scripts/check.sh --fast                 # skip the LaTeX build
 
-python3 scripts/check_ledger.py           # 0 errors required after any ledger edit
-python3 scripts/check_ledger.py status    # the live frontier
-python3 scripts/check_ledger.py node <id> # one node: deps, consumers, fences
-python3 scripts/check_agents.py           # role definitions and Codex adapters
+python3 scripts/check_ledger.py            # 0 errors required after any ledger edit
+python3 scripts/check_ledger.py status     # the live frontier
+python3 scripts/check_ledger.py node <id>  # one node: deps, consumers, fences
+python3 scripts/check_ledger.py candidates # statements proposed but not yet nodes
+python3 scripts/check_agents.py            # role definitions and Codex adapters
 ```
 
 A green check establishes structure only. It says nothing about whether a proof is correct
@@ -70,7 +75,7 @@ every repository built from this template, so no validator needs configuration t
 2. **Name the repository.** Replace `{{REPO_TITLE}}` above and the placeholders in
    [`main.tex`](main.tex) (title, subtitle, author, abstract).
 
-3. **Add program constraints, if any.** [`CLAUDE.md`](CLAUDE.md) ships seven universal hard
+3. **Add program constraints, if any.** [`CLAUDE.md`](CLAUDE.md) ships eleven universal hard
    constraints. Anything specific to this repository's mathematics goes in the *Program
    constraints* section as `P1, P2, …` — kept separate so that a fork can drop them without
    leaving a `Reserved` hole in the universal list. Merge barriers belong here, and the
@@ -88,10 +93,11 @@ every repository built from this template, so no validator needs configuration t
    artifact genre ships with one instance to copy. It is:
 
    - `modules/00-overview.tex` (the three seed `\label`s)
-   - the three nodes in `research/program/ledger.yaml` and the `obs:example` entry in
-     `research/program/obstructions.md`
+   - the three nodes in `research/program/ledger.yaml`
    - `solutions/prop-example.tex`
    - `research/reviews/2026-09-01-prop-example-proof-review.md`
+   - `research/explorations/2026-09-02-example-exploration.md` and the
+     `research/runs/` artifact it cites
    - `experiments/numerics/targets/example.py` and its registry entry
 
    Delete this section at the same time.
@@ -100,11 +106,10 @@ every repository built from this template, so no validator needs configuration t
 
 These ship as skeletons on purpose — a wrong entry is worse than an empty table:
 
-- [`shared/notation.md`](shared/notation.md) — the fixed normalizations a statement's truth
-  depends on.
-- [`shared/preamble.tex`](shared/preamble.tex) — add macros to the *program macros* block; the
-  core block above it stays diffable against the template.
-- [`references.bib`](references.bib) — empty. A node with `status: imported` needs keys here
+- [`preamble.tex`](preamble.tex) — add macros to the *program macros* block; the
+  core block above it stays diffable against the template. A macro standing for a fixed
+  normalization needs a `kind: definition` node, not just a macro.
+- [`references.bib`](references.bib) — empty. A node with `provenance: literature` needs keys here
   first.
-- [`research/knowledge/`](research/knowledge/) — lemmas earn a place after their second use;
-  instances enter only through the `synthesizer`.
+- [`research/instances.md`](research/instances.md) — the shared adversarial battery; instances
+  enter only through the `synthesizer`.

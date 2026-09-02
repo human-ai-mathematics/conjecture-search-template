@@ -13,18 +13,37 @@
 Replace this module. It exists so that a freshly cloned template is green under
 every validator, and so that each artifact genre has one worked example to copy.
 
+A convention this program fixes --- a sign, a scaling, a log base, which constant
+absorbs what --- is stated here as a \texttt{\textbackslash begin\{definition\}}
+under its own \texttt{\textbackslash label} and carries a ledger node with
+\texttt{kind: definition} and \texttt{status: defined}. Claims resting on it name
+it in \texttt{depends\_on}, so changing it is a mathematical edit the checker can
+see. There is no separate notation or normalization file: a second list would be a
+copy of the dependency graph that nothing keeps honest.
+
 \subsection{An obstruction}
 
 An obstruction is a fence: a statement violating it is wrong by construction, so
 it is read \emph{before} a proof is attempted or a numerical run is spent
-(\texttt{CLAUDE.md} constraint 5). Every obstruction node needs a heading in
-\texttt{research/program/obstructions.md}, which the checker enforces.
+(\texttt{CLAUDE.md} constraint 5). It is an ordinary ledger node --- \texttt{kind:
+obstruction}, stated here under a \texttt{\textbackslash label} like any other ---
+and it is stated here, rather than in a registry of its own, because a fence is
+only useful next to the mathematics it fences.
+
+State both halves. An obstruction that records only what it rules out, or only
+that something is hard, fences nothing: the escape routes are what the next agent
+reads.
 
 \begin{remark}[worked example of an obstruction]
 \label{obs:example}
-  A finite battery of instances cannot establish a universal statement. Numerical
-  agreement across every instance tried constrains nothing about the untried
-  ones, so no run --- however large --- discharges this fence.
+  \emph{Rules out.} Establishing a universal statement from a finite battery of
+  instances. Agreement across every instance tried constrains nothing about the
+  untried ones, so no run --- however large --- discharges a universal claim.
+
+  \emph{Leaves open.} Refutation. One instance suffices to refute a universal
+  statement, and an exact arithmetic witness for such an instance is a genuine
+  candidate --- though it still requires an independently reviewed refutation
+  dossier before it carries logical force (\texttt{CLAUDE.md} constraint 2).
 \end{remark}
 
 \subsection{An open question}

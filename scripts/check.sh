@@ -29,8 +29,7 @@ run "agent roles"     python3 scripts/check_agents.py
 run "checker tests"   python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 
 if command -v uv >/dev/null 2>&1; then
-  run "numerics tests"  sh -c 'cd experiments && uv run pytest -q'
-  run "numerics check"  sh -c 'cd experiments && uv run python -m numerics check'
+  run "numerics"        sh -c 'cd experiments && uv run pytest -q'
 else
   printf '\n=== numerics === SKIPPED: uv not installed\n'
 fi

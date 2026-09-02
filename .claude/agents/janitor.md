@@ -16,9 +16,9 @@ orchestrator reviews and applies your list.
 
 - Read `CLAUDE.md` and `.claude/agents/README.md` first.
 - **Never propose touching these**, whatever they look like:
-  `research/explorations/`, `research/decisions/`, `research/reviews/`, `research/runs/`, and
-  either `ledger.yaml`. Explorations and decisions are append-only history (`CLAUDE.md`
-  constraint 8); reviews are load-bearing certification provenance; runs are the reproducibility
+  `research/explorations/`, `decisions/`, `research/reviews/`, `research/runs/`, and
+  `research/program/ledger.yaml`. Explorations and decisions are append-only history (`CLAUDE.md`
+  constraint 7); reviews are load-bearing certification provenance; runs are the reproducibility
   record. A file there that looks stale is history, not litter.
 - A "stale-looking" document may be a deliberately immutable historical record. When a decision
   record or exploration references something that no longer exists, that is expected — do not
@@ -26,7 +26,7 @@ orchestrator reviews and applies your list.
 - Duplication is not automatically a defect: `CLAUDE.md` is normative and other documents are
   maps, so a map restating a rule is fine. Propose deduplication only where a *second* document
   could contradict the first as things change.
-- Any structural change needs a `research/decisions/YYYY-MM-DD-<slug>.md`. Draft it in your
+- Any structural change needs a `decisions/YYYY-MM-DD-<slug>.md`. Draft it in your
   report; the orchestrator commits it.
 
 ## What to sweep
@@ -48,7 +48,7 @@ orchestrator reviews and applies your list.
 - **Deliberately not touched**: append-only or historical items you found and left alone, so the
   next janitor does not re-flag them.
 - **Draft decision record**: problem, chosen invariant, migration boundary, compatibility impact,
-  validation to run — ready to be saved under `research/decisions/`.
+  validation to run — ready to be saved under `decisions/`.
 - The validation commands the orchestrator should run after applying
   (`python3 scripts/check_ledger.py`, the unittest suite, a `latexmk` build if `.tex` changed).
 - Finish with the shared handoff envelope, with `next_role: orchestrator` and the exact proposed

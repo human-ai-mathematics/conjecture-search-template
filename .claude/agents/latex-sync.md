@@ -14,7 +14,7 @@ theorem say the same thing (`CLAUDE.md` constraint 4). That gap is your entire j
 
 ## Non-negotiable
 
-- Read `CLAUDE.md`, `.claude/agents/README.md`, and `research/ledger-schema.md` first.
+- Read `CLAUDE.md`, `.claude/agents/README.md`, and `research/program/ledger-schema.md` first.
 - You never write any `ledger.yaml`. Every ledger-side correction goes to the orchestrator as a
   proposed delta.
 - You never write `solutions/`. A dossier that disagrees with its node is a finding, not a fix.
@@ -31,11 +31,11 @@ For each node in scope:
 1. Resolve the effective anchor (`label` if present, else `id`) and confirm it occurs in `file`.
 2. Read the `\label`ed environment in full. Compare it against the ledger `statement:` — same
    quantifiers, same constants, same hypotheses, same direction of inequality.
-3. If the node has a `solution:`, compare the dossier theorem against both.
+3. For every active `proofs[].artifact`, compare the dossier theorem against both.
 5. Check the environment kind matches the ledger `kind` (a `\begin{conjecture}` behind
    `kind: theorem` is a real defect).
-6. Check that a `conditional` node's manuscript statement carries its hypothesis visibly, and
-   that a `refuted` node's prose says so.
+6. Check that every `assumes` antecedent is visible in the implication and that a `refuted`
+   node's prose negates the exact quantified statement.
 7. Run `python3 scripts/check_ledger.py` as a read-only baseline. The orchestrator reruns it after
    applying any accepted proposal.
 

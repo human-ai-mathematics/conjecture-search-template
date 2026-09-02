@@ -1,0 +1,79 @@
+% preamble.tex
+% -----------------------------------------------------------------------------
+% Single source of truth for packages, theorem environments, macros, and the
+% bibliography resource. Inputted by main.tex via
+%   \usepackage{subfiles}
+%   \input{\subfix{preamble.tex}}
+% so that `latexmk main.tex`, a standalone `latexmk modules/NN-*.tex`, and a
+% standalone `latexmk solutions/<id>.tex` all resolve the same preamble and
+% bibliography. Do NOT put \documentclass or \usepackage{subfiles} here (those
+% live in main.tex).
+%
+% Build (biber backend), from the repository root:
+%   latexmk -pdf -outdir=build main.tex          % the whole document
+% A standalone module shows cross-module \ref as "??" and unresolved citations;
+% this is expected and harmless for syntax/math checking.
+%
+% This file ships deliberately small. Everything here is either used by the seed
+% document or needed by every mathematical document; add what your program needs
+% rather than pruning a menu you did not choose. Keep the core block diffable
+% against the template and put your own notation in the program block below.
+% -----------------------------------------------------------------------------
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage[backend=biber,style=alphabetic,maxbibnames=8]{biblatex}
+\addbibresource{\subfix{references.bib}}
+
+% Commonly wanted, deliberately not loaded: tikz (+ arrows.meta, positioning,
+% fit, backgrounds), enumitem, booktabs, tabularx, bm, mathrsfs. Add the ones you
+% actually use --- tikz in particular costs build time on every module and
+% dossier.
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  citecolor=blue!55!black,
+  urlcolor=blue!55!black
+}
+
+% --- theorem environments (shared numbering by section) ----------------------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{question}[theorem]{Question}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{example}[theorem]{Example}
+
+% --- core macros (domain-neutral) --------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\dd}{\,\mathrm{d}}
+\newcommand{\norm}[1]{\left\lVert #1\right\rVert}
+\newcommand{\abs}[1]{\left\lvert #1\right\rvert}
+\newcommand{\inner}[2]{\left\langle #1,#2\right\rangle}
+
+% --- program macros ----------------------------------------------------------
+% This repository's own notation. Everything above this line is domain-neutral
+% and should stay diffable against the template; everything here is yours.
+%
+% A macro standing for a fixed normalization --- a sign, a scaling, a log base,
+% which constant absorbs what --- records that convention in the ledger, not in a
+% comment here: state it as a \begin{definition} in modules/ under a \label, give
+% it a node with kind: definition and status: defined, and have every claim that
+% rests on it name that node in depends_on. Changing such a convention is then a
+% mathematical edit the checker can see.

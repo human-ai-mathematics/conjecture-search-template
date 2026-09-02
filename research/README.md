@@ -20,23 +20,27 @@ There is one ledger, at `program/ledger.yaml`. All ledger writes pass through on
 
 | content | location |
 |---|---|
-| ledger fields and invariants | [`ledger-schema.md`](ledger-schema.md) |
+| ledger fields and invariants | [`program/ledger-schema.md`](program/ledger-schema.md) |
 | accepted mathematical prose | [`../modules/`](../modules/) |
 | claim state and logical edges | `program/ledger.yaml` |
-| fenced proof shapes | `program/obstructions.md` and ledger `bounded_by` |
+| hard/advisory proof barriers | proved/open obstruction nodes via `bounded_by`/`heuristic_barriers` |
 | proof dossiers | [`../solutions/`](../solutions/) |
-| reusable lemmas and shared instances | [`knowledge/`](knowledge/) |
+| shared adversarial instances | [`instances.md`](instances.md) |
 | mathematical attempts and dead ends | [`explorations/`](explorations/) |
+| candidate statements not yet ledger nodes | `candidates:` front matter in [`explorations/`](explorations/) |
 | independent reviews | [`reviews/`](reviews/) |
 | numerical artifacts | [`runs/`](runs/) |
-| harness decisions | [`decisions/`](decisions/) |
+| harness decisions | [`../decisions/`](../decisions/) |
 
-The ledger uses `depends_on` for proof dependencies and `bounded_by` for obstruction nodes.
+The ledger separates proof dependencies (`depends_on`), implication antecedents/conclusions
+(`assumes`/`implies`), and hard/advisory barriers (`bounded_by`/`heuristic_barriers`).
 
 ## Contribution flow
 
 1. Select a ledger node and read its manuscript statement, dependencies, and obstructions.
-2. Record the attempt in a new dated exploration; put numerical work through `numerics`.
+2. Record the attempt in a new dated exploration, with its validated front matter; put
+   numerical work through `numerics`. A tentative statement stays there as a `cand:` candidate
+   until it is precise, stable, and worth tracking (`CLAUDE.md` constraint 8).
 3. Send accepted statement and ledger changes through the orchestrator.
 4. For a proof, supply a standalone dossier and independent review.
 5. Run the structural checker.
@@ -47,6 +51,7 @@ The ledger uses `depends_on` for proof dependencies and `bounded_by` for obstruc
 python3 scripts/check_ledger.py
 python3 scripts/check_ledger.py status
 python3 scripts/check_ledger.py node <id>
+python3 scripts/check_ledger.py candidates
 python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 ```
 

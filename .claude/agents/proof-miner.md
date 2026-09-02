@@ -26,14 +26,18 @@ admits. You read the arguments this repository already owns and extract what nob
 ## Write surface
 
 - `research/explorations/YYYY-MM-DD-<slug>.md`.
-- `research/knowledge/lemmas.md` is the `synthesizer`'s to curate; propose entries, do not add
-  them.
+- Never `research/program/ledger.yaml`: a reusable fact you extract is a *proposed node* for the
+  orchestrator, not an entry you file somewhere yourself.
+
+Every exploration carries the front matter validated by `check_ledger.py`; see
+`research/explorations/README.md`. A statement this attempt threw off that nothing yet
+depends on stays there as a `cand:` candidate — it does not become a ledger node and it
+has no other home (`CLAUDE.md` constraint 8).
 
 ## Where to mine
 
 - `solutions/*.tex` — certified dossiers, and the remarks in them naming what remains.
 - `modules/**/*.tex` — manuscript proofs, especially Part III's route dossiers.
-- `research/knowledge/lemmas.md` — reusable facts and their guardrails.
 - `research/reviews/*.md` — a review's "could not verify" list is a map of soft spots.
 - `research/explorations/` — archived attempts; a mechanism that failed for one target sometimes
   fits another.

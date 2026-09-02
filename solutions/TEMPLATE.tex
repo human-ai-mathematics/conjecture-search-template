@@ -1,5 +1,5 @@
 % solutions/<ledger-id>.tex  — copy this file, rename to the ledger id (e.g. thm-foo.tex).
-% A standalone proof dossier. Inherits shared/preamble.tex (macros, theorem envs, biblatex)
+% A standalone proof dossier. Inherits preamble.tex (macros, theorem envs, biblatex)
 % via the subfiles class, so it compiles on its own AND lifts into main.tex unchanged:
 %   cd solutions && latexmk -pdf -outdir=../build <id>.tex
 %                                                    (standalone; cross-module \ref -> "??")
@@ -9,7 +9,7 @@
 
 % === SOLUTION HEADER (proof provenance) =====================================
 %   ledger-node : <id>                 research/program/ledger.yaml id this discharges
-%   refines     : <label>              \label in modules/... (the statement sharpened)
+%   refines     : <label(s)>           statement(s) sharpened
 %   bounded_by  : obs:...              obstruction(s) the statement must respect
 %   checked_by  : none | agent | human | lean  (none = not yet a proof)
 %   author      : <agent or name>
@@ -31,9 +31,9 @@
 \end{theorem}
 
 \begin{proof}
-  % Natural-language proof. Self-contained: state imported results with \cite and used
+  % Natural-language proof. Self-contained: state literature results with \cite and used
   % manuscript lemmas with \ref. A Lean proof, when it exists, lives beside this file as
-  % <id>.lean and is recorded by checked_by: lean. Agent certification requires
+  % <id>.lean and is recorded by proofs[].mode: lean. Agent certification requires
   % an independent reviewer and a persisted report under research/reviews/. Numerical
   % diagnostics may motivate the statement but cannot justify any step of this proof.
 \end{proof}
