@@ -1,5 +1,8 @@
-"""Regression tests for the cross-client agent-definition checker."""
+"""Roles plane: canonical role definitions and their generated Codex adapters.
 
+These run against a copy of the real `.claude/` and `.codex/` trees, so the shipped
+roster is what is actually checked.
+"""
 from __future__ import annotations
 
 import shutil
@@ -10,29 +13,26 @@ import tomllib
 import unittest
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 REPO = Path(__file__).resolve().parents[2]
+CHECK = REPO / "scripts/check.py"
 
 
-class AgentCheckerFixture(unittest.TestCase):
+class RoleTests(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()
         self.root = Path(self.tempdir.name)
         shutil.copytree(REPO / ".claude", self.root / ".claude")
         shutil.copytree(REPO / ".codex", self.root / ".codex")
-        (self.root / "scripts").mkdir()
-        shutil.copy2(REPO / "scripts/check_agents.py", self.root / "scripts/check_agents.py")
 
     def tearDown(self):
         self.tempdir.cleanup()
 
     def run_checker(self) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            [sys.executable, "scripts/check_agents.py"],
-            cwd=self.root,
-            check=False,
-            capture_output=True,
-            text=True,
+            [sys.executable, str(CHECK), "--root", str(self.root), "--plane", "roles"],
+            cwd=self.root, check=False, capture_output=True, text=True,
         )
 
     def role_files(self) -> list[Path]:
@@ -42,7 +42,7 @@ class AgentCheckerFixture(unittest.TestCase):
     def test_generated_adapters_match_canonical_roles(self):
         result = self.run_checker()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn(f"0 errors ({len(self.role_files())} roles)", result.stdout)
+        self.assertIn(f"{len(self.role_files())} agent role(s)", result.stdout)
 
     def test_roster_is_derived_from_the_files_on_disk(self):
         """Adding a role is one file: no list of names is kept anywhere else."""
@@ -60,7 +60,7 @@ class AgentCheckerFixture(unittest.TestCase):
         self.assertIn("roster does not link role 'extra-role'", result.stdout)
 
     def test_role_declaring_an_unknown_reasoning_effort_is_rejected(self):
-        role = self.root / ".claude/agents/prover.md"
+        role = self.root / ".claude/agents/researcher.md"
         role.write_text(
             role.read_text(encoding="utf-8").replace("reasoning: ultra", "reasoning: maximum"),
             encoding="utf-8",
@@ -103,6 +103,27 @@ class AgentCheckerFixture(unittest.TestCase):
         result = self.run_checker()
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("read-only role declares a write tool", result.stdout)
+
+    def test_write_codex_removes_an_adapter_whose_role_is_gone(self):
+        orphan = self.root / ".codex/agents/retired-role.toml"
+        orphan.write_text('name = "retired-role"\n', encoding="utf-8")
+
+        subprocess.run(
+            [sys.executable, str(CHECK), "--root", str(self.root), "--write-codex"],
+            cwd=self.root, check=False, capture_output=True, text=True,
+        )
+
+        self.assertFalse(orphan.exists())
+        self.assertEqual(self.run_checker().returncode, 0)
+
+    def test_author_and_reviewer_remain_separate_roles(self):
+        """The one epistemic control the role collapse must not lose."""
+        researcher = (self.root / ".claude/agents/researcher.md").read_text(encoding="utf-8")
+        reviewer = (self.root / ".claude/agents/reviewer.md").read_text(encoding="utf-8")
+
+        self.assertIn("You never write any `ledger.yaml`, `research/reviews/`", researcher)
+        self.assertIn("You never write `solutions/`", reviewer)
+        self.assertIn("Never review work you authored", reviewer)
 
 
 if __name__ == "__main__":

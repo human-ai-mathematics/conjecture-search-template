@@ -1,7 +1,7 @@
 # numerics — numerical research diagnostics
 
-`numerics` runs numerical batteries for this repository's research program. Its output guides
-exploration; it never changes a ledger status or certifies a proof (`CLAUDE.md` constraint 2).
+`numerics` runs numerical batteries for this repository's research program. Its output guides the
+search; it never changes a ledger status or certifies a proof (`CLAUDE.md` constraint 2).
 
 ## Boundary
 
@@ -108,10 +108,11 @@ observe("K_7", "every 2-colouring contains a monochromatic triangle",
 ```
 
 The target id is a **stable public name**: artifacts keep the id they were written with and the
-archive is append-only, so renaming a target breaks the trail from an exploration back to its
-evidence.
+archive is append-only, so renaming a target breaks the trail from a checkpoint back to its
+evidence. `python3 scripts/check.py --plane numerics` validates that trail's near end: every
+artifact still parses and still carries its provenance header.
 
 Before writing a target, fix the discriminating threshold: what value would count against the
 candidate, and what value is merely consistent with it. A diagnostic with no refuting outcome is
-not worth running. Mathematical conclusions and run interpretation belong in
-`research/explorations/`, not in this guide.
+not worth running. Mathematical conclusions and run interpretation belong in a dated
+checkpoint under `research/explorations/`, not in this guide.

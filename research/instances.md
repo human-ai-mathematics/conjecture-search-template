@@ -11,10 +11,12 @@ survives. Reject instances that only serve one agent's happy path.
 Passing a finite battery changes no claim or proof status, however large the battery
 (`obs:example` in the seed ledger is exactly this fence).
 
-This registry is the one research document that is *not* mathematics: an instance has no truth
-value, no proof, and no `\label`. That is why it lives here as prose rather than as a ledger node
-— a lemma or an obstruction, by contrast, belongs in `modules/` under a label with a node of its
-own.
+An instance is not mathematics: it has no truth value, no proof, and no `\label`. That is why it
+lives here as prose rather than as a ledger node — a lemma or an obstruction, by contrast, belongs
+in `modules/` under a label with a node of its own. It shares that status with
+[`program/portfolio.yaml`](program/portfolio.yaml), which records what the search is doing rather
+than what is claimed; the two are the repository's only non-mathematical research documents, and
+the `synthesizer` curates both.
 
 ## Calibration instances
 

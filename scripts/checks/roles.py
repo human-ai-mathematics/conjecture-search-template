@@ -1,0 +1,225 @@
+"""The roles plane: canonical Claude role definitions and generated Codex adapters.
+
+The roster is the set of ``.claude/agents/*.md`` files: adding a role is a one-file
+operation. Each role's frontmatter is self-describing, so no list of role names is
+duplicated here or in any configuration file. Codex cannot read the Markdown, so this
+plane also owns generation of ``.codex/agents/*.toml`` and rejects a stale adapter.
+"""
+from __future__ import annotations
+
+import json
+import re
+import tomllib
+from dataclasses import dataclass
+from pathlib import Path
+
+CLAUDE_AGENTS = Path(".claude/agents")
+CODEX_AGENTS = Path(".codex/agents")
+
+WRITE_TOOLS = {"Edit", "Write"}
+REQUIRED_FRONTMATTER = ("name", "description", "tools", "read_only", "reasoning")
+BOOLEANS = {"true": True, "false": False}
+REASONING_EFFORTS = {"high", "ultra"}
+CODEX_MODEL = "gpt-5.6-sol"
+
+
+@dataclass(frozen=True)
+class Role:
+    name: str
+    description: str
+    tools: tuple[str, ...]
+    read_only: bool
+    reasoning: str
+    body: str
+    path: Path
+    relative: str
+
+
+def _parse_frontmatter(path: Path) -> tuple[dict[str, str], str]:
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines(keepends=True)
+    if not lines or lines[0].strip() != "---":
+        raise ValueError("missing opening YAML frontmatter delimiter")
+    try:
+        closing = next(i for i, line in enumerate(lines[1:], 1) if line.strip() == "---")
+    except StopIteration as exc:
+        raise ValueError("missing closing YAML frontmatter delimiter") from exc
+
+    metadata: dict[str, str] = {}
+    for lineno, line in enumerate(lines[1:closing], 2):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if ":" not in stripped:
+            raise ValueError(f"line {lineno}: expected 'key: value'")
+        key, value = stripped.split(":", 1)
+        key = key.strip()
+        if key in metadata:
+            raise ValueError(f"line {lineno}: duplicate key '{key}'")
+        metadata[key] = value.strip()
+    return metadata, "".join(lines[closing + 1:])
+
+
+def load_roles(root: Path, errors: list[str]) -> dict[str, Role]:
+    roles: dict[str, Role] = {}
+    directory = root / CLAUDE_AGENTS
+    paths = sorted(directory.glob("*.md"))
+    if not [path for path in paths if path.name != "README.md"]:
+        errors.append(f"{CLAUDE_AGENTS}/ declares no role")
+
+    for path in paths:
+        if path.name == "README.md":
+            continue
+        relative = path.relative_to(root).as_posix()
+        try:
+            metadata, body = _parse_frontmatter(path)
+        except (OSError, UnicodeError, ValueError) as exc:
+            errors.append(f"{relative}: {exc}")
+            continue
+
+        missing_fields = [key for key in REQUIRED_FRONTMATTER if not metadata.get(key)]
+        if missing_fields:
+            errors.append(f"{relative}: missing fields {missing_fields}")
+            continue
+        name = metadata["name"]
+        if name != path.stem:
+            errors.append(f"{relative}: name '{name}' must match filename stem")
+        if name in roles:
+            errors.append(f"{relative}: duplicate role name '{name}'")
+            continue
+        client_model_fields = {"model", "model_reasoning_effort"}.intersection(metadata)
+        if client_model_fields:
+            errors.append(
+                f"{relative}: client-specific fields {sorted(client_model_fields)} belong "
+                "in an adapter, not canonical frontmatter"
+            )
+
+        tools = tuple(part.strip() for part in metadata["tools"].split(",") if part.strip())
+
+        raw_read_only = metadata["read_only"].strip().lower()
+        if raw_read_only not in BOOLEANS:
+            errors.append(
+                f"{relative}: read_only must be 'true' or 'false', "
+                f"got '{metadata['read_only']}'"
+            )
+            continue
+        read_only = BOOLEANS[raw_read_only]
+        if read_only and WRITE_TOOLS.intersection(tools):
+            errors.append(f"{relative}: read-only role declares a write tool")
+
+        reasoning = metadata["reasoning"].strip()
+        if reasoning not in REASONING_EFFORTS:
+            errors.append(
+                f"{relative}: reasoning must be one of {sorted(REASONING_EFFORTS)}, "
+                f"got '{reasoning}'"
+            )
+            continue
+        if ".claude/agents/README.md" not in body:
+            errors.append(f"{relative}: does not load the shared execution contract")
+        if "## Report" not in body:
+            errors.append(f"{relative}: missing role-specific Report section")
+
+        roles[name] = Role(name, metadata["description"], tools, read_only, reasoning,
+                           body, path, relative)
+    return roles
+
+
+def render_codex_adapter(role: Role) -> str:
+    sandbox_mode = "read-only" if role.read_only else "workspace-write"
+    return "\n".join([
+        f"# Generated from {role.relative} by scripts/check.py.",
+        "# Edit the canonical Markdown and regenerate; do not edit this file directly.",
+        f"name = {json.dumps(role.name, ensure_ascii=False)}",
+        f"description = {json.dumps(role.description, ensure_ascii=False)}",
+        f"model = {json.dumps(CODEX_MODEL)}",
+        f"model_reasoning_effort = {json.dumps(role.reasoning)}",
+        f"sandbox_mode = {json.dumps(sandbox_mode)}",
+        f"developer_instructions = {json.dumps(role.body, ensure_ascii=False)}",
+        "",
+    ])
+
+
+def write_codex_adapters(root: Path, roles: dict[str, Role]) -> list[str]:
+    """Regenerate the Codex adapters, removing any that no longer have a role."""
+    directory = root / CODEX_AGENTS
+    if directory.is_symlink():
+        return [
+            f"{CODEX_AGENTS} is a symlink; replace it with a real directory before "
+            "generating Codex TOML adapters"
+        ]
+    directory.mkdir(parents=True, exist_ok=True)
+    for name, role in sorted(roles.items()):
+        (directory / f"{name}.toml").write_text(render_codex_adapter(role), encoding="utf-8")
+    for path in sorted(directory.glob("*.toml")):
+        if path.stem not in roles:
+            path.unlink()
+    return []
+
+
+def _validate_readme(root: Path, roles: dict[str, Role], errors: list[str]) -> None:
+    path = root / CLAUDE_AGENTS / "README.md"
+    relative = (CLAUDE_AGENTS / "README.md").as_posix()
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        errors.append(f"{relative}: {exc}")
+        return
+    linked = set(re.findall(r"\]\(([A-Za-z0-9._-]+)\.md\)", text))
+    for name in sorted(roles):
+        if name not in linked:
+            errors.append(f"{relative}: roster does not link role '{name}'")
+    for name in sorted(linked - set(roles) - {"README"}):
+        errors.append(f"{relative}: roster links '{name}.md', which is not a role")
+
+
+def _validate_codex_adapters(root: Path, roles: dict[str, Role], errors: list[str]) -> None:
+    directory = root / CODEX_AGENTS
+    if directory.is_symlink():
+        errors.append(f"{CODEX_AGENTS} must be a real directory, not a symlink")
+        return
+    if not directory.is_dir():
+        errors.append(f"{CODEX_AGENTS} directory is missing")
+        return
+
+    adapter_paths = sorted(directory.glob("*.toml"))
+    adapter_stems = {path.stem for path in adapter_paths}
+    if adapter_stems != set(roles):
+        missing = sorted(set(roles) - adapter_stems)
+        extra = sorted(adapter_stems - set(roles))
+        if missing:
+            errors.append(f"Codex adapters missing: {missing}")
+        if extra:
+            errors.append(f"unexpected Codex adapters: {extra}")
+
+    for path in adapter_paths:
+        role = roles.get(path.stem)
+        if role is None:
+            continue
+        relative = path.relative_to(root).as_posix()
+        try:
+            text = path.read_text(encoding="utf-8")
+            parsed = tomllib.loads(text)
+        except (OSError, UnicodeError, tomllib.TOMLDecodeError) as exc:
+            errors.append(f"{relative}: {exc}")
+            continue
+        for field in ("name", "description", "developer_instructions"):
+            if not parsed.get(field):
+                errors.append(f"{relative}: missing required Codex field '{field}'")
+        if text != render_codex_adapter(role):
+            errors.append(
+                f"{relative}: stale or hand-edited; run "
+                "'python3 scripts/check.py --write-codex'"
+            )
+
+
+def check(root: Path, errors: list[str], *, write_codex: bool = False) -> dict[str, Role]:
+    """Validate the role roster and its adapters; ``.claude/agents/`` absent means skip."""
+    if not (root / CLAUDE_AGENTS).is_dir():
+        return {}
+    before = len(errors)
+    roles = load_roles(root, errors)
+    if write_codex and len(errors) == before:
+        errors.extend(write_codex_adapters(root, roles))
+    _validate_readme(root, roles, errors)
+    _validate_codex_adapters(root, roles, errors)
+    return roles

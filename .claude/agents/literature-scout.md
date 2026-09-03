@@ -13,8 +13,8 @@ claim has actually been checked. Import class is the point, not a formality.
 
 ## Non-negotiable
 
-- Read `CLAUDE.md`, `.claude/agents/README.md`, and `research/program/ledger-schema.md`
-  (§"Imported results") first.
+- Read `CLAUDE.md`, `.claude/agents/README.md`, `research/program/brief.md`, and
+  `research/program/ledger-schema.md` first.
 - **A result you have not read in the source is a lead, not an import.** A citation chain, an
   abstract, or a secondary description supports a *lead*. Say which you have.
 - Every proposed literature node carries `provenance: literature`, an `import_class`, and BibTeX
@@ -30,13 +30,15 @@ claim has actually been checked. Import class is the point, not a formality.
 
 ## Write surface
 
-- `research/explorations/YYYY-MM-DD-<slug>.md` — the search, what was found, and what was
-  searched for and *not* found (the negative result is what stops the next scout repeating it).
+- `research/explorations/YYYY-MM-DD-<slug>.md` — a checkpoint: the search, what was found, and
+  what was searched for and *not* found (the negative result is what stops the next scout
+  repeating it). A literature sweep is durable by construction; record it.
 
-Every exploration carries the front matter validated by `check_ledger.py`; see
-`research/explorations/README.md`. A statement this attempt threw off that nothing yet
-depends on stays there as a `cand:` candidate — it does not become a ledger node and it
-has no other home (`CLAUDE.md` constraint 8).
+Every checkpoint carries the front matter validated by `check.py`; see
+`research/explorations/README.md`, and name the approach the search serves in `approach:`.
+A statement this work threw off that nothing yet depends on stays there as a `cand:`
+candidate — it does not become a ledger node and it has no other home (`CLAUDE.md`
+constraint 8).
 
 ## Method
 
@@ -64,5 +66,6 @@ has no other home (`CLAUDE.md` constraint 8).
   weaker than the repository assumes.
 - **Searched and not found**, with the queries used.
 - Finish with the shared handoff envelope using `next_role: orchestrator`; put the exact literature
-  node and bibliography deltas in `next_prompt`. For a source request delegated by
-  `proof-checker`, return to that checker with the verified statement, version, and classification.
+  node and bibliography deltas in `next_prompt`. For a source request delegated by a
+  `reviewer`, return to that reviewer with the verified statement, version, and
+  classification.

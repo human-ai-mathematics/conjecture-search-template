@@ -1,9 +1,10 @@
-# The claim graph for this repository's program. Statements live in modules/;
-# the field-level schema is research/program/ledger-schema.md and the workflow
-# is research/program/README.md.
+# The claim graph for this repository's program: what is mathematically claimed.
+# What the *search* is doing lives next door in portfolio.yaml and never here
+# (CLAUDE.md constraint 12). Statements live in modules/; the field-level schema
+# is research/program/ledger-schema.md and the workflow is research/program/README.md.
 #
 # One repository, one program, one ledger (CLAUDE.md constraint 1). Every edit
-# funnels through a single orchestrator, and `python3 scripts/check_ledger.py`
+# funnels through a single orchestrator, and `python3 scripts/check.py`
 # must return 0 errors afterwards.
 #
 # The three nodes below are the template's worked example: an obstruction that

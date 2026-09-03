@@ -16,13 +16,15 @@ orchestrator reviews and applies your list.
 
 - Read `CLAUDE.md` and `.claude/agents/README.md` first.
 - **Never propose touching these**, whatever they look like:
-  `research/explorations/`, `decisions/`, `research/reviews/`, `research/runs/`, and
-  `research/program/ledger.yaml`. Explorations and decisions are append-only history (`CLAUDE.md`
-  constraint 7); reviews are load-bearing certification provenance; runs are the reproducibility
-  record. A file there that looks stale is history, not litter.
+  `research/explorations/`, `decisions/`, `research/reviews/`, `research/runs/`,
+  `research/program/ledger.yaml`, and `research/program/portfolio.yaml`. Checkpoints and
+  decisions are append-only history (`CLAUDE.md` constraint 7); reviews are load-bearing
+  certification provenance; runs are the reproducibility record; the ledger and the portfolio
+  are single-writer state. A file there that looks stale is history, not litter.
 - A "stale-looking" document may be a deliberately immutable historical record. When a decision
-  record or exploration references something that no longer exists, that is expected — do not
-  propose repairing history.
+  record or checkpoint references something that no longer exists, that is expected — do not
+  propose repairing history. A checkpoint or audit that a later record names in `supersedes:`
+  is superseded, not stale: it stays exactly as it is.
 - Duplication is not automatically a defect: `CLAUDE.md` is normative and other documents are
   maps, so a map restating a rule is fine. Propose deduplication only where a *second* document
   could contradict the first as things change.
@@ -50,6 +52,6 @@ orchestrator reviews and applies your list.
 - **Draft decision record**: problem, chosen invariant, migration boundary, compatibility impact,
   validation to run — ready to be saved under `decisions/`.
 - The validation commands the orchestrator should run after applying
-  (`python3 scripts/check_ledger.py`, the unittest suite, a `latexmk` build if `.tex` changed).
+  (`python3 scripts/check.py`, the unittest suite, a `latexmk` build if `.tex` changed).
 - Finish with the shared handoff envelope, with `next_role: orchestrator` and the exact proposed
   patch list in `next_prompt`.

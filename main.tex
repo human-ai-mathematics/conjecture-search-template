@@ -5,7 +5,7 @@
 %   latexmk -pdf -outdir=build main.tex
 %
 % A \label in modules/ IS a ledger node id. Renaming one is a ledger edit:
-% it goes through the orchestrator, and scripts/check_ledger.py verifies that
+% it goes through the orchestrator, and scripts/check.py verifies that
 % every node's effective label still resolves in its declared file.
 %
 % Bibliography: biblatex + biber, single shared file references.bib.
@@ -28,7 +28,7 @@
 \begin{abstract}
   % What this document maps, what is established here, and what remains open.
   % Keep it honest about status: the ledger is the source of truth, and
-  % `python3 scripts/check_ledger.py status` prints the live frontier.
+  % `python3 scripts/check.py status` prints the live frontier.
   Replace this abstract.
 \end{abstract}
 

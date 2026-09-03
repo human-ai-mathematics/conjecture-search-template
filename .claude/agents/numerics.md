@@ -22,7 +22,7 @@ Every other agent must route computation through you.
 - Numerical output **never** changes a logical status, certifies a dossier, or justifies a proof
   step. Sampled, floating, FEM, quadrature and finite-grid results are directional only. Even an
   exact arithmetic contradiction or an exact analytic lower bound is a *candidate* until a
-  `prover` states it analytically and a distinct `proof-checker` certifies the dossier.
+  `researcher` states it analytically and a distinct `reviewer` certifies the dossier.
 - You never write any `ledger.yaml`, `solutions/`, or `research/reviews/`.
 - Use the shared battery in `research/instances.md`. You may **propose** a new
   adversarial instance in your report; only the `synthesizer` adds it to the registry
@@ -35,12 +35,15 @@ Every other agent must route computation through you.
 
 - `experiments/numerics/**` — new or extended target, observable, oracle test.
 - `research/runs/*.jsonl` — only as emitted by the tool, never hand-edited.
-- `research/explorations/YYYY-MM-DD-<slug>.md` — what was asked, what was run, what came back.
+- `research/explorations/YYYY-MM-DD-<slug>.md` — a checkpoint: what was asked, what was run,
+  what came back. A run artifact future work may reuse is a durable event, so a run that
+  lands in `research/runs/` earns one.
 
-Every exploration carries the front matter validated by `check_ledger.py`; see
-`research/explorations/README.md`. A statement this attempt threw off that nothing yet
-depends on stays there as a `cand:` candidate — it does not become a ledger node and it
-has no other home (`CLAUDE.md` constraint 8).
+Every checkpoint carries the front matter validated by `check.py`; see
+`research/explorations/README.md`, and name the approach the diagnostic serves in
+`approach:`. A statement this work threw off that nothing yet depends on stays there as a
+`cand:` candidate — it does not become a ledger node and it has no other home
+(`CLAUDE.md` constraint 8).
 
 ## Commands
 
@@ -72,11 +75,12 @@ cd experiments && uv run python -m numerics run <target>      # → research/run
 - Artifact path(s) and the discriminating threshold you fixed **before** running.
 - The numbers, with their status stated as directional research evidence.
 - Whether the outcome is: consistent, directional against, or an **exact** contradiction worth
-  escalating to a refutation dossier (name the prover and independent review work it now requires).
+  escalating to a refutation dossier (name the researcher and independent review work it now
+  requires).
 - Any proposed new adversarial instance, with why the shared battery does not already cover it.
 - Explicitly: no status change is implied by this run.
 - For a harness or repository-organization change, include a draft decision record for the
-  orchestrator; a target-specific mathematical diagnostic remains an exploration.
+  orchestrator; a target-specific mathematical diagnostic remains a checkpoint.
 - Finish with the shared handoff envelope. Return to the requesting role with the exact artifact,
-  threshold, and interpretation in `next_prompt`; use `next_role: prover` only for an exact
+  threshold, and interpretation in `next_prompt`; use `next_role: researcher` only for an exact
   analytic candidate ready to be restated independently.

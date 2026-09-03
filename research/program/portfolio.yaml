@@ -1,0 +1,46 @@
+# What the search is doing — as against research/program/ledger.yaml, which records
+# what is mathematically claimed. Field contract: research/program/portfolio-schema.md.
+#
+# This file is optional. Delete it while one person is working one route; create it as
+# soon as several routes, agents, or sessions are in flight and somebody has to know
+# which of them are still alive. It is a single-writer file: the `synthesizer` holds the
+# `portfolio` concurrency key, and everyone else proposes changes through their handoff.
+#
+# It stores coordination state only. A blocker is named by its `cand:` id or ledger node
+# id and never restated here (CLAUDE.md constraint 12).
+#
+# The three approaches below are the template's worked example, matching the seed nodes
+# in ledger.yaml. Delete this file, or replace its contents, when the repository has a
+# real search.
+
+target: q:example
+
+families:
+  - id: fam:example-numerical
+    mechanism: >-
+      Attack the target from the numerical side first: find out which shapes of
+      counterexample are available at all before committing to an analytic route.
+    state: active
+
+approaches:
+  - id: ap:example-finite-battery
+    family: fam:example-numerical
+    state: blocked
+    blocker: obs:example
+    reopen_if: >-
+      Someone supplies a construction that certifies the instances not tried, rather
+      than a battery that samples more of them.
+    checkpoints:
+      - research/explorations/2026-09-02-example-exploration.md
+
+  - id: ap:example-roundoff-bound
+    family: fam:example-numerical
+    parent: ap:example-finite-battery
+    state: queued
+
+  - id: ap:example-exhaustive-search
+    family: fam:example-numerical
+    state: duplicate
+    related:
+      - to: ap:example-finite-battery
+        relation: duplicates

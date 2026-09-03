@@ -61,11 +61,20 @@ A non-certifying report uses only:
 ---
 type: audit
 date: "YYYY-MM-DD"
+supersedes:
+  - research/reviews/YYYY-MM-DD-earlier-audit.md
 ---
 ```
 
 Its outcome, participants, and scope remain ordinary prose because they have no mechanical
 proof-certification effect.
+
+`supersedes` is optional and lists strictly earlier audits this report replaces as the current
+reading. Nothing is rewritten or deleted: an audit whose findings a later schema change
+overtook stays exactly as it is, and the reader is simply pointed at the record that succeeded
+it. It is the same relation checkpoints use (`research/explorations/README.md`), and it is
+available only to audits — a proof review is a certification event, not a summary, and uses
+`follows_up` instead.
 
 ## Report body
 
@@ -82,5 +91,6 @@ certify an analytic step.
 Validate the archive and every active certification pointer with:
 
 ```bash
-python3 scripts/check_ledger.py
+python3 scripts/check.py --plane proofs
+python3 scripts/check.py checkpoints    # also lists superseded audits
 ```

@@ -4,28 +4,55 @@ The Markdown files in this directory are the canonical role definitions for this
 `../../CLAUDE.md` is normative and wins on any conflict.
 
 Claude Code reads the Markdown files directly. Codex does not: project-scoped Codex agents are
-standalone TOML files. `python3 scripts/check_agents.py --write-codex` generates
+standalone TOML files. `python3 scripts/check.py --write-codex` generates
 `../../.codex/agents/*.toml` from these canonical Markdown bodies, and
-`python3 scripts/check_agents.py` rejects missing or stale adapters. Do not hand-edit a generated
-TOML file.
+`python3 scripts/check.py --plane roles` rejects missing or stale adapters. Do not hand-edit a
+generated TOML file.
 
 Each role file is self-describing. Its frontmatter carries `name`, `description`, `tools`,
 `read_only`, and `reasoning` (`high` or `ultra`), and the checker derives the roster from the
 files on disk. Adding a role is one new file plus one row in the table below; there is no list of
 role names to keep in sync anywhere else.
 
+## Four core roles, and specialists
+
+Conjecture search needs four things: orientation, attack, independent check, and convergence.
+Those are `scout`, `researcher`, `reviewer`, and `synthesizer`.
+
+Proving, refuting, mining an existing proof, and building a construction are **assignment
+lenses** for the `researcher`, not separate role contracts — they share a write surface, a set
+of prohibitions, and a handoff. Certifying a dossier and auditing manuscript/ledger agreement
+are likewise the two lenses of the `reviewer`. The lens is named by the orchestrator in the
+assignment, and a role that surveys several lenses at once produces a shallow pass on all of
+them.
+
+Everything else is an optional specialist, activated by the work: `numerics` when there is
+something to compute, `literature-scout` when there is something to import, `janitor` when the
+repository needs tidying.
+
+**Author and reviewer never coincide.** A `researcher` cannot write `research/reviews/`, and a
+`reviewer` cannot write `solutions/`. That is an epistemic control, not administrative
+ornament. When the runtime permits it, launch the reviewer without the author's conversation
+history: the reviewer reconstructs the work from repository artifacts, not from the author's
+account of it.
+
 ## The orchestrator is the main session
 
-The orchestrator is not a spawnable role. It owns every single-file merge point:
+The orchestrator is not a spawnable role. It owns every single-file merge point except the
+portfolio:
 
 - `research/program/ledger.yaml`;
+- `research/program/brief.md`;
 - `references.bib`;
-- any route or target control document under `research/program/`;
 - accepted manuscript statement changes; and
 - application of proposed deltas returned by roles.
 
-No role writes those files. A role proposes an exact delta; the orchestrator resolves contention,
-applies accepted changes atomically, and runs the relevant validators.
+No role writes those files. A role proposes an exact delta; the orchestrator resolves
+contention, applies accepted changes atomically, and runs the relevant validators.
+
+`research/program/portfolio.yaml` is the one exception: the `synthesizer` is its single writer,
+because keeping the search coherent *is* that role's job. Everyone else proposes a portfolio
+change through the handoff.
 
 ## Shared handoff envelope
 
@@ -37,17 +64,25 @@ artifacts:
   - <repo-relative path, or none>
 proposed_deltas:
   - <exact proposal, or none>
+portfolio_delta:
+  - <approach id, new state, exact blocker and reopen condition, or none>
 next_role: <role name, orchestrator, or none>
 next_prompt: |
   <complete instructions for the next role, or empty>
 ```
 
-`next_prompt` is an instruction, not a summary. The orchestrator passes it verbatim. A downstream
-role must not be launched from an inferred or softened version of a finding.
+`next_prompt` is an instruction, not a summary. The orchestrator passes it verbatim. A
+downstream role must not be launched from an inferred or softened version of a finding.
+
+`portfolio_delta` is how parallel work stays coordinated without concurrent edits to one file.
+State the approach, the state it should now be in, and — if blocked — the exact `cand:` id or
+ledger node it is blocked on together with the condition that would reopen it. "This looks
+hard" is not a blocker.
 
 For a proof review, `outcome: complete` means the certifying report passed; `revise` means the
-prover receives the reviewer's exact repair instructions; `blocked` means no certification delta
-is applicable. Prose containing words such as "pass" or "done" never controls a transition.
+researcher receives the reviewer's exact repair instructions; `blocked` means no certification
+delta is applicable. Prose containing words such as "pass" or "done" never controls a
+transition.
 
 ## Concurrency keys
 
@@ -57,59 +92,53 @@ orchestrator, not by a role saying "singleton" about itself.
 | key | owner / rule |
 |---|---|
 | `ledger` | orchestrator only |
+| `brief` | orchestrator only |
+| `portfolio` | one `synthesizer`; every other role proposes through `portfolio_delta` |
 | `bibliography` | orchestrator only; literature scouts propose entries |
-| `manuscript` | orchestrator only; `latex-sync` audits and proposes patches |
+| `manuscript` | orchestrator only; a `reviewer` on the `sync` lens audits and proposes patches |
 | `instances` | one `synthesizer` |
 | `numerics-code` | one `numerics` whenever `experiments/numerics/**` changes |
 | `numerics-run:<target>:<profile>:<seed>` | parallel only for distinct stable runs |
-| `solution:<dossier>` | one `prover`; its reviewer uses a distinct agent identity |
-| `review:<dossier>` | one cold `proof-checker` at a time |
-| `exploration:<path>` | exclusive create-only path |
+| `solution:<dossier>` | one `researcher`; its reviewer uses a distinct agent identity |
+| `review:<dossier>` | one cold `reviewer` at a time |
+| `checkpoint:<path>` | exclusive create-only path |
 
-Add a key here whenever this repository grows a new single-writer file — a route control
-document, a gating table, a second registry.
+Add a key here whenever this repository grows a new single-writer file.
 
-Every role that creates an exploration receives a run id from the orchestrator and uses
-`research/explorations/YYYY-MM-DD-<role>-<scope>-<run-id>.md`. If no run id was supplied, choose a
-collision-resistant suffix and verify that the path does not exist. Never overwrite an earlier
-record.
+Every role that creates a checkpoint receives a run id from the orchestrator and uses
+`research/explorations/YYYY-MM-DD-<role>-<scope>-<run-id>.md`. If no run id was supplied,
+choose a collision-resistant suffix and verify that the path does not exist. Never overwrite an
+earlier record.
 
-Each exploration opens with the front matter specified in `research/explorations/README.md` and
-validated by `check_ledger.py`: what it engaged, what it produced, and which `research/runs/`
-artifacts it cites. A tentative statement is recorded there as a `cand:` candidate and nowhere
-else (`CLAUDE.md` constraint 8); promoting one to a ledger node is
-the orchestrator's act, like any other ledger edit.
+Each checkpoint opens with the front matter specified in `research/explorations/README.md` and
+validated by `check.py`: what it engaged, which approach it belongs to, what it produced, and
+which `research/runs/` artifacts it cites. A tentative statement is recorded there as a `cand:`
+candidate and nowhere else (`CLAUDE.md` constraint 8); promoting one to a ledger node is the
+orchestrator's act, like any other ledger edit.
 
 ## Roster
 
-| role | writes | cardinality |
-|---|---|---|
-| [`scout`](scout.md) | nothing | N, parallel |
-| [`numerics`](numerics.md) | `experiments/numerics/`, generated runs, one new exploration | singleton for code; N for distinct stable runs |
-| [`prover`](prover.md) | one dossier; one new exploration | 1 per dossier |
-| [`refutation-seeker`](refutation-seeker.md) | one new exploration | N, one lens each |
-| [`proof-checker`](proof-checker.md) | one new review | 1 cold reviewer per dossier |
-| [`synthesizer`](synthesizer.md) | `research/instances.md`; one new exploration | **singleton** |
-| [`latex-sync`](latex-sync.md) | nothing; patch proposal only | 1 |
-| [`janitor`](janitor.md) | nothing; proposal only | 1 |
-| [`proof-miner`](proof-miner.md) | one new exploration | N |
-| [`literature-scout`](literature-scout.md) | one new exploration | N; bibliography remains single-writer |
-
-Author and reviewer never coincide. A `prover` cannot write `research/reviews/`, and a
-`proof-checker` cannot write `solutions/`. When the runtime permits it, launch the proof checker
-without the prover's conversation history: the reviewer reconstructs the proof from repository
-artifacts, not from the author's account of the work.
+| role | lenses | writes | cardinality |
+|---|---|---|---|
+| [`scout`](scout.md) | — | nothing | N, parallel |
+| [`researcher`](researcher.md) | `prove`, `refute`, `mine`, `construct` | one dossier; one new checkpoint | 1 per dossier; N across distinct lenses and targets |
+| [`reviewer`](reviewer.md) | `certify`, `sync` | one new review | 1 cold reviewer per dossier |
+| [`synthesizer`](synthesizer.md) | — | `portfolio.yaml`, `research/instances.md`; one new checkpoint | **singleton** |
+| [`numerics`](numerics.md) | — | `experiments/numerics/`, generated runs, one new checkpoint | singleton for code; N for distinct stable runs |
+| [`literature-scout`](literature-scout.md) | — | one new checkpoint | N; bibliography remains single-writer |
+| [`janitor`](janitor.md) | — | nothing; proposal only | 1 |
 
 ### Adding a program-specific role
 
-The ten roles above are the backbone: they are about proving, checking, refuting, mining,
-scouting, computing and tidying, and none of them mentions this repository's mathematics. A
-program usually wants one or two roles of its own — a prober for a particular gate, a refiner for
-a particular family of statements. Write it as a new `.md` file here, add a row above, then:
+The seven roles above are the backbone: they are about orienting, attacking, checking,
+converging, computing, importing and tidying, and none of them mentions this repository's
+mathematics. Prefer a new **lens** on an existing role to a new role. When a program genuinely
+wants its own — a prober for a particular gate, a refiner for a particular family of statements
+— write it as a new `.md` file here, add a row above, then:
 
 ```bash
-python3 scripts/check_agents.py --write-codex
-python3 scripts/check_agents.py
+python3 scripts/check.py --write-codex
+python3 scripts/check.py --plane roles
 ```
 
 ## Transitions
@@ -118,44 +147,46 @@ Use `scout` for unfamiliar, ambiguous, or broad assignments; it is not a mandato
 exact node and artifacts are already known.
 
 ```text
-Explore:  scout -> refutation-seeker -> numerics (when requested)
-                                    \-> prover
+Explore:  scout -> researcher(refute) -> numerics (when requested)
+                                     \-> researcher(prove)
 External: literature-scout -> orchestrator
-Mining:   proof-miner -> synthesizer | prover
-Proof:    prover -> proof-checker -> pass: orchestrator
-                                \-> revise: prover (verbatim next_prompt)
-Refute:   refutation-seeker -> prover proves refuter -> proof-checker -> orchestrator
+Mining:   researcher(mine) -> synthesizer | researcher(prove)
+Proof:    researcher(prove) -> reviewer(certify) -> pass: orchestrator
+                                              \-> revise: researcher (verbatim next_prompt)
+Refute:   researcher(refute) -> researcher(prove) proves the refuter
+                             -> reviewer(certify) -> orchestrator
 Memory:   parallel findings -> synthesizer -> orchestrator
-Sync:     latex-sync -> orchestrator
+Sync:     reviewer(sync) -> orchestrator
 Hygiene:  janitor -> orchestrator
 ```
 
 A numerical result never skips the proof path. An exact `numerics` witness is still handed to a
-`prover`, independently certified by a `proof-checker`, and only then used by the orchestrator as
+`researcher`, independently certified by a `reviewer`, and only then used by the orchestrator as
 `refuted_by` provenance.
 
 ## Where to fan out, where to converge
 
-Fan out across read-only scouting, independent gates in different routes, refutation lenses, and
-independent literature/mining questions. Do not fan out writes to a shared file. `numerics`
-package edits, bibliography edits, instance curation, manuscript promotion, and ledger edits
-converge through their keys above.
+Fan out across read-only scouting, independent approaches in different families, refutation
+lenses, and independent literature/mining questions. Do not fan out writes to a shared file.
+`numerics` package edits, bibliography edits, instance curation, portfolio curation, manuscript
+promotion, and ledger edits converge through their keys above.
 
-The `synthesizer` owns the mathematical merge barriers declared as program constraints in
-`CLAUDE.md`. The live frontier is derived with `python3 scripts/check_ledger.py status`; no role
-maintains a second copy.
+The `synthesizer` owns the search portfolio and the mathematical merge barriers declared as
+program constraints in `CLAUDE.md`. The live frontier is derived with
+`python3 scripts/check.py status` and the live search with
+`python3 scripts/check.py portfolio`; no role maintains a second copy of either.
 
 ## Validation
 
 After changing a role or adapter:
 
 ```bash
-python3 scripts/check_agents.py
+python3 scripts/check.py --plane roles
 ```
 
 Regenerate Codex adapters deliberately after reviewing the canonical Markdown change:
 
 ```bash
-python3 scripts/check_agents.py --write-codex
-python3 scripts/check_agents.py
+python3 scripts/check.py --write-codex
+python3 scripts/check.py --plane roles
 ```

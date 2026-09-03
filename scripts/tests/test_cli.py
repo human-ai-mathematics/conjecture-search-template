@@ -1,0 +1,136 @@
+"""The command-line surface: plane selection and the derived views.
+
+These run the real ``scripts/check.py`` against a fixture tree through ``--root``, so
+the entry point, the plane filter, and the views are exercised as a user meets them.
+"""
+from __future__ import annotations
+
+import sys
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from fixtures import CheckerFixture, node  # noqa: E402
+
+
+class CommandLineTests(CheckerFixture):
+    def test_cli_reports_malformed_status_instead_of_crashing(self):
+        malformed = node("thm:bad")
+        malformed["status"] = []
+        self.add_ledger("program", "program", [malformed])
+
+        result = self.cli()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("bad status '[]'", result.stdout)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_errors_are_tagged_with_the_plane_that_raised_them(self):
+        malformed = node("thm:bad")
+        malformed["status"] = []
+        self.add_ledger("program", "program", [malformed])
+        self.add_checkpoint("dangling", nodes=("q:ghost",))
+
+        everything = self.cli()
+        core_only = self.cli("--plane", "core")
+
+        self.assertIn("FAIL [core]", everything.stdout)
+        self.assertIn("FAIL [checkpoints]", everything.stdout)
+        self.assertIn("FAIL [core]", core_only.stdout)
+        self.assertNotIn("FAIL [checkpoints]", core_only.stdout)
+
+    def test_a_plane_with_no_files_reports_nothing(self):
+        """Activation is structural: an absent plane has no rules to obey."""
+        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+
+        for plane in ("portfolio", "numerics", "checkpoints", "roles"):
+            with self.subTest(plane=plane):
+                result = self.cli("--plane", plane)
+                self.assertEqual(result.returncode, 0, result.stdout)
+
+    def test_cli_status_and_node_views_are_derived(self):
+        self.add_ledger(
+            "program",
+            "program",
+            [
+                node("lem:base"),
+                node(
+                    "q:frontier",
+                    status="open",
+                    kind="question",
+                    depends_on=["lem:base"],
+                ),
+            ],
+        )
+
+        status = self.cli("status")
+        detail = self.cli("node", "q:frontier")
+
+        self.assertEqual(status.returncode, 0)
+        self.assertIn("[program]", status.stdout)
+        self.assertIn("open (1): q:frontier", status.stdout)
+        self.assertEqual(detail.returncode, 0)
+        self.assertIn("[program] q:frontier", detail.stdout)
+        self.assertIn("depends_on:", detail.stdout)
+        self.assertIn("used_by: []", detail.stdout)
+
+    def test_cli_lists_live_candidate_statements(self):
+        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_checkpoint("propose", outcome="candidate",
+                            candidates=({"id": "cand:alpha",
+                                         "statement": "the candidate statement"},))
+
+        result = self.cli("candidates")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("cand:alpha", result.stdout)
+        self.assertIn("the candidate statement", result.stdout)
+
+    def test_cli_portfolio_view_shows_routes_blockers_and_relations(self):
+        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_portfolio({
+            "target": "q:open",
+            "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
+            "approaches": [
+                {"id": "ap:live", "family": "fam:one", "state": "active"},
+                {"id": "ap:stuck", "family": "fam:one", "state": "blocked",
+                 "blocker": "q:open", "reopen_if": "a new mechanism appears"},
+            ],
+        })
+
+        result = self.cli("portfolio")
+
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("target: q:open", result.stdout)
+        self.assertIn("[fam:one] active", result.stdout)
+        self.assertIn("ap:stuck [blocked]", result.stdout)
+        self.assertIn("blocked on: q:open", result.stdout)
+        self.assertIn("reopen if: a new mechanism appears", result.stdout)
+
+    def test_cli_checkpoint_view_shows_current_heads(self):
+        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        old = self.add_checkpoint("first", nodes=("q:open",))
+        self.add_checkpoint("second", date="2026-08-27", nodes=("q:open",),
+                            supersedes=(old,))
+
+        result = self.cli("checkpoints")
+
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("1 current checkpoint(s), 1 superseded", result.stdout)
+        self.assertIn("2026-08-27-second.md", result.stdout)
+        self.assertNotIn("2026-08-26-first.md", result.stdout)
+
+    def test_a_view_refuses_to_render_over_a_broken_repository(self):
+        malformed = node("thm:bad")
+        malformed["status"] = []
+        self.add_ledger("program", "program", [malformed])
+
+        result = self.cli("status")
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("bad status '[]'", result.stdout)
+
+
+if __name__ == "__main__":
+    unittest.main()

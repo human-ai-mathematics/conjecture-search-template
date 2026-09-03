@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 # Every validator in this repository, in the order that fails fastest.
 #
-# Structure first (cheap, and the thing most edits touch), then the numerical
-# harness, then the document. A green run establishes structure only: it says
-# nothing about whether a proof is correct (CLAUDE.md constraint 4).
+# Structure first — scripts/check.py, every plane at once (cheap, and the thing
+# most edits touch) — then the numerical harness, then the document. A green run
+# establishes structure only: it says nothing about whether a proof is correct
+# (CLAUDE.md constraint 4).
+#
+# While iterating on one plane, run it directly instead:
+#   python3 scripts/check.py --plane portfolio
 #
 #   ./scripts/check.sh            # everything
 #   ./scripts/check.sh --fast     # skip the LaTeX build
@@ -24,8 +28,7 @@ run() {
   STATUS=1
 }
 
-run "ledger"          python3 scripts/check_ledger.py
-run "agent roles"     python3 scripts/check_agents.py
+run "structure"       python3 scripts/check.py
 run "checker tests"   python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 
 if command -v uv >/dev/null 2>&1; then

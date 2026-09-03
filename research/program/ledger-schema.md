@@ -1,7 +1,8 @@
 # Ledger schema
 
 This is the field contract for [`ledger.yaml`](ledger.yaml).
-[`../../scripts/check_ledger.py`](../../scripts/check_ledger.py) is the executable validator;
+[`../../scripts/check.py`](../../scripts/check.py) is the executable validator (plane
+`core` here, plane `proofs` for the certification records below);
 [`../../CLAUDE.md`](../../CLAUDE.md) owns contribution policy.
 
 ## Document
@@ -53,7 +54,7 @@ All relation fields are YAML lists of same-ledger node ids.
 
 This distinction prevents a standard category error. A theorem of the form $A\Rightarrow B$ can
 be proved while $A$ remains open: store $A$ in `assumes`, $B$ in `implies`, and keep the theorem
-`proved`. `check_ledger.py status` reports such a result as applicability-blocked.
+`proved`. `check.py status` reports such a result as applicability-blocked.
 
 ## Proof records
 
@@ -79,10 +80,15 @@ their proofs. Multiple records allow genuinely alternative proofs to coexist.
 
 ## Boundary
 
-The ledger contains current mathematical state, not attempt history, numerical output, or loose
-roadmap links. Put those in `research/explorations/`, `research/runs/`, and program briefs.
-Numerical evidence never changes a status. Candidate statements stay in exploration front matter
-until they are precise, stable, and worth tracking as manuscript/ledger nodes.
+The ledger contains current mathematical state, not attempt history, numerical output, search
+activity, or loose roadmap links. Put those in `research/explorations/`, `research/runs/`,
+`research/program/portfolio.yaml`, and `research/program/brief.md`. Numerical evidence never
+changes a status. Candidate statements stay in checkpoint front matter until they are precise,
+stable, and worth tracking as manuscript/ledger nodes.
+
+An approach family, a route state, a blocker, and a saturation judgment are search state, not
+claims: they belong in the portfolio and are rejected here as obsolete fields
+(`CLAUDE.md` constraint 12).
 
 The checker establishes structural consistency only. Independent review establishes agreement of
 the manuscript, ledger, dossier, quantifiers, and mathematics.
@@ -90,8 +96,8 @@ the manuscript, ledger, dossier, quantifiers, and mathematics.
 ## Verify
 
 ```bash
-python3 scripts/check_ledger.py
-python3 scripts/check_ledger.py status
-python3 scripts/check_ledger.py node q:example
+python3 scripts/check.py --plane core
+python3 scripts/check.py status
+python3 scripts/check.py node q:example
 python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 ```
