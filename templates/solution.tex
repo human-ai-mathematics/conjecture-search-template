@@ -1,36 +1,36 @@
-% solutions/<ledger-id>.tex  — copy this file, rename to the ledger id (e.g. thm-foo.tex).
-% A standalone proof dossier. Inherits preamble.tex (macros, theorem envs, biblatex)
-% via the subfiles class, so it compiles on its own AND lifts into main.tex unchanged:
-%   cd solutions && latexmk -pdf -outdir=../build <id>.tex
+% solutions/{{FILE_ID}}.tex — a standalone proof dossier.
+%
+% Inherits preamble.tex (macros, theorem envs, biblatex) via the subfiles class, so it
+% compiles on its own AND lifts into main.tex unchanged:
+%   cd solutions && latexmk -pdf -outdir=../build {{FILE_ID}}.tex
 %                                                    (standalone; cross-module \ref -> "??")
-%   \subfile{solutions/<id>}  in main.tex              (later, once accepted)
+%   \subfile{solutions/{{FILE_ID}}}  in main.tex           (later, once accepted)
 \documentclass[../main.tex]{subfiles}
 \begin{document}
 
-% === SOLUTION HEADER (proof provenance) =====================================
+% === SOLUTION HEADER ========================================================
 % Parsed by scripts/check.py: `field : value`, the value ending at the first run of
-% two or more spaces, so the gloss to its right is ignored. Two fields are checked.
-%   ledger-node : <id>[, <id>]        research/program/ledger.yaml id(s) this discharges
-%   checked_by  : none                none | agent | human  (none = not yet a proof)
+% two or more spaces, so the gloss to its right is ignored. One field is checked.
+%   ledger-node : {{NODE}}        research/program/ledger.yaml id(s) this discharges
 % The rest is for a human reader and has no second owner:
 %   refines     : <label(s)>          statement(s) sharpened
 %   bounded_by  : obs:...             obstruction(s) the statement must respect
 %   author      : <agent or name>
 %   date        : YYYY-MM-DD
-% The reviewer's identity and the review path are NOT repeated here. The ledger's
-% proofs[].review owns the path and the report's own front matter owns the identities;
-% a third copy would have no owner to keep it true.
+% Certification is NOT recorded here. The ledger's proofs[] record owns the mode and the
+% review path, and the review's own front matter owns the identities; a dossier that no
+% proofs[] record names is a draft, and that absence is the only thing that says so.
 % ============================================================================
 
 \section*{Solution: \textit{<short target name>}}
-\label{sec:sol-<id>}
+\label{sec:sol-{{FILE_ID}}}
 
 \paragraph{Refined statement.}
 % State the sharp current form — not an obsolete loose open form. Cite the manuscript
 % target it sharpens with \ref{<label>}, and note which obstruction shapes it.
 
 \begin{theorem}[refined form of \ref{<label>}]
-\label{thm:sol-<id>}
+\label{thm:sol-{{FILE_ID}}}
   % ... the precise theorem ...
 \end{theorem}
 

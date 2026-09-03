@@ -1,16 +1,15 @@
 ---
 type: brief
-target: q:example
+target: conj:example
 ---
 
 # Problem brief
 
-<!-- This is the worked example's brief, pointing at the example node q:example. Copy it
-     to research/program/brief.md and rewrite it for your target — do not start a
-     sustained search without one. It deliberately keeps its instructions rather than
-     being filled in, which is why `check.py ready --root example` reports this tree as
-     not instantiated: being the thing you copy is its whole job. The sections below are
-     the ones an agent needs before it can attack a conjecture honestly. -->
+<!-- The worked example's brief, filled in. It is what a completed one looks like; the
+     unfilled scaffold to copy is templates/brief.md, or `python3 scripts/new.py brief
+     --target <node-id>`. The mathematics is deliberately elementary — the target is
+     refuted by a two-entry vector — so that nothing here competes for attention with the
+     shape of the document. A real brief has this shape and harder content. -->
 
 The harness remembers, validates and certifies. It does not supply mathematical
 pressure. That is this file's job: it is the one document that knows how the target
@@ -27,67 +26,110 @@ key), and it owns none of the mathematics. Three things, three homes:
 
 ## The target
 
-Name the ledger node and its manuscript anchor, then quote the manuscript statement
-verbatim below, so an agent gets the exact quantifiers without a second hop. The
-blockquote is a **copy, not a source**: if it and the manuscript disagree, the manuscript
-is right and the copy is a defect, which is what the `reviewer`'s `sync` lens checks
-(`CLAUDE.md` constraint 8). Never sharpen the statement here — sharpen it in `modules/`
-and re-copy.
+The blockquote below is a **copy, not a source**: if it and the manuscript disagree, the
+manuscript is right and the copy is a defect, which is what the `reviewer`'s `sync` lens
+checks (`CLAUDE.md` constraint 8). Never sharpen the statement here — sharpen it in
+`modules/` and re-copy.
 
-Where a definition is doing real work — a convention, a sign, a scaling — name the
-`kind: definition` node it rests on.
+> **Target** `conj:example`, stated at `\label{conj:example}` in
+> [`../../modules/00-overview.tex`](../../modules/00-overview.tex):
+>
+> For all real $a_1,\dots,a_n$ with $n \ge 2$,
+> $\sum_{i=1}^n (a_i - \bar a)^2 \ge \tfrac{1}{2}\sum_{i=1}^n a_i^2$.
 
-> **Target** `q:example`, stated at `\label{q:example}` in
-> [`../../modules/00-overview.tex`](../../modules/00-overview.tex). Placeholder for the
-> question this repository is organized around. Replace it with a precise statement
-> someone could prove or refute.
+Here $\bar a = n^{-1}\sum_{i=1}^n a_i$, the ordinary mean. No definition node carries that
+convention in this example, because nothing else in the fixture depends on it; in a real
+program a fixed normalization earns a `kind: definition` node and every claim resting on it
+names that node in `depends_on`.
+
+Note what the target is *not*. It is not about the identity at `prop:example`, which is
+proved and settled. It asserts a **uniform constant** $\tfrac{1}{2}$, valid for every $n$
+and every vector, and the constant is where it is vulnerable.
 
 ## The exact negation
 
-Write the logical negation, with quantifier order intact, before anyone attacks it. A
-single witness refutes a universal claim; failure of a dimension-free or uniform constant
-generally requires a certified family with the relevant divergence (`CLAUDE.md`
-constraint 11). Say which of the two shapes a refutation of *this* target must have.
+$$\exists\, n \ge 2,\ \exists\, a_1,\dots,a_n \in \mathbb{R} : \quad
+\sum_{i=1}^n (a_i - \bar a)^2 < \tfrac{1}{2}\sum_{i=1}^n a_i^2 .$$
+
+The quantifier order decides the shape of the refutation, and here it is the easy shape:
+the target is universally quantified over $n$ and over vectors, so **one instance
+suffices**. There is no dimension-free constant to break along a family — the constant
+$\tfrac{1}{2}$ is already fixed in the statement, so a single vector violating it settles
+the matter (`CLAUDE.md` constraint 11).
+
+Contrast the harder shape, which this fixture deliberately does not need: had the target
+read "there is a constant $c > 0$, independent of $n$, such that …", refuting it would
+require a certified family along which the ratio tends to zero, not one vector.
 
 ## What counts as complete
 
-Two lists, both explicit.
+Both lists below are explicit, and writing the second one first is what made the search
+short: it says a witness is enough, so the first thing worth trying is looking for one.
 
-**A complete proof** must establish exactly the statement above, with no extra
-hypotheses. Name the weakenings that do *not* count — a special case, a bounded-parameter
-version, a result conditional on an open antecedent — so that partial progress is
-recorded as partial rather than presented as the answer.
+**A complete proof** must establish the inequality for every $n \ge 2$ and every real
+vector, with the constant $\tfrac{1}{2}$ intact. These do **not** count, and must be
+recorded as partial rather than presented as the answer:
 
-**A complete refutation** must negate the exact quantified statement, through a certified
-dossier, with `refuted_by` naming proved refuters.
+- the centred case $\bar a = 0$, where the inequality reads $\sum a_i^2 \ge \tfrac{1}{2}\sum a_i^2$
+  and is trivially true;
+- any version with $\tfrac{1}{2}$ weakened to a constant depending on $n$;
+- any version restricted to vectors with a fixed number of distinct entries;
+- a numerical verification over any finite battery, which `obs:example` fences outright.
+
+**A complete refutation** must exhibit a specific $n$ and a specific vector, verify both
+sides by exact arithmetic, and reach `status: refuted` through the ordinary channel: the
+witness is a candidate, the statement it establishes becomes a proved refuter node with its
+own manuscript statement and dossier, that dossier is independently reviewed, and only then
+does `conj:example` gain `refuted_by`. A run artifact is never a step in that chain
+(constraints 2 and 11).
 
 ## Edge cases and audit tests
 
-The problem-specific checks a reviewer must run — the degenerate instances, the boundary
-conventions, the places where this particular statement's authors did not look. For the
-worked example, the checkable trap is stated at `obs:example`: agreement across a finite
-battery constrains nothing about the instances not tried.
+The five things that actually go wrong here, for a reviewer to run against any claimed
+proof or refutation:
 
-A generic instruction to be rigorous is worth much less than a list of the five things
-that actually go wrong in this problem. Add to this list every time a review catches
-something.
+1. **Constant vectors.** $a = (t,\dots,t)$ gives $\bar a = t$ and a left side of $0$. For
+   $t \ne 0$ the right side is $\tfrac{n t^2}{2} > 0$. This is the whole failure.
+2. **The zero vector.** $a = (0,\dots,0)$ gives $0 \ge 0$, which *holds*. It is not a
+   counterexample, and a refutation that offers it has not read the inequality.
+3. **$n = 2$ exactly.** The smallest admissible case, and the one a proof attempt is most
+   likely to have checked by hand and generalized from.
+4. **Scaling.** Both sides are homogeneous of degree $2$, so a witness may be normalized
+   freely — and equally, no proof may draw strength from a normalization.
+5. **Floating point.** A near-equality reported by a numerical run is not a violation.
+   `cand:example-identity-stability` exists precisely because nothing here yet bounds the
+   arithmetic error, so a residual near machine epsilon must be treated as inconclusive.
+
+Add to this list every time a review catches something.
 
 ## Traps and circular reductions
 
-Reductions that land on a lemma of the same strength as the target, equivalences known in
-the literature, and any route that would quietly assume the conclusion. A route that ends
-at an equivalent-strength lemma is not close to done: record it here so the next agent
-recognizes it in a new disguise.
+- **Centring first.** Replacing $a$ by $a - \bar a$ and then applying the inequality assumes
+  what is at issue: after centring the statement is trivially true, and the reduction has
+  thrown away the only vectors that break it.
+- **Reading it as Cauchy–Schwarz.** $\sum (a_i - \bar a)^2 = \sum a_i^2 - n\bar a^2$ is
+  `prop:example` and is proved; it says nothing about the constant, and a route that ends
+  by re-deriving it has arrived back at a settled node.
+- **Widening the battery.** Enumerating a larger box is the same route under a new name.
+  See `ap:example-exhaustive-search`, which is marked `duplicate` for exactly this.
 
 ## Initial families and their reopening criteria
 
-The approach families worth starting from, and what would make each one blocked or
-reopened. The live version of that state is [`portfolio.yaml`](portfolio.yaml); this
-section is the reasoning behind the initial seeding, not a second copy of it.
+One family was seeded: `fam:example-numerical` — look at the target numerically before
+committing to an analytic route, on the reasoning that a false uniform constant usually
+shows itself in seconds and a true one does not.
+
+It is now `saturated`: the search ended, and the family is closed with a reopening
+condition rather than deleted. The live version of that state is
+[`portfolio.yaml`](portfolio.yaml); this section is the reasoning behind the seeding, not a
+second copy of it.
 
 ## Budget policy
 
-What the search does when it does not succeed. The honest outcome — unresolved, with
-certified advances and exact remaining gaps — must be permitted and reportable. Elapsed
-time is not a measure of search quality: it says nothing about approach exhaustion,
-duplicated work, or novelty. Terminate on saturation of the portfolio, not on a clock.
+The honest outcome — unresolved, with certified advances and exact remaining gaps — is
+permitted and reportable. Terminate on saturation of the portfolio, not on a clock: elapsed
+time says nothing about approach exhaustion, duplicated work, or novelty. Saturation costs
+a synthesis checkpoint and a reopening condition, and is never inferred from attempt counts.
+
+For this target the budget was one numerical run. That is not a policy anyone should copy —
+it is what a target refuted by a two-entry vector deserves.

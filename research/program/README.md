@@ -13,12 +13,12 @@ the validator needs no configuration to find it. The program's *name* is `meta.p
 
 | question | source |
 |---|---|
-| Which node is the target, and what would finish it? | [`brief.md`](brief.md) |
+| Which node is the target, and what would finish it? | `brief.md` — gated; [scaffold](../../templates/brief.md), [worked](../../example/research/program/brief.md) |
 | What does a filled-in one of any of these look like? | [`../../example/`](../../example/README.md) |
 | What exactly does the target say? | [`../../modules/`](../../modules/), at its `\label` |
 | What is each claim's status? | [`ledger.yaml`](ledger.yaml) |
 | What ledger fields are valid? | [`ledger-schema.md`](ledger-schema.md) |
-| Which routes are alive, blocked, duplicated, saturated? | [`portfolio.yaml`](portfolio.yaml) |
+| Which routes are alive, blocked, duplicated, saturated? | `portfolio.yaml` — gated; [scaffold](../../templates/portfolio.yaml), [worked](../../example/research/program/portfolio.yaml) |
 | What portfolio and brief fields are valid? | [`portfolio-schema.md`](portfolio-schema.md) |
 | Which proof shapes are fenced or suspect? | Proved obstruction nodes via `bounded_by`; open ones via `heuristic_barriers` |
 | Which conventions do claims rest on? | `kind: definition` nodes with `status: defined`, and `depends_on` |
@@ -71,8 +71,7 @@ file.
 
 ## Workflow
 
-1. Read [`brief.md`](brief.md), then select a node from the ledger or an approach from the
-   portfolio.
+1. Read `brief.md`, then select a node from the ledger or an approach from the portfolio.
 2. Read the node's manuscript anchor, `depends_on` closure, `assumes`/`implies`, and both
    classes of obstruction in full.
 3. Record a checkpoint when the result is durable. Send numerical work through `numerics` and

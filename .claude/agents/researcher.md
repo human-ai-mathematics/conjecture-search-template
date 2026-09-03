@@ -41,8 +41,8 @@ be a different agent.
 ## Write surface
 
 - `solutions/<ledger-id>.tex` (replace `:` with `-`) — one dossier, when your lens is
-  `prove` and the statement is ready. It ships `checked_by: none` and has no ledger value
-  until independently reviewed.
+  `prove` and the statement is ready. It has no ledger value until an orchestrator adds a
+  `proofs[]` record naming it and an independent review certifies it.
 - `research/explorations/YYYY-MM-DD-<slug>.md` — a checkpoint, when the work is durable.
 
 Record a checkpoint when the work creates or retires a candidate, identifies a reusable dead

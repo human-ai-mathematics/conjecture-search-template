@@ -31,6 +31,14 @@ ROSTER = "MAINTAINING.md"
 NOT_ROLES = frozenset({RUNTIME_CONTRACT, ROSTER})
 CODEX_AGENTS = Path(".codex/agents")
 
+#: Optional capability packs. A pack is a role a repository installs when its work calls
+#: for it — numerical experiment, literature import, repository hygiene — rather than one
+#: a fresh clone carries whether or not it is used. `python3 scripts/new.py role <pack>`
+#: copies one into .claude/agents/, at which point it is an ordinary role in every
+#: respect. The roster in MAINTAINING.md links the packs by path, which is why an
+#: installed pack needs no further paperwork.
+PACKS = Path("packs")
+
 WRITE_TOOLS = {"Edit", "Write"}
 REQUIRED_FRONTMATTER = ("name", "description", "tools", "read_only", "reasoning")
 REQUIRED_LENS_FRONTMATTER = ("name", "role")
@@ -238,11 +246,27 @@ def write_codex_adapters(root: Path, roles: dict[str, Role]) -> list[str]:
     return []
 
 
+def _pack_names(root: Path) -> set[str]:
+    """The capability packs on offer, installed or not."""
+    directory = root / PACKS
+    if not directory.is_dir():
+        return set()
+    return {entry.name for entry in directory.iterdir()
+            if entry.is_dir() and (entry / f"{entry.name}.md").is_file()}
+
+
 def _validate_roster(root: Path, roles: dict[str, Role], errors: list[str]) -> None:
     """The roster table names every role and nothing else.
 
     It lives in the maintainer's guide rather than the runtime contract: a role loads
     README.md to execute a task and never needs the table of its colleagues.
+
+    Links are matched by filename stem wherever they point, so the roster's packs table —
+    which links ``packs/numerics/numerics.md`` — already accounts for that role once it is
+    installed. Installing a pack is then genuinely one command, not a command plus a
+    documentation edit the checker would otherwise demand. An uninstalled pack is likewise
+    not a stray link, and neither is a lens: the roster is allowed to point at the
+    strategies a role can be assigned.
     """
     path = root / CLAUDE_AGENTS / ROSTER
     relative = (CLAUDE_AGENTS / ROSTER).as_posix()
@@ -251,21 +275,34 @@ def _validate_roster(root: Path, roles: dict[str, Role], errors: list[str]) -> N
     except (OSError, UnicodeError) as exc:
         errors.append(f"{relative}: {exc}")
         return
-    linked = set(re.findall(r"\]\(([A-Za-z0-9._-]+)\.md\)", text))
+    linked = {Path(target).stem
+              for target in re.findall(r"\]\(([A-Za-z0-9._/-]+)\.md\)", text)}
     for name in sorted(roles):
         if name not in linked:
             errors.append(f"{relative}: roster does not link role '{name}'")
-    for name in sorted(linked - set(roles) - {stem.removesuffix(".md") for stem in NOT_ROLES}):
-        errors.append(f"{relative}: roster links '{name}.md', which is not a role")
+    lenses = {path.stem for path in (root / CLAUDE_LENSES).glob("*.md")}
+    known = (set(roles) | _pack_names(root) | lenses
+             | {stem.removesuffix(".md") for stem in NOT_ROLES})
+    for name in sorted(linked - known):
+        errors.append(
+            f"{relative}: roster links '{name}.md', which is not a role, a capability "
+            "pack, or a lens"
+        )
 
 
 def _validate_codex_adapters(root: Path, roles: dict[str, Role], errors: list[str]) -> None:
+    """Validate the generated Codex adapters — if this repository ships any.
+
+    Cross-client support is a choice, not a requirement. A repository driven only by
+    Claude Code deletes ``.codex/`` and owes nothing; the tree is regenerated in full by
+    ``--write-codex`` whenever it wants one back. What is not optional is an adapter that
+    disagrees with the Markdown it was generated from.
+    """
     directory = root / CODEX_AGENTS
     if directory.is_symlink():
         errors.append(f"{CODEX_AGENTS} must be a real directory, not a symlink")
         return
     if not directory.is_dir():
-        errors.append(f"{CODEX_AGENTS} directory is missing")
         return
 
     adapter_paths = sorted(directory.glob("*.toml"))

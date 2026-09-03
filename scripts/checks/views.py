@@ -11,8 +11,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-import yaml
-
+from .common import yaml  # noqa: F401
 from .common import LANES, as_list, repo_relative
 from .ledger import applicability_blockers
 
@@ -20,14 +19,13 @@ from .ledger import applicability_blockers
 #: literal placeholder, never a guess at what a filled-in value looks like: a readiness
 #: gate that infers is worse than none, and a real program may legitimately own a node
 #: called ``…:example``.
-PLACEHOLDERS: tuple[tuple[str, str, str], ...] = (
-    ("README.md", "{{REPO_TITLE}}", "name the repository"),
-    ("main.tex", "<Document title>", "set the manuscript title"),
-    ("main.tex", "<author>", "set the manuscript author"),
-    ("main.tex", "Replace this abstract.", "write the abstract"),
-    ("README.md", "# Instantiating this template",
-     "delete the instantiation section once its steps are done"),
-    ("research/program/brief.md", "<!-- This is the worked example's brief",
+#:
+#: They are split because they answer two different questions. *Can this repository be
+#: attacked?* needs a target, a brief and a named program. *Can this repository be
+#: published?* needs a title, an author and an abstract. A search does not wait on the
+#: second, so ``ready`` does not ask about it.
+RESEARCH_PLACEHOLDERS: tuple[tuple[str, str, str], ...] = (
+    ("research/program/brief.md", "<!-- UNWRITTEN — this brief is still the scaffold.",
      "rewrite the brief for this repository's target"),
     ("research/program/brief.md", "Write the logical negation, with quantifier order intact",
      "write the exact negation in the brief"),
@@ -35,7 +33,51 @@ PLACEHOLDERS: tuple[tuple[str, str, str], ...] = (
      "write what counts as a complete proof and a complete refutation"),
 )
 
+PUBLICATION_PLACEHOLDERS: tuple[tuple[str, str, str], ...] = (
+    ("README.md", "{{REPO_TITLE}}", "name the repository"),
+    ("main.tex", "<Document title>", "set the manuscript title"),
+    ("main.tex", "<author>", "set the manuscript author"),
+    ("main.tex", "Replace this abstract.", "write the abstract"),
+    ("README.md", "# Instantiating this template",
+     "delete the instantiation section once its steps are done"),
+)
+
 BRIEF = "research/program/brief.md"
+
+
+def _placeholder_blockers(
+    base: Path, table: tuple[tuple[str, str, str], ...]
+) -> list[str]:
+    """Every shipped placeholder in ``table`` still present under ``base``.
+
+    A file that does not exist contributes nothing: absence is the business of the
+    caller, which knows whether this particular file is required.
+    """
+    blockers: list[str] = []
+    for relative, needle, remedy in table:
+        path = base / relative
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            blockers.append(f"{relative}: cannot read: {exc}")
+            continue
+        if needle in text:
+            blockers.append(f"{relative}: {remedy}")
+    return blockers
+
+
+def _report(blockers: list[str], heading: str, done: str, note: str) -> bool:
+    """Print a readiness verdict. ``True`` when there is nothing left to do."""
+    if blockers:
+        print(f"{heading} — {len(blockers)} thing(s) to do:")
+        for blocker in dict.fromkeys(blockers):
+            print(f"  {blocker}")
+        print(f"\n{note}")
+        return False
+    print(done)
+    return True
 
 
 def summary(report: dict, lanes: tuple[str, ...] = LANES) -> None:
@@ -43,9 +85,14 @@ def summary(report: dict, lanes: tuple[str, ...] = LANES) -> None:
     ledgers = report["ledgers"]
     total = sum(len(item["nodes"]) for item in ledgers)
     error_count = sum(len(report["errors"][lane]) for lane in lanes)
+    # Claim and structural labels are counted apart because only the first kind is
+    # required to be a node. Reported together, a template with one \section anchor and
+    # no claims at all read "0 nodes, 1 labels", which looks like a missing node.
+    labels = report["labels"]
+    claims = sum(1 for entry in labels.values() if entry["environment"] is not None)
     print(
-        f"\n{len(ledgers)} ledger(s), {total} nodes, {len(report['labels'])} labels. "
-        f"{error_count} error(s)."
+        f"\n{len(ledgers)} ledger(s), {total} nodes, {claims} claim label(s), "
+        f"{len(labels) - claims} structural. {error_count} error(s)."
     )
     for item in sorted(ledgers, key=lambda entry: (entry["program"], str(entry["path"]))):
         counts = Counter(str(node.get("status")) for node in item["nodes"].values())
@@ -71,12 +118,16 @@ def summary(report: dict, lanes: tuple[str, ...] = LANES) -> None:
 
 
 def ready(report: dict, root: Path | None) -> bool:
-    """Is this repository instantiated, or is it still the shipped template?
+    """Can a sustained search start here, or is this still the shipped template?
 
     A different question from ``check``. Activation is structural, so an absent optional
     plane is valid and must stay valid — a fresh clone is *correct* and *not ready*.
-    This view asks only whether the placeholders are gone and a sustained search has
-    something to aim at, and it prints what to do rather than what is wrong.
+    This view asks only whether a search has something to aim at: a named program, a
+    target with a ledger node, and a brief that has actually been written.
+
+    It deliberately says nothing about the manuscript title, the author, the abstract or
+    the leftover instantiation section. Those are publication and cleanup details, they
+    block no mathematics, and ``publish_ready`` owns them.
     """
     base = Path(root) if root is not None else Path(__file__).resolve().parents[2]
     blockers: list[str] = []
@@ -100,28 +151,37 @@ def ready(report: dict, root: Path | None) -> bool:
             f"{BRIEF}: absent — a sustained search opens with a brief naming its target"
         )
 
-    for relative, needle, remedy in PLACEHOLDERS:
-        path = base / relative
-        if not path.is_file():
-            continue
-        try:
-            text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeError) as exc:
-            blockers.append(f"{relative}: cannot read: {exc}")
-            continue
-        if needle in text:
-            blockers.append(f"{relative}: {remedy}")
+    blockers.extend(_placeholder_blockers(base, RESEARCH_PLACEHOLDERS))
 
-    if blockers:
-        print(f"not ready — {len(blockers)} thing(s) to do:")
-        for blocker in dict.fromkeys(blockers):
-            print(f"  {blocker}")
-        print("\nThis is not a defect. A freshly cloned template is correct and not yet")
-        print("instantiated; see the instantiation checklist in README.md.")
-        return False
-    print("ready: the placeholders are gone and the brief names a target in the ledger.")
-    print("A green check is still structure only (CLAUDE.md constraint 4).")
-    return True
+    return _report(
+        blockers,
+        "not ready",
+        "ready: the program is named, the target has a node, and the brief is written.\n"
+        "A green check is still structure only (CLAUDE.md constraint 4).",
+        "This is not a defect. A freshly cloned template is correct and not yet\n"
+        "instantiated; see docs/RUNNING-A-SEARCH.md, and scripts/new.py for the\n"
+        "scaffolds. Manuscript title, author and abstract are a separate question:\n"
+        "'python3 scripts/check.py publish-ready'.",
+    )
+
+
+def publish_ready(report: dict, root: Path | None) -> bool:
+    """Is the manuscript and its front matter fit to show someone?
+
+    The other half of the old ``ready``. None of it blocks an attack on the target, so it
+    is asked separately and answered separately: a repository can be deep into a search
+    and still owe an abstract.
+    """
+    base = Path(root) if root is not None else Path(__file__).resolve().parents[2]
+    return _report(
+        _placeholder_blockers(base, PUBLICATION_PLACEHOLDERS),
+        "not publishable yet",
+        "publish-ready: the manuscript placeholders are gone.\n"
+        "This says nothing about whether the mathematics is finished; "
+        "'check.py status' prints the frontier.",
+        "None of these block the search. 'python3 scripts/check.py ready' is the\n"
+        "question that does.",
+    )
 
 
 def candidates(report: dict) -> None:
@@ -290,3 +350,24 @@ def checkpoints(report: dict) -> None:
         print(f"  {relative}")
     for relative, heirs in sorted(superseded_audits.items()):
         print(f"  superseded  {relative}\n      read instead: {', '.join(heirs)}")
+
+
+def dossiers(report: dict) -> None:
+    """Every dossier an active proof record names, one repo-relative path per line.
+
+    Machine-readable on purpose. ``scripts/check.sh`` consumes it to compile each dossier
+    standalone, which ``solutions/README.md`` makes part of the proof definition of done
+    and which no validator otherwise exercises: a dossier with a LaTeX syntax error used
+    to pass every check in the repository.
+    """
+    found: list[str] = []
+    for item in report["ledgers"]:
+        for node in item["nodes"].values():
+            for proof in as_list(node.get("proofs")):
+                if not isinstance(proof, dict):
+                    continue
+                artifact = proof.get("artifact")
+                if isinstance(artifact, str) and artifact not in found:
+                    found.append(artifact)
+    for path in sorted(found):
+        print(path)

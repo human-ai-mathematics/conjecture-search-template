@@ -15,8 +15,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import yaml
-
+from .common import yaml  # noqa: F401
 from .common import APPROACH_ID_RE, contained_path, read_front_matter
 
 PORTFOLIO_PATH = Path("research/program/portfolio.yaml")

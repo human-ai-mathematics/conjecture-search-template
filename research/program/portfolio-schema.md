@@ -1,7 +1,10 @@
 # Portfolio schema
 
-This is the field contract for [`portfolio.yaml`](portfolio.yaml) and for the front
-matter of [`brief.md`](brief.md). [`../../scripts/check.py`](../../scripts/check.py) is
+This is the field contract for `portfolio.yaml` and for the front matter of `brief.md`.
+Both are gated and absent by default — the scaffolds are
+[`templates/portfolio.yaml`](../../templates/portfolio.yaml) and
+[`templates/brief.md`](../../templates/brief.md), and filled-in instances are in
+[`example/`](../../example/README.md). [`../../scripts/check.py`](../../scripts/check.py) is
 the executable validator; [`../../CLAUDE.md`](../../CLAUDE.md) owns policy.
 
 The governing separation:

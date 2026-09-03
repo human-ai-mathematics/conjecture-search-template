@@ -100,7 +100,6 @@ class CheckerFixture(unittest.TestCase):
                 covered = "; ".join(str(item.get("id")) for item in bare_proved)
                 solution_path.write_text(
                     f"%   ledger-node : {covered}\n"
-                    "%   checked_by  : human\n"
                     "standalone fixture proofs\n"
                 )
                 for item in bare_proved:
@@ -119,7 +118,6 @@ class CheckerFixture(unittest.TestCase):
         covered = "; ".join(node_ids)
         path.write_text(
             f"%   ledger-node : {covered}\n"
-            "%   checked_by  : none\n"
             "standalone proof fixture\n"
         )
         return relative
@@ -130,7 +128,7 @@ class CheckerFixture(unittest.TestCase):
                    solutions: tuple[str, ...] = (), report_type: str = "proof-review",
                    date: str = "2026-08-25", supersedes: tuple[str, ...] = (),
                    body: str = "fixture review\n") -> str:
-        relative = f"research/reviews/{date}-{name}.md"
+        relative = f"research/reviews/{date[:10]}-{name}.md"
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         metadata: dict = {"type": report_type, "date": date}
@@ -187,7 +185,7 @@ class CheckerFixture(unittest.TestCase):
                        supersedes: tuple[str, ...] = (),
                        front_matter: dict | None = None,
                        body: str = "fixture checkpoint\n") -> str:
-        relative = f"research/explorations/{date}-{name}.md"
+        relative = f"research/explorations/{date[:10]}-{name}.md"
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         metadata: dict = {"type": "exploration", "date": date, "outcome": outcome}

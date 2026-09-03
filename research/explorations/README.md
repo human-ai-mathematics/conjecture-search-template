@@ -46,7 +46,7 @@ supersedes:
 | field | requirement | meaning |
 |---|---|---|
 | `type` | required | Always `exploration`. |
-| `date` | required | Quoted ISO date matching the filename prefix. |
+| `date` | required | Quoted ISO date matching the filename prefix, or a UTC timestamp `YYYY-MM-DDTHH:MM:SSZ` whose date part does. |
 | `outcome` | required | What the work produced: see below. |
 | `nodes` | one of `nodes`, `approach`, `candidates` | Ledger node ids engaged; each must resolve. |
 | `approach` | one of `nodes`, `approach`, `candidates` | The `ap:` id in the portfolio this belongs to. |
@@ -70,8 +70,8 @@ Work that both failed and threw off a candidate is `candidate`: the outcome name
 
 ### `approach` — the link to the portfolio
 
-`approach` is what connects durable memory to
-[`../program/portfolio.yaml`](../program/portfolio.yaml): the checkpoint says why a route's
+`approach` is what connects durable memory to the search portfolio at
+`../program/portfolio.yaml` (gated; [scaffold](../../templates/portfolio.yaml)): the checkpoint says why a route's
 state changed, the portfolio says what that state now is. The portfolio's `checkpoints:` list
 points back, which is how a record written before the portfolio existed can still be attached
 to a route without editing it.
@@ -92,9 +92,28 @@ They mean different things and neither deletes anything:
 
 `python3 scripts/check.py checkpoints` prints the current heads — every record nothing later
 has superseded. The full archive stays exactly where it is. Supersession only ever points
-backwards in time, which is what makes it acyclic. The same relation is available to
-non-certifying `type: audit` reports in [`../reviews/`](../reviews/); proof reviews and
-decision records keep their stricter semantics.
+backwards in time. The same relation is available to non-certifying `type: audit` reports in
+[`../reviews/`](../reviews/); proof reviews and decision records keep their stricter semantics.
+
+### Two records on the same day
+
+A filename is not a clock. Records used to be ordered by sorting their paths, so two
+checkpoints dated the same day were ranked by the first letter of their slugs — which could
+reject a perfectly good promotion for being alphabetically early, or wave through a genuinely
+backwards one.
+
+The checker now claims an order only where it has one:
+
+- **different days** — ordered, and checked as before;
+- **same day, both timestamped** — ordered by the timestamp, and checked;
+- **same day, either untimed** — *unordered*. A same-day proposal and promotion is accepted,
+  because it is the ordinary shape of a productive session, and supersession is instead
+  verified to be acyclic directly.
+
+Write a plain `date:` unless two records genuinely need separating; then give both a UTC
+timestamp. `python3 scripts/new.py checkpoint <slug>` stamps one for you. Nothing on disk
+ever needs renaming — this file's name keeps its `YYYY-MM-DD-` prefix either way, and
+`CLAUDE.md` constraint 7 stands untouched.
 
 ## Candidate statements
 

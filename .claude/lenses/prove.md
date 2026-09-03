@@ -13,10 +13,11 @@ contract; everything below is what `prove` adds.
 1. Read the node, its manuscript statement, its `depends_on` closure, and every `bounded_by`
    and `heuristic_barriers` node in full. Hard fences must be respected; advisory barriers
    must be addressed or explicitly set aside.
-2. Copy `solutions/TEMPLATE.tex`. Fill the audit header: `ledger-node` naming what this
-   discharges, `refines`, `bounded_by`, `checked_by: none`, author identity, date. The
-   header carries no reviewer and no review path — the ledger's `proofs[].review` owns the
-   path and the report's front matter owns the identities. You are not the reviewer.
+2. Run `python3 scripts/new.py dossier <ledger-id>`, or copy `templates/solution.tex`
+   yourself. Fill the header: `ledger-node` naming what this discharges, `refines`,
+   `bounded_by`, author identity, date. The header carries no certification, no reviewer and
+   no review path — the ledger's `proofs[]` record owns the mode and the path, and the
+   report's front matter owns the identities. You are not the reviewer.
 3. State the refined theorem, then prove it. `\ref`/`\cite` freely; `??` standalone is
    expected.
 4. Compile: `cd solutions && latexmk -pdf -outdir=../build <id>.tex`.
@@ -38,7 +39,8 @@ Directional numerics remains useful *outside* the dossier, and the shared contra
 - Dossier path, and whether the standalone build succeeded — paste the failing lines if not.
 - The fence-by-fence check against `bounded_by`.
 - Every unclosed step, and every hypothesis actually used, including any used but not stated.
-- **No applicable ledger delta.** A dossier shipping `checked_by: none` is an uncertified
-  candidate: state the future `proofs[].artifact` path as a deferred artifact only.
+- **No applicable ledger delta.** A dossier no `proofs[]` record names is an uncertified
+  draft, and that absence is the only thing that says so: state the future
+  `proofs[].artifact` path as a deferred artifact only.
 - `next_role: reviewer`. Put the theorem, the used hypotheses, the fence check and the build
   result in `next_prompt`, so a cold reviewer can be launched from repository artifacts alone.

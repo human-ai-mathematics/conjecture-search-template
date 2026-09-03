@@ -15,7 +15,8 @@ import re
 from pathlib import Path
 
 from .common import (APPROACH_ID_RE, check_record_date, contained_path,
-                     optional_string_list, read_front_matter, repo_relative)
+                     optional_string_list, read_front_matter, record_instant,
+                     repo_relative, strictly_after)
 
 EXPLORATIONS = "research/explorations"
 RUNS = "research/runs"
@@ -152,18 +153,24 @@ def check_supersession(root: Path, records: list[dict], directory: str, genre: s
                        errors: list[str]) -> dict[str, list[str]]:
     """Validate one genre's supersession links; map each superseded record to its heirs.
 
-    A record may only supersede an earlier record of its own genre. Strict ordering is
-    what makes the relation acyclic without a graph walk, and it is also the honest
-    reading: a later summary replaces an earlier one, never the reverse.
+    A record may only supersede an earlier record of its own genre — a later summary
+    replaces an earlier one, never the reverse.
+
+    Acyclicity used to be argued from a strict total order, and that order was
+    manufactured by sorting paths: two records dated the same day were ranked by their
+    slugs. That is not chronology, and every same-day supersession in this repository
+    passed or failed on which letter its title happened to start with. So the order is
+    now only consulted where it is real — different days, or two timestamps — and where
+    it is not, the relation is verified acyclic directly, which is the property the
+    ordering was standing in for all along.
 
     The result maps superseded path to the records that replaced it, so a reader is told
     what to read *instead* rather than only that something is stale. Membership tests
     against the returned mapping behave as they did against a set.
     """
-    order = {record["relative"]: index for index, record in enumerate(
-        sorted(records, key=lambda item: (item["date"] or "", item["relative"]))
-    )}
+    moment = {record["relative"]: record_instant(record["date"]) for record in records}
     superseded: dict[str, list[str]] = {}
+    edges: dict[str, list[str]] = {}
     for record in records:
         context = f"{record['path']}.supersedes"
         for reference in record["supersedes"]:
@@ -174,18 +181,64 @@ def check_supersession(root: Path, records: list[dict], directory: str, genre: s
             target = repo_relative(root, resolved)
             if target == record["relative"]:
                 errors.append(f"{context}: a record cannot supersede itself")
-            elif target not in order:
+            elif target not in moment:
                 errors.append(f"{context}: '{reference}' is not {genre}")
-            elif order[target] >= order[record["relative"]]:
+            elif strictly_after(moment[target], moment[record["relative"]]):
                 errors.append(
                     f"{context}: '{reference}' is not older than this record; "
                     "supersession only ever points backwards"
                 )
             else:
                 superseded.setdefault(target, []).append(record["relative"])
+                edges.setdefault(record["relative"], []).append(target)
+
+    for cycle in _cycles(edges):
+        errors.append(
+            f"{directory}: supersession cycle {' -> '.join(cycle)}; supersession only "
+            "ever points backwards. Records dated the same day are not ordered by "
+            "filename — give them UTC timestamps (YYYY-MM-DDTHH:MM:SSZ) to order them"
+        )
+
     for heirs in superseded.values():
         heirs.sort()
     return superseded
+
+
+def _cycles(edges: dict[str, list[str]]) -> list[list[str]]:
+    """Every cycle reachable in a supersession graph, each reported once.
+
+    Same-day records carry no usable order, so the guard that a strict ranking used to
+    provide for free is done explicitly here. Iterative depth-first search with an
+    explicit stack: the graph is tiny, but a recursive walk over an append-only archive
+    that only ever grows is a limit waiting to be hit.
+    """
+    found: list[list[str]] = []
+    seen: set[str] = set()
+    for start in sorted(edges):
+        if start in seen:
+            continue
+        stack = [(start, iter(sorted(edges.get(start, ()))))]
+        path = [start]
+        on_path = {start}
+        while stack:
+            node, children = stack[-1]
+            child = next(children, None)
+            if child is None:
+                stack.pop()
+                on_path.discard(path.pop())
+                seen.add(node)
+                continue
+            if child in on_path:
+                cut = path[path.index(child):] + [child]
+                if cut not in found:
+                    found.append(cut)
+                continue
+            if child in seen:
+                continue
+            stack.append((child, iter(sorted(edges.get(child, ())))))
+            path.append(child)
+            on_path.add(child)
+    return found
 
 
 def check(root: Path, node_ids: set[str], approach_ids: set[str] | None,
@@ -202,16 +255,25 @@ def check(root: Path, node_ids: set[str], approach_ids: set[str] | None,
         return {"records": [], "candidates": [], "promoted": {}, "superseded": {}}
 
     declared: dict[str, dict] = {}
-    retired: dict[str, tuple[int, str]] = {}
+    retired: dict[str, tuple[tuple[str, str], str]] = {}
     promoted: dict[str, dict] = {}
 
-    for order, path in enumerate(sorted(directory.rglob("*.md"))):
+    # Read everything first, then walk it in time order. The old loop used the position
+    # of a path in a lexical listing as its event clock, which made a candidate's
+    # lifecycle depend on the first letter of a slug whenever two records shared a date.
+    for path in sorted(directory.rglob("*.md")):
         if path.name == "README.md":
             continue
         metadata = _read_metadata(path, root, errors)
         if metadata is None:
             continue
+        metadata["moment"] = record_instant(metadata["date"])
         records.append(metadata)
+    records.sort(key=lambda item: (item["moment"], item["relative"]))
+
+    for metadata in records:
+        path = metadata["path"]
+        moment = metadata["moment"]
         context = str(path)
         relative = metadata["relative"]
 
@@ -253,7 +315,7 @@ def check(root: Path, node_ids: set[str], approach_ids: set[str] | None,
                     "statement": candidate["statement"],
                     "source": relative,
                     "date": metadata["date"],
-                    "order": order,
+                    "moment": moment,
                 }
 
         for promotion in metadata["promotes"]:
@@ -280,7 +342,7 @@ def check(root: Path, node_ids: set[str], approach_ids: set[str] | None,
                 )
             else:
                 promoted[candidate_id] = {
-                    "node": node_id, "source": relative, "order": order,
+                    "node": node_id, "source": relative, "moment": moment,
                     "date": metadata["date"],
                 }
 
@@ -301,12 +363,16 @@ def check(root: Path, node_ids: set[str], approach_ids: set[str] | None,
                     f"{retired[candidate_id][1]}"
                 )
             else:
-                retired[candidate_id] = (order, relative)
+                retired[candidate_id] = (moment, relative)
 
-    for candidate_id, (order, source) in sorted(retired.items()):
+    # "Before" here means demonstrably before: different days, or two timestamps. Two
+    # untimed records dated the same day are not ordered, so a same-day proposal and
+    # promotion — the ordinary shape of a productive session — is accepted rather than
+    # judged on its filenames.
+    for candidate_id, (moment, source) in sorted(retired.items()):
         if candidate_id not in declared:
             errors.append(f"{source}.retires: '{candidate_id}' was never proposed")
-        elif declared[candidate_id]["order"] > order:
+        elif strictly_after(declared[candidate_id]["moment"], moment):
             errors.append(
                 f"{source}.retires: '{candidate_id}' is retired before "
                 f"{declared[candidate_id]['source']} proposes it"
@@ -315,7 +381,7 @@ def check(root: Path, node_ids: set[str], approach_ids: set[str] | None,
     for candidate_id, promotion in sorted(promoted.items()):
         if candidate_id not in declared:
             errors.append(f"{promotion['source']}.promotes: '{candidate_id}' was never proposed")
-        elif declared[candidate_id]["order"] > promotion["order"]:
+        elif strictly_after(declared[candidate_id]["moment"], promotion["moment"]):
             errors.append(
                 f"{promotion['source']}.promotes: '{candidate_id}' is promoted before "
                 f"{declared[candidate_id]['source']} proposes it"

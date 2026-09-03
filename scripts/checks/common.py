@@ -12,17 +12,24 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+# PyYAML is the checker's one dependency, declared in the root pyproject.toml. Every
+# other module in this package imports it *from here* rather than directly, so this hint
+# is what a missing install produces no matter which module happens to load first — it
+# used to depend on `checkpoints` sorting before `ledger` in one import statement.
 try:
     import yaml
 except ImportError:  # pragma: no cover - environment guard
-    raise SystemExit("PyYAML required: pip install pyyaml")
+    raise SystemExit(
+        "PyYAML required. Install it with 'pip install pyyaml', or run the checker as "
+        "'uv run python scripts/check.py', which reads the root pyproject.toml."
+    )
 
 #: The validation lanes, in the order a default run reports them. A lane is an
 #: implementation partition of the checker, not one of the repository's three
 #: domains and not one of CLAUDE.md's activation gates. A lane whose files are
 #: absent contributes nothing: that is what makes activation structural rather
 #: than a configured mode.
-LANES = ("core", "proofs", "checkpoints", "portfolio", "numerics", "roles")
+LANES = ("core", "proofs", "checkpoints", "portfolio", "numerics", "roles", "docs")
 
 #: A portfolio approach id. Shared, because the portfolio declares these ids and the
 #: checkpoint lane resolves against them; one regex keeps the two lanes agreeing.
@@ -76,17 +83,62 @@ def read_front_matter(path: Path, noun: str, errors: list[str]) -> dict | None:
     return raw
 
 
+#: A dated record carries either a plain ISO date or a UTC timestamp. The timestamp form
+#: exists so that two records written on the same day can be *told* apart in time. Without
+#: one the checker does not guess: a filename slug is not a clock, and sorting paths
+#: lexically once rejected a legitimate same-day promotion because ``p`` sorts after ``r``.
+RECORD_INSTANT_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:T(\d{2}:\d{2}:\d{2})Z)?$")
+
+
+def record_instant(value: str | None) -> tuple[str, str]:
+    """Split a record's ``date`` into ``(day, time)``; an untimed record has ``time=""``.
+
+    Comparing the pair orders two records only as far as they are actually ordered. An
+    empty time is not "midnight" — it is *unknown*, and ``strictly_after`` treats it so.
+    """
+    match = RECORD_INSTANT_RE.match(value or "")
+    if match is None:
+        return (value or "", "")
+    return (match.group(1), match.group(2) or "")
+
+
+def strictly_after(later: tuple[str, str], earlier: tuple[str, str]) -> bool:
+    """Is ``later`` genuinely after ``earlier``, rather than merely sorting after it?
+
+    Different days answer themselves. On the same day the answer is yes only when both
+    records carry a timestamp; otherwise their order is unknown and this returns ``False``
+    in both directions, so a caller asking "did this happen out of order?" gets no for an
+    ambiguous pair rather than an answer it has not earned.
+    """
+    if later[0] != earlier[0]:
+        return later[0] > earlier[0]
+    if not later[1] or not earlier[1]:
+        return False
+    return later[1] > earlier[1]
+
+
 def check_record_date(path: Path, raw: dict, errors: list[str]) -> str | None:
-    """A quoted ISO date that agrees with the filename prefix, for a dated record."""
+    """A quoted ISO date or UTC timestamp agreeing with the filename prefix."""
     value = raw.get("date")
     if not isinstance(value, str):
-        errors.append(f"{path}.date: must be a quoted ISO date YYYY-MM-DD")
+        errors.append(
+            f"{path}.date: must be a quoted ISO date YYYY-MM-DD, or a UTC timestamp "
+            "YYYY-MM-DDTHH:MM:SSZ to order records written on the same day"
+        )
         return None
-    try:
-        date.fromisoformat(value)
-    except ValueError:
-        errors.append(f"{path}.date: invalid ISO date '{value}'")
-    if not path.name.startswith(f"{value}-"):
+    match = RECORD_INSTANT_RE.match(value)
+    day = match.group(1) if match else value
+    if match is None:
+        errors.append(
+            f"{path}.date: invalid ISO date '{value}': want YYYY-MM-DD or "
+            "YYYY-MM-DDTHH:MM:SSZ"
+        )
+    else:
+        try:
+            date.fromisoformat(day)
+        except ValueError:
+            errors.append(f"{path}.date: invalid ISO date '{value}'")
+    if not path.name.startswith(f"{day}-"):
         errors.append(f"{path}.date: must match the filename prefix")
     return value
 

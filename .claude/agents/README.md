@@ -31,6 +31,14 @@ contention, applies accepted changes atomically, and runs the relevant validator
 writer, because keeping the search coherent *is* that role's job. Everyone else proposes a
 portfolio change through the handoff.
 
+## Four roles ship; three are installed when needed
+
+`scout`, `researcher`, `reviewer` and `synthesizer` are always present. `numerics`,
+`literature-scout` and `janitor` are **capability packs** in `packs/`, installed with
+`python3 scripts/new.py role <pack>`. A handoff may name one that is not installed yet —
+say `next_role: numerics` for a diagnostic — and the orchestrator installs it before
+dispatching. Nothing else about them differs once installed.
+
 ## Shared handoff envelope
 
 Every role keeps its role-specific report, then ends with this compact envelope:

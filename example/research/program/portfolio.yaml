@@ -10,40 +10,49 @@
 # It stores coordination state only. A blocker is named by its `cand:` id or ledger node
 # id and never restated here (CLAUDE.md constraint 12).
 #
-# The three approaches below are the worked example's, matching the nodes in this
-# directory's ledger.yaml. Each carries an `objective`: a family says what mechanism it
-# tries, and a route says what it tries within that family.
+# This is the worked example's portfolio, and it is finished: conj:example is refuted, so
+# no route is left `active` or `queued` and the one family is closed with a reopening
+# condition. Each entry carries an `objective` — a family says what mechanism it tries, a
+# route says what it tries within that family, and neither is a claim.
 
-target: q:example
+target: conj:example
 
 families:
   - id: fam:example-numerical
     mechanism: >-
-      Attack the target from the numerical side first: find out which shapes of
-      counterexample are available at all before committing to an analytic route.
-    state: active
+      Look at the target numerically before committing to an analytic route, on the
+      reasoning that a false uniform constant usually shows itself in seconds and a true
+      one does not.
+    state: saturated
+    closure_checkpoint: research/explorations/2026-09-03-example-refuter.md
+    reopen_if: >-
+      The target is restated with a constant that is allowed to depend on $n$, at which
+      point a numerical sweep would be measuring something the refuted version fixed.
 
 approaches:
   - id: ap:example-finite-battery
     family: fam:example-numerical
     objective: >-
-      Run the identity over a battery of adversarial instances and see whether any of
-      them breaks it.
-    state: blocked
-    blocker: obs:example
-    reopen_if: >-
-      Someone supplies a construction that certifies the instances not tried, rather
-      than a battery that samples more of them.
+      Run conj:example over a battery of adversarial instances and see whether any of
+      them violates the constant 1/2.
+    state: completed
     checkpoints:
       - research/explorations/2026-09-02-example-exploration.md
+      - research/explorations/2026-09-03-example-refuter.md
 
   - id: ap:example-roundoff-bound
     family: fam:example-numerical
     objective: >-
-      Bound the floating-point discrepancy the battery measured, so a numerical
-      disagreement can be told apart from a genuine counterexample.
+      Bound the floating-point discrepancy the battery measured, so that a near-equality
+      reported by a run can be told apart from a genuine violation.
     parent: ap:example-finite-battery
-    state: queued
+    state: blocked
+    blocker: cand:example-identity-stability
+    reopen_if: >-
+      cand:example-identity-stability is proved, or someone supplies any explicit error
+      bound for the identity evaluated in floating point.
+    checkpoints:
+      - research/explorations/2026-09-03-example-refuter.md
 
   - id: ap:example-exhaustive-search
     family: fam:example-numerical

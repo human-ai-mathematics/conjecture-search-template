@@ -2,25 +2,43 @@
 # Every validator in this repository, in the order that fails fastest.
 #
 # Structure first — scripts/check.py, every lane at once (cheap, and the thing
-# most edits touch) — then the numerical harness, then the document. A green run
-# establishes structure only: it says nothing about whether a proof is correct
-# (CLAUDE.md constraint 4).
+# most edits touch) — then the numerical harness, then the document and every
+# dossier the ledger currently certifies. A green run establishes structure only:
+# it says nothing about whether a proof is correct (CLAUDE.md constraint 4).
 #
 # While iterating on one lane, run it directly instead:
 #   python3 scripts/check.py --lane portfolio
 #
-# `check.py ready` is deliberately NOT run here. It asks whether the repository has been
-# instantiated, and a freshly cloned template must stay green on this script while
-# correctly failing that one.
+# `check.py ready` and `check.py publish-ready` are deliberately NOT run here. They
+# ask whether the repository has been instantiated, and a freshly cloned template
+# must stay green on this script while correctly failing those.
 #
-#   ./scripts/check.sh            # everything
+#   ./scripts/check.sh            # everything available
 #   ./scripts/check.sh --fast     # skip the LaTeX build
+#   ./scripts/check.sh --strict   # a missing tool is a failure, not a skip
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
 FAST=0
-[ "${1:-}" = "--fast" ] && FAST=1
+STRICT=0
+for argument in "$@"; do
+  case "$argument" in
+    --fast) FAST=1 ;;
+    --strict) STRICT=1 ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
+    *) printf 'unknown option: %s\n' "$argument" >&2; exit 2 ;;
+  esac
+done
 STATUS=0
+SKIPPED=()
+
+# PyYAML is the checker's one dependency, declared in the root pyproject.toml. Use the
+# interpreter that already has it; fall back to uv, which reads that manifest, so a fresh
+# clone bootstraps itself instead of printing an install hint and stopping.
+PY=(python3)
+if ! python3 -c 'import yaml' >/dev/null 2>&1 && command -v uv >/dev/null 2>&1; then
+  PY=(uv run --quiet --project . python)
+fi
 
 run() {
   local label="$1"; shift
@@ -32,28 +50,59 @@ run() {
   STATUS=1
 }
 
-run "structure"       python3 scripts/check.py
-run "worked example"  python3 scripts/check.py --root example
-run "checker tests"   python3 -m unittest discover -s scripts/tests -p 'test_*.py'
+# A suite that did not run has not passed. Without --strict it is recorded and named in
+# the summary; with it, an absent tool fails the run outright.
+skip() {
+  local label="$1" reason="$2"
+  if [ "$STRICT" -eq 1 ]; then
+    printf '\n=== %s ===\n!!! FAILED: %s — %s (--strict)\n' "$label" "$label" "$reason"
+    STATUS=1
+  else
+    printf '\n=== %s === SKIPPED: %s\n' "$label" "$reason"
+    SKIPPED+=("$label: $reason")
+  fi
+}
+
+run "structure"       "${PY[@]}" scripts/check.py
+run "worked example"  "${PY[@]}" scripts/check.py --root example
+run "checker tests"   "${PY[@]}" -m unittest discover -s scripts/tests -p 'test_*.py'
 
 if command -v uv >/dev/null 2>&1; then
-  run "numerics"        sh -c 'cd experiments && uv run pytest -q'
+  run "numerics"      sh -c 'cd experiments && uv run pytest -q'
 else
-  printf '\n=== numerics === SKIPPED: uv not installed\n'
+  skip "numerics" "uv not installed"
 fi
 
 if [ "$FAST" -eq 0 ]; then
   if command -v latexmk >/dev/null 2>&1; then
-    run "document"      latexmk -pdf -outdir=build main.tex
+    run "document"    latexmk -pdf -outdir=build main.tex
+    # Standalone compilation is part of the proof definition of done (solutions/README.md)
+    # and nothing else exercises it: main.tex subfiles the modules, never the dossiers, so
+    # a dossier with a LaTeX error used to pass every check in the repository.
+    for tree in . example; do
+      while read -r dossier; do
+        [ -n "$dossier" ] || continue
+        [ -f "$tree/$dossier" ] || continue
+        run "dossier $tree/$dossier" \
+          latexmk -pdf -cd -outdir="$PWD/build" "$tree/$dossier"
+      done < <("${PY[@]}" scripts/check.py dossiers --root "$tree" 2>/dev/null)
+    done
   else
-    printf '\n=== document === SKIPPED: latexmk not installed\n'
+    skip "document" "latexmk not installed"
   fi
 fi
 
 printf '\n'
-if [ "$STATUS" -eq 0 ]; then
+if [ "$STATUS" -ne 0 ]; then
+  echo "one or more checks FAILED"
+elif [ "${#SKIPPED[@]}" -eq 0 ]; then
   echo "all checks passed (structure only — see CLAUDE.md constraint 4)"
 else
-  echo "one or more checks FAILED"
+  echo "all AVAILABLE checks passed (structure only — see CLAUDE.md constraint 4)"
+  echo "this was not a complete verification. Skipped:"
+  for entry in "${SKIPPED[@]}"; do
+    printf '  %s\n' "$entry"
+  done
+  echo "run with --strict to make a missing tool a failure."
 fi
 exit "$STATUS"

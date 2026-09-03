@@ -33,11 +33,12 @@ agreement are likewise the two lenses of the `reviewer`. Each lens is one file i
 loaded on its own: a role that surveys several lenses at once produces a shallow pass on
 all of them, and one that *reads* several pays for strategies it was not asked to run.
 
-The other three are **optional specialists**, activated by the work: `numerics` when there
+Three further roles are **capability packs**, activated by the work: `numerics` when there
 is something to compute, `literature-scout` when there is something to import, `janitor`
-when the repository needs tidying. A repository that does none of those should delete the
-ones it does not use — `python3 scripts/check.py --write-codex` removes the orphaned
-adapter, and nothing else refers to a role by name.
+when the repository needs tidying. They ship uninstalled, in [`../../packs/`](../../packs/),
+because a role that is present is a role an orchestrator can reach for — and a fresh clone
+that has computed nothing should not carry a numerics specialist, an unused Codex adapter
+for it, and a validator walking both.
 
 ## Roster
 
@@ -47,9 +48,31 @@ adapter, and nothing else refers to a role by name.
 | [`researcher`](researcher.md) | [`prove`](../lenses/prove.md), [`refute`](../lenses/refute.md), [`mine`](../lenses/mine.md), [`construct`](../lenses/construct.md) | one dossier; one new checkpoint | 1 per dossier; N across distinct lenses and targets |
 | [`reviewer`](reviewer.md) | [`certify`](../lenses/certify.md), [`sync`](../lenses/sync.md) | one new review | 1 cold reviewer per dossier |
 | [`synthesizer`](synthesizer.md) | — | `portfolio.yaml`, `research/instances.md`; one new checkpoint | **singleton** |
-| [`numerics`](numerics.md) | — | `experiments/numerics/`, generated runs, one new checkpoint | singleton for code; N for distinct stable runs |
-| [`literature-scout`](literature-scout.md) | — | one new checkpoint | N; bibliography remains single-writer |
-| [`janitor`](janitor.md) | — | nothing; proposal only | 1 |
+
+## Capability packs
+
+Not installed by default. `python3 scripts/new.py role <pack>` copies one into
+`.claude/agents/` and regenerates its Codex adapter; from that moment it is an ordinary
+role in every respect, validated like the four above. Deleting the file uninstalls it, and
+`python3 scripts/check.py --write-codex` removes the orphaned adapter.
+
+| pack | install when | writes | cardinality |
+|---|---|---|---|
+| [`numerics`](../../packs/numerics/numerics.md) | there is something to compute | `experiments/numerics/`, generated runs, one new checkpoint | singleton for code; N for distinct stable runs |
+| [`literature-scout`](../../packs/literature-scout/literature-scout.md) | there is something to import | one new checkpoint | N; bibliography remains single-writer |
+| [`janitor`](../../packs/janitor/janitor.md) | the repository needs tidying | nothing; proposal only | 1 |
+
+The roster above links each pack by path, so installing one needs no edit here. The
+`numerics` *harness* under `experiments/` is a separate question and stays where it is:
+its lane already validates only the run artifacts that exist, so an unused harness costs
+nothing.
+
+## Cross-client adapters are optional too
+
+`.codex/` exists so Codex can read roles it cannot parse from Markdown. A repository
+driven only by Claude Code may delete the whole tree and the roles lane will not complain;
+`--write-codex` regenerates it in full if that changes. What is never allowed is an
+adapter that disagrees with the Markdown it came from.
 
 ## Transitions
 

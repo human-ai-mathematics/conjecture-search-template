@@ -26,13 +26,20 @@ classified according to their actual role. Reclassification is not proof certifi
 
 ## Certification modes
 
-A proof is only as trustworthy as its check. Every solution declares its level in the header:
+A proof is only as trustworthy as its check. The level is recorded once, in the ledger's
+`proofs[]` record for the node — never in the dossier:
 
-| `checked_by` | meaning | ledger effect |
+| ledger | meaning | ledger effect |
 |---|---|---|
-| `none`  | drafted, unreviewed dossier header only | **no ledger value** — not a proof yet |
-| `agent` | a distinct agent audited the complete natural-language proof and left a persisted report | yes (agent-certified) |
-| `human` | a human read and accepts the natural-language argument | yes (human-certified) |
+| no `proofs[]` record names this file | a drafted dossier | **no ledger value** — not a proof yet |
+| `mode: agent` + `review:` | a distinct agent audited the complete natural-language proof and left a persisted report | yes (agent-certified) |
+| `mode: human` + `accepted_by:` | a human read and accepts the natural-language argument | yes (human-certified) |
+
+A dossier says nothing about how far it has been checked, because it has no way to stay
+right about it. The header used to carry a `checked_by` field that nothing compared to the
+ledger, so a file could read `checked_by: none` under a certified proof record and no
+validator objected. It is retired and rejected by name. **A dossier that no `proofs[]`
+record names is a draft, and that absence is the whole signal.**
 
 There is no machine mode. `mode: lean` shipped as a placeholder that checked only whether a
 file with a `.lean` suffix sat beside the dossier — it never ran the kernel, an empty file
@@ -51,16 +58,17 @@ Human certification requires `proofs[].accepted_by`. A proved implication remain
 `status: proved` even when an antecedent is open: antecedents go in `assumes`, conclusions in
 `implies`, and only proof dependencies in `depends_on`.
 
-## The audit header
+## The dossier header
 
-Two of its fields are parsed and checked: `ledger-node`, which must name the node whose
-`proofs[]` record points here, and `checked_by`, which must be `none`, `agent` or `human`.
-A value ends at the first run of two or more spaces, so the gloss to its right is ignored.
-The rest of the header — `refines`, `bounded_by`, author, date — is for a human reader.
+Exactly one field is parsed and checked: `ledger-node`, which must name the node whose
+`proofs[]` record points here. A value ends at the first run of two or more spaces, so the
+gloss to its right is ignored. The rest of the header — `refines`, `bounded_by`, author,
+date — is for a human reader.
 
-The header does **not** repeat the reviewer's identity or the review path. The ledger's
-`proofs[].review` owns the path and the review's own front matter owns the identities; a
-third copy would have no owner to keep it true, which is how the previous header drifted.
+The header carries no certification and no reviewer identity. `checked_by`, `reviewer` and
+`review` are rejected by name: the ledger's `proofs[]` record owns the mode and the review
+path, and the review's own front matter owns the identities. A second copy would have no
+owner to keep it true, which is how every previous version of this header drifted.
 
 ## Refutation is the same channel
 
@@ -87,11 +95,12 @@ independently of numerical outcomes, as required by [`../CLAUDE.md`](../CLAUDE.m
 
 ## Writing a solution
 
-1. Copy `TEMPLATE.tex` to `solutions/<ledger-id>.tex` (replace `:` with `-`). Closely coupled
-   nodes may share one target-level dossier if its header and theorem labels enumerate every
-   covered ledger id explicitly.
-2. Fill the audit header (`ledger-node`, `refines`, `bounded_by`, `checked_by: none`,
-   author, and date).
+1. Run `python3 scripts/new.py dossier <ledger-id>`, or copy
+   [`../templates/solution.tex`](../templates/solution.tex) to `solutions/<ledger-id>.tex`
+   yourself (replace `:` with `-`). Closely coupled nodes may share one target-level dossier
+   if its header and theorem labels enumerate every covered ledger id explicitly.
+2. Fill the header (`ledger-node`, `refines`, `bounded_by`, author, and date). Certification
+   is not among them — it belongs to the ledger.
 3. State the **refined** theorem and prove it. Use `\ref`/
    `\cite` freely — they resolve when lifted into `main.tex` and show `??` standalone (expected).
 4. Compile standalone:

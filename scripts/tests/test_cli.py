@@ -5,6 +5,7 @@ the entry point, the lane filter, and the views are exercised as a user meets th
 """
 from __future__ import annotations
 
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -12,6 +13,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from fixtures import CheckerFixture, node  # noqa: E402
+
+REPO = Path(__file__).resolve().parents[2]
+CHECK = REPO / "scripts/check.py"
 
 
 class CommandLineTests(CheckerFixture):
@@ -185,6 +189,43 @@ class CommandLineTests(CheckerFixture):
 
         self.assertEqual(instantiated.returncode, 0, instantiated.stdout)
         self.assertIn("ready:", instantiated.stdout)
+
+    def test_readiness_asks_nothing_about_the_manuscript_front_matter(self):
+        """A title, an author and an abstract block no mathematics.
+
+        They used to sit in the same checklist as the target and the brief, which made
+        `ready` answer a question nobody starting a search was asking.
+        """
+        self.add_ledger("program", "real-program",
+                        [node("q:target", status="open", kind="question")])
+        self.add_brief("q:target", body="The negation, spelled out.\n")
+        (self.root / "main.tex").write_text(
+            "\\title{<Document title>}\n\\author{<author>}\nReplace this abstract.\n"
+        )
+        (self.root / "README.md").write_text("# {{REPO_TITLE}}\n")
+
+        ready = self.cli("ready")
+        publish = self.cli("publish-ready")
+
+        self.assertEqual(ready.returncode, 0, ready.stdout)
+        self.assertNotIn("main.tex", ready.stdout)
+        self.assertEqual(publish.returncode, 1)
+        self.assertIn("set the manuscript title", publish.stdout)
+        self.assertIn("name the repository", publish.stdout)
+
+    def test_the_worked_example_is_an_instantiated_repository(self):
+        """example/ answers 'what does a finished one look like?', so it must be one.
+
+        It used to ship an instructional brief and a placeholder target, which meant the
+        fixture demonstrated the schemas and not a search.
+        """
+        result = subprocess.run(
+            [sys.executable, str(CHECK), "--root", str(REPO / "example"), "ready"],
+            check=False, capture_output=True, text=True,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("ready:", result.stdout)
 
     def test_a_view_refuses_to_render_over_a_broken_repository(self):
         malformed = node("thm:bad")

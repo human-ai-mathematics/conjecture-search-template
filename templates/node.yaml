@@ -1,0 +1,26 @@
+# A single ledger node. `python3 scripts/new.py node <id> --kind <kind>` prints one of
+# these to stdout; paste it under `nodes:` in research/program/ledger.yaml yourself.
+# Nothing but the orchestrator writes that file (CLAUDE.md constraint 1), which is why
+# this scaffold does not edit it.
+#
+# Field contract: research/program/ledger-schema.md. Six fields are required; every
+# relation below is optional and may be deleted.
+
+  # kind: theorem|lemma|proposition|corollary|conjecture|question|definition|
+  #       assumption|obstruction|example  — and it must match the LaTeX environment
+  #       the statement is written in.
+  # status: open|proved|refuted|defined ('defined' only for a definition).
+  # provenance: internal|literature (literature also needs import_class + references).
+  - id: {{NODE}}
+    kind: {{KIND}}
+    status: open
+    provenance: internal
+    file: modules/{{FILE}}
+    summary: "One line, a gloss for the derived views. The statement itself lives in modules/ under \\label{{{NODE}}} and nowhere else."
+
+    # depends_on: []         # facts a proof of this node used — the acyclic proof DAG
+    # assumes: []            # antecedents of an implication, never proof dependencies
+    # implies: []            # what this node yields
+    # refines: []            # statements this one sharpens
+    # bounded_by: []         # proved obstruction nodes — hard fences
+    # heuristic_barriers: [] # open obstruction nodes — advisory only

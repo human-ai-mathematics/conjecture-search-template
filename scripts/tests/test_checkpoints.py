@@ -217,6 +217,74 @@ class CheckpointTests(CheckerFixture):
         self.assertEqual(report["checkpoints"]["promoted"]["cand:stability"]["node"],
                          "lem:stability")
 
+    def test_a_same_day_promotion_after_its_proposal_is_accepted(self):
+        """The event clock used to be the position of a path in a lexical listing.
+
+        Here the promotion's filename sorts *before* the proposal's, and both are dated
+        the same day. Nothing about that says the promotion happened first, so the
+        checker no longer says it did.
+        """
+        self.add_ledger("program", "program",
+                        [node("lem:stability", status="open", kind="lemma")])
+        self.add_checkpoint(
+            "zebra-proposal", date="2026-08-20", outcome="candidate",
+            candidates=[{"id": "cand:stability", "statement": "A precise statement."}],
+        )
+        self.add_checkpoint(
+            "alpha-promotion", date="2026-08-20", outcome="proposed",
+            nodes=("lem:stability",),
+            promotes=[{"candidate": "cand:stability", "node": "lem:stability"}],
+        )
+
+        report = self.check()
+
+        self.assertEqual(failures(report, ("checkpoints",)), [])
+        self.assertEqual([entry["id"] for entry in report["candidates"]], [])
+
+    def test_a_utc_timestamp_still_orders_two_records_within_one_day(self):
+        """Ambiguity is the default, not the ceiling: a record that wants to be ordered
+        says so with a timestamp, and then the check bites again."""
+        self.add_ledger("program", "program",
+                        [node("lem:stability", status="open", kind="lemma")])
+        self.add_checkpoint(
+            "proposal", date="2026-08-20T15:00:00Z", outcome="candidate",
+            candidates=[{"id": "cand:stability", "statement": "A precise statement."}],
+        )
+        self.add_checkpoint(
+            "promotion", date="2026-08-20T09:00:00Z", outcome="proposed",
+            nodes=("lem:stability",),
+            promotes=[{"candidate": "cand:stability", "node": "lem:stability"}],
+        )
+
+        errors = self.errors()
+
+        self.assertIn("'cand:stability' is promoted before", errors)
+
+    def test_a_same_day_supersession_cycle_is_rejected(self):
+        """Strict ordering used to make the relation acyclic for free. Same-day records
+        have no such order, so acyclicity is now verified rather than assumed."""
+        self.add_ledger("program", "program", [node("lem:x", status="open", kind="lemma")])
+        first = self.add_checkpoint("first", date="2026-08-20", nodes=("lem:x",))
+        second = self.add_checkpoint("second", date="2026-08-20", nodes=("lem:x",),
+                                     supersedes=(first,))
+        self.add_checkpoint("first", date="2026-08-20", nodes=("lem:x",),
+                            supersedes=(second,))
+
+        errors = self.errors()
+
+        self.assertIn("supersession cycle", errors)
+
+    def test_two_records_on_one_day_may_supersede_in_either_direction(self):
+        """A legitimate same-day supersession is accepted whichever way the slugs sort."""
+        self.add_ledger("program", "program", [node("lem:x", status="open", kind="lemma")])
+        stale = self.add_checkpoint("zebra", date="2026-08-20", nodes=("lem:x",))
+        self.add_checkpoint("alpha", date="2026-08-20", nodes=("lem:x",),
+                            supersedes=(stale,))
+
+        report = self.check()
+
+        self.assertEqual(failures(report, ("checkpoints",)), [])
+
     def test_a_promotion_names_a_node_that_actually_exists(self):
         self.add_ledger("program", "program",
                         [node("lem:real", status="open", kind="lemma")])

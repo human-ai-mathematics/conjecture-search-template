@@ -84,12 +84,17 @@ supersedes:
 Its outcome, participants, and scope remain ordinary prose because they have no mechanical
 proof-certification effect.
 
-`supersedes` is optional and lists strictly earlier audits this report replaces as the current
+`supersedes` is optional and lists earlier audits this report replaces as the current
 reading. Nothing is rewritten or deleted: an audit whose findings a later schema change
 overtook stays exactly as it is, and the reader is simply pointed at the record that succeeded
 it. It is the same relation checkpoints use (`research/explorations/README.md`), and it is
 available only to audits — a proof review is a certification event, not a summary, and uses
 `follows_up` instead.
+
+Two audits dated the same day are not ordered by their filenames, so a same-day supersession
+is accepted in either direction and the relation is verified acyclic instead. `date:` also
+accepts a UTC timestamp `YYYY-MM-DDTHH:MM:SSZ`, whose date part must still match the filename
+prefix; use one when two reports on one day really do need an order.
 
 ## Report body
 

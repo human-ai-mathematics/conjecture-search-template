@@ -54,11 +54,20 @@ reads.
 
 \subsection{An open question}
 
+An \texttt{open} node is one nobody has discharged. It carries no proof provenance,
+and saying it is ``probably true'' is not a ledger classification --- the question
+below is elementary and almost certainly has a one-line proof, and it stays
+\texttt{open} until someone writes that proof into a dossier and a reviewer checks
+it. Status records what has been established, never what is expected.
+
 \begin{question}
 \label{q:example}
-  Replace this with the question the repository is actually organized around.
-  An \texttt{open} node is one nobody has discharged; it carries no proof
-  provenance, and saying it is ``probably true'' is not a ledger classification.
+  Does \ref{prop:example} survive weighting? Fix weights $w_1,\dots,w_n > 0$ with
+  $\sum_{i=1}^n w_i = 1$ and write $\bar a_w = \sum_{i=1}^n w_i a_i$. Is
+  \[
+    \sum_{i=1}^n w_i (a_i - \bar a_w)^2 = \sum_{i=1}^n w_i a_i^2 - \bar a_w^2
+  \]
+  for all real $a_1,\dots,a_n$?
 \end{question}
 
 \subsection{A proved statement}
@@ -74,9 +83,11 @@ by an independent review under \texttt{research/reviews/}. The manuscript states
 the result; the dossier is what an independent reviewer checks
 (\texttt{solutions/README.md}).
 
-\subsection{A refuted conjecture}
+\subsection{A refuted conjecture --- the worked search's target}
 
-Refutation ends where proof ends: in a certified dossier. The witness itself is
+This is the statement the example's problem brief and search portfolio are organized
+around, and the one the routes attack. Refutation ends where proof ends: in a
+certified dossier. The witness itself is
 not the refutation --- it is a candidate until the statement it establishes is a
 node of its own, proved and independently reviewed. Only then does the target
 become \texttt{refuted}, naming that node in \texttt{refuted\_by} and nowhere

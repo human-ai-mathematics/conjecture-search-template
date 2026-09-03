@@ -292,7 +292,7 @@ class ProofsTests(CheckerFixture):
             errors,
         )
 
-    def test_a_dossier_header_must_say_what_it_proves_and_how_far_it_is_checked(self):
+    def test_a_dossier_header_must_say_what_it_proves(self):
         """The header is parsed, not grepped: the word and the id may not sit apart."""
         relative = "solutions/loose-header.tex"
         path = self.root / relative
@@ -312,7 +312,25 @@ class ProofsTests(CheckerFixture):
         errors = self.errors()
 
         self.assertIn("dossier header has no 'ledger-node' field", errors)
-        self.assertIn("dossier header has no 'checked_by' field", errors)
+
+    def test_a_dossier_carrying_checked_by_is_rejected_by_name(self):
+        """Certification has one home. The header duplicated it with nothing to reconcile
+        the two, so a dossier could read `checked_by: none` under a certified proof
+        record and nothing went red."""
+        relative = self.add_solution("retired-header", node_ids=("thm:retired",))
+        path = self.root / relative
+        path.write_text(path.read_text() + "%   checked_by  : none\n")
+        self.add_ledger(
+            "main", "program",
+            [node("thm:retired", proofs=[{
+                "artifact": relative, "mode": "human", "accepted_by": "fixture human",
+            }])],
+        )
+
+        errors = self.errors()
+
+        self.assertIn("dossier header field 'checked_by' is retired", errors)
+        self.assertIn("proofs[].mode", errors)
 
     def test_machine_certification_is_retired_until_the_kernel_actually_runs(self):
         """An empty .lean file satisfied the strongest-sounding mode in the ladder."""

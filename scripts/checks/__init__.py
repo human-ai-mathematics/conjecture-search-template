@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import checkpoints, ledger, numerics, portfolio, proofs, roles
+from . import checkpoints, docs, ledger, numerics, portfolio, proofs, roles
 from .common import LANES
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -50,6 +50,7 @@ def analyze(root: Path | None = None, research: Path | None = None,
 
     artifacts = numerics.check(root, errors["numerics"])
     role_definitions = roles.check(root, errors["roles"], write_codex=write_codex)
+    links = docs.check(root, errors["docs"])
 
     return {
         "errors": errors,
@@ -62,6 +63,7 @@ def analyze(root: Path | None = None, research: Path | None = None,
         "artifacts": artifacts,
         "roles": role_definitions,
         "archive": archive,
+        "links": links,
     }
 
 

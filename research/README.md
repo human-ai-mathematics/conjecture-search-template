@@ -12,7 +12,11 @@ is what people and agents write *about* the mathematics.
 
 | program | entry point | purpose |
 |---|---|---|
-| *(this repository's program)* | [`program/brief.md`](program/brief.md) | which node is the target, what counts as done, and the known traps |
+| *(this repository's program)* | `program/brief.md` | which node is the target, what counts as done, and the known traps |
+
+The brief is gated: it is absent until a sustained search starts. Until then, read the
+[scaffold](../templates/brief.md) or the [worked one](../example/research/program/brief.md), and
+create it with `python3 scripts/new.py brief --target <node-id>`.
 
 There is one ledger, at `program/ledger.yaml`. All ledger writes pass through one orchestrator
 (`CLAUDE.md` constraint 1). There is one portfolio, at `program/portfolio.yaml`, written only
@@ -23,8 +27,9 @@ by the `synthesizer` (constraint 12).
 | content | location |
 |---|---|
 | accepted mathematical prose, the canonical quantified target included | [`../modules/`](../modules/) |
-| a worked instance of every genre below, as a fixture to copy | [`../example/`](../example/README.md) |
-| what finishing means, the exact negation, and the known traps | [`program/brief.md`](program/brief.md) |
+| an unfilled scaffold of each genre below, to copy | [`../templates/`](../templates/README.md) |
+| one complete search using every genre below, to read | [`../example/`](../example/README.md) |
+| what finishing means, the exact negation, and the known traps | `program/brief.md` (gated; [scaffold](../templates/brief.md)) |
 | ledger fields and invariants | [`program/ledger-schema.md`](program/ledger-schema.md) |
 | portfolio and brief fields | [`program/portfolio-schema.md`](program/portfolio-schema.md) |
 | claim state and logical edges | `program/ledger.yaml` |

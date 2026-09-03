@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Structural checker and derived views for this repository.
 
-One entry point, six validation lanes:
+One entry point, seven validation lanes:
 
 * ``core`` — the claim graph: node schema, the acyclic proof DAG, manuscript anchors,
   the separation of proof dependencies from implication antecedents, and both classes
@@ -13,7 +13,9 @@ One entry point, six validation lanes:
 * ``portfolio`` — the problem brief and the live search portfolio;
 * ``numerics`` — the provenance headers of the immutable artifacts in
   ``research/runs/``;
-* ``roles`` — the agent roster and its generated Codex adapters.
+* ``roles`` — the agent roster and its generated Codex adapters;
+* ``docs`` — repository-relative Markdown links, so a navigation table cannot point at a
+  file that is not there.
 
 A lane is an implementation partition of this checker. It is not one of the three
 domains the repository is organized into (mathematical state, search state, durable
@@ -24,15 +26,21 @@ absent contributes nothing, so an early repository pays for nothing it is not us
     python3 scripts/check.py --lane core           # repeatable
     python3 scripts/check.py --root example        # validate another tree
     python3 scripts/check.py --write-codex         # regenerate Codex adapters
-    python3 scripts/check.py ready                 # is this repository instantiated?
+    python3 scripts/check.py ready                 # can a search start here?
+    python3 scripts/check.py publish-ready         # is the manuscript fit to show?
     python3 scripts/check.py status                # the live frontier
     python3 scripts/check.py node <id>             # one node: deps, consumers, fences
     python3 scripts/check.py candidates            # statements proposed but not nodes
     python3 scripts/check.py portfolio             # families, routes, blockers
     python3 scripts/check.py checkpoints           # current heads of durable memory
+    python3 scripts/check.py dossiers              # active dossiers, for the LaTeX build
+
+This command never writes. Scaffolding a brief, a portfolio, a checkpoint or a dossier is
+'python3 scripts/new.py'.
 
 Exit 0 = clean, 1 = errors. A green run establishes structure only; it says nothing
-about whether a proof is correct (CLAUDE.md constraint 4). Requires PyYAML.
+about whether a proof is correct (CLAUDE.md constraint 4). Requires PyYAML — see the
+root pyproject.toml, or 'pip install pyyaml'.
 """
 from __future__ import annotations
 
@@ -46,7 +54,8 @@ from checks import analyze, failures, views  # noqa: E402
 from checks.common import LANES  # noqa: E402
 from checks.ledger import LEDGER_PATH  # noqa: E402
 
-VIEWS = ("ready", "status", "node", "candidates", "portfolio", "checkpoints")
+VIEWS = ("ready", "publish-ready", "status", "node", "candidates", "portfolio",
+         "checkpoints", "dossiers")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -85,7 +94,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "ready":
         return 0 if views.ready(report, args.root) else 1
-    if args.command == "status":
+    if args.command == "publish-ready":
+        return 0 if views.publish_ready(report, args.root) else 1
+    if args.command == "dossiers":
+        views.dossiers(report)
+    elif args.command == "status":
         views.status(report)
     elif args.command == "candidates":
         views.candidates(report)

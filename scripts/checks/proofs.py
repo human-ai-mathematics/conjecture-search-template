@@ -29,14 +29,27 @@ RETIRED_PROOF_MODES = {
             "status: proved. Restore it when check.py invokes Lean with pinned tooling",
 }
 
-#: The dossier's audit header, parsed rather than grepped. `ledger-node` enumerates the
-#: ids the dossier discharges; `checked_by` states how far it has been checked. Nothing
-#: else in the header is validated, because nothing else has a single owner: the ledger's
-#: proofs[] record owns the mode and the review path, and the review's own front matter
-#: owns author and reviewer identity.
+#: The dossier's header, parsed rather than grepped. Exactly one field is validated:
+#: `ledger-node`, the ids the dossier discharges. Nothing else in the header has a single
+#: owner — the ledger's proofs[] record owns the mode and the review path, and the
+#: review's own front matter owns author and reviewer identity.
 HEADER_LIMIT = 2500
-HEADER_MODES = {"none", "agent", "human"}
 HEADER_GLOSS_RE = re.compile(r"\s{2,}")
+
+#: Header fields that once existed and no longer do, with what owns them now. Rejected by
+#: name, so an inherited dossier gets an explanation rather than silence.
+#:
+#: `checked_by` duplicated `proofs[].mode` with nothing to reconcile the two: the checker
+#: validated its vocabulary and never compared it to the ledger, so a dossier could read
+#: `checked_by: none` under a `mode: agent` record with a passing review and nothing went
+#: red. Certification now has one home. A dossier that no proofs[] record names is a
+#: draft, and that absence is what says so.
+RETIRED_HEADER_FIELDS = {
+    "checked_by": "proofs[].mode in research/program/ledger.yaml, which owns "
+                  "certification; a dossier no proofs[] record names is a draft",
+    "reviewer": "the review's own front matter",
+    "review": "proofs[].review in research/program/ledger.yaml",
+}
 
 REVIEW_TYPES = {"proof-review", "audit"}
 #: An audit certifies nothing, so it carries only what every dated record carries —
@@ -166,13 +179,10 @@ def _dossier(root: Path, program: str, nid: str, reference: object,
             f"{context}: dossier header declares ledger-node '{declared}', not '{nid}'"
         )
 
-    checked_by = header.get("checked_by")
-    if checked_by is None:
-        errors.append(f"{context}: dossier header has no 'checked_by' field")
-    elif checked_by not in HEADER_MODES:
+    for field in sorted(set(header) & set(RETIRED_HEADER_FIELDS)):
         errors.append(
-            f"{context}: dossier header checked_by '{checked_by}': "
-            f"want one of {sorted(HEADER_MODES)}"
+            f"{context}: dossier header field '{field}' is retired — use "
+            f"{RETIRED_HEADER_FIELDS[field]}"
         )
     return artifact
 

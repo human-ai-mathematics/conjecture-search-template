@@ -25,6 +25,9 @@ class RoleTests(unittest.TestCase):
         self.root = Path(self.tempdir.name)
         shutil.copytree(REPO / ".claude", self.root / ".claude")
         shutil.copytree(REPO / ".codex", self.root / ".codex")
+        # The roster links the uninstalled capability packs by path, so they are part of
+        # the world the roles lane validates.
+        shutil.copytree(REPO / "packs", self.root / "packs")
 
     def tearDown(self):
         self.tempdir.cleanup()
@@ -74,6 +77,31 @@ class RoleTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("declares lens 'prove', which is not a lens belonging to 'researcher'",
                       result.stdout)
+
+    def test_a_repository_may_ship_no_codex_adapters_at_all(self):
+        """Cross-client support is a choice. Only Claude Code? Delete the tree."""
+        shutil.rmtree(self.root / ".codex")
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_installing_a_capability_pack_leaves_the_roles_lane_green(self):
+        """A pack install is one command: the roster already links it by path, so no
+        documentation edit is owed before the checker will pass."""
+        self.assertFalse((self.root / ".claude/agents/numerics.md").exists())
+
+        install = subprocess.run(
+            [sys.executable, str(REPO / "scripts/new.py"), "--root", str(self.root),
+             "role", "numerics"],
+            check=False, capture_output=True, text=True,
+        )
+        self.assertEqual(install.returncode, 0, install.stdout + install.stderr)
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue((self.root / ".codex/agents/numerics.toml").is_file())
 
     def test_a_lens_is_not_a_role_and_gets_no_adapter(self):
         """Lenses carry no tools and no write surface, so they need no Codex adapter."""

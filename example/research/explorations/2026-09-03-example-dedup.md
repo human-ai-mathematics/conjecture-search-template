@@ -4,19 +4,20 @@ date: "2026-09-03"
 approach: ap:example-exhaustive-search
 outcome: directional
 nodes:
-  - q:example
+  - conj:example
 ---
 
 Worked example of the second thing a checkpoint does: explain a *search* change rather than
-a mathematical one. It is also the example's only record carrying `approach:`; the other is
-attached from the portfolio's side, which is how a record written before the portfolio
-existed gets placed on a route without editing it.
+a mathematical one. It is also the example's only record carrying `approach:`, because it
+concerns exactly one route; the other two are attached from the portfolio's side, which is
+how a record covering several routes — or one written before the portfolio existed — gets
+placed without editing it.
 
 ## What was tried
 
 `ap:example-exhaustive-search` was queued as a fresh route: enumerate the integer vectors
-in a box and check the identity at `prop:example` on each. Before spending anything on it,
-the existing routes were read.
+in a box and check `conj:example` on each. Before spending anything on it, the existing
+routes were read.
 
 ## How
 
@@ -39,7 +40,7 @@ larger enumeration buys a larger silence.
 
 The judgment cost something to reach — it required reading another route's artifact — and
 without a record the next agent queues the same idea under a third name. That is the third
-of the six triggers in [`README.md`](README.md): a checkpoint is owed when work blocks,
+of the six triggers in [`research/explorations/README.md`](../../../research/explorations/README.md): a checkpoint is owed when work blocks,
 reopens, duplicates, or saturates a portfolio approach.
 
 Nothing here is a mathematical claim, and no candidate is proposed. Deduplication is search

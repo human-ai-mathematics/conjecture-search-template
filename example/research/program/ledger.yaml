@@ -10,6 +10,9 @@
 # The nodes below are: an obstruction that fences the search, an open question, a
 # proved statement with a certified dossier, and a conjecture refuted by a proved
 # refuter — so that proving and refuting each have a worked instance.
+#
+# conj:example is the target. brief.md and portfolio.yaml both resolve to it, and the
+# checkpoints in ../explorations/ record how it got from open to refuted.
 
 meta:
   program: example
@@ -37,7 +40,7 @@ nodes:
     status: open
     provenance: internal
     file: modules/00-overview.tex
-    summary: "Placeholder for the question this repository is organized around. Replace it with a precise statement someone could prove or refute."
+    summary: "Whether the centred sum-of-squares identity of prop:example still holds when the mean is replaced by a weighted mean with positive weights summing to one."
     heuristic_barriers: [obs:example]
 
   # ---------------------------------------------------------------------------

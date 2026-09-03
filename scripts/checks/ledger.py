@@ -11,8 +11,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import yaml
-
+from .common import yaml  # noqa: F401
 from .common import as_list, contained_path, repo_relative
 
 #: One repository, one program, one ledger (CLAUDE.md constraint 1). The program
@@ -107,6 +106,45 @@ OBSOLETE_META_FIELDS = {
 }
 
 
+def strip_comments(text: str) -> str:
+    """Blank out LaTeX comments, preserving every character offset.
+
+    An unescaped ``%`` starts a comment running to the end of the line. Commented text is
+    replaced by spaces rather than removed, so offsets into the result still index the
+    original: ``_labels_with_environments`` merges two regex streams by ``match.start()``
+    and would interleave them wrongly if the string shifted underneath it.
+
+    A character-wise scan rather than a regex, because ``\\%`` is an escaped percent and
+    not a comment while ``\\\\%`` is a line break followed by one, and a lookbehind cannot
+    tell those apart.
+
+    Without this a commented-out ``\\begin{theorem}`` or ``\\label`` entered the claim
+    inventory, so a draft parked behind a ``%`` demanded a ledger node it had no business
+    demanding. The same applies to ``.bib``, where ``%`` is also a comment.
+    """
+    out: list[str] = []
+    escaped = False
+    commented = False
+    for character in text:
+        if character == "\n":
+            escaped = commented = False
+            out.append(character)
+        elif commented:
+            out.append(" ")
+        elif escaped:
+            escaped = False
+            out.append(character)
+        elif character == "\\":
+            escaped = True
+            out.append(character)
+        elif character == "%":
+            commented = True
+            out.append(" ")
+        else:
+            out.append(character)
+    return "".join(out)
+
+
 def _labels_with_environments(text: str) -> list[tuple[str, str | None]]:
     """Pair every ``\\label`` in one file with the claim environment enclosing it.
 
@@ -158,7 +196,7 @@ def manuscript_labels(root: Path, errors: list[str] | None = None) -> dict[str, 
             if errors is not None:
                 errors.append(f"{relative}: cannot read manuscript module: {exc}")
             continue
-        for label, environment in _labels_with_environments(text):
+        for label, environment in _labels_with_environments(strip_comments(text)):
             if label in labels and errors is not None:
                 errors.append(
                     f"{relative}: duplicate manuscript label '{label}', already at "
@@ -183,7 +221,7 @@ def bibliography_keys(root: Path) -> set[str] | None:
     if not path.is_file():
         return None
     try:
-        return set(BIB_ENTRY_RE.findall(path.read_text(encoding="utf-8")))
+        return set(BIB_ENTRY_RE.findall(strip_comments(path.read_text(encoding="utf-8"))))
     except (OSError, UnicodeError):
         return None
 

@@ -1,15 +1,17 @@
 # CLAUDE.md — repository contract
 
 `AGENTS.md` is a symlink to this file, so Claude Code and Codex receive the same instructions.
-This is the root contract for work entering the repository. Scoped contracts may add narrower
-requirements: [`research/program/ledger-schema.md`](research/program/ledger-schema.md) for the
-ledger, [`research/program/portfolio-schema.md`](research/program/portfolio-schema.md) for the
-search portfolio, [`solutions/README.md`](solutions/README.md) for proofs,
-[`experiments/README.md`](experiments/README.md) for numerical work,
-[`.claude/agents/`](.claude/agents/README.md) for role permissions, and
-[`.claude/lenses/`](.claude/lenses/README.md) for the assignment lenses those roles load.
-They never override this file. Use [`research/README.md`](research/README.md) to locate each
-domain's source of truth; other READMEs are navigation maps.
+This is the root contract for work entering the repository, and it is normative: scoped
+contracts — the [ledger](research/program/ledger-schema.md) and
+[portfolio](research/program/portfolio-schema.md) schemas, [proofs](solutions/README.md),
+[numerics](experiments/README.md), [role permissions](.claude/agents/README.md), the
+[lenses](.claude/lenses/README.md) those roles load — may add narrower requirements and never
+override this file.
+
+Two documents are not contract and are worth reading once:
+[`docs/RUNNING-A-SEARCH.md`](docs/RUNNING-A-SEARCH.md) is the operational path end to end,
+and [`example/`](example/README.md) is one complete search of that shape. Use
+[`research/README.md`](research/README.md) to locate each domain's source of truth.
 
 Three words, three meanings, kept apart on purpose. A **domain** is one of the three things
 the repository is organized into — mathematical state, search state, durable evidence; the
@@ -54,7 +56,8 @@ requires a brief, for the same reason in the other direction: several coordinate
 a sustained search. After that the gates are independent.
 
 Numerics, literature import, and repository hygiene are capability packs on the same footing:
-present when used, irrelevant when not.
+present when used, irrelevant when not. The three roles that drive them ship uninstalled in
+[`packs/`](packs/README.md) — `python3 scripts/new.py role <pack>` installs one.
 
 An afternoon of speculative work may cross none of these and leave no repository artifact at
 all. That is a correct outcome, not a gap. Something crosses a gate when it must survive the
@@ -62,45 +65,32 @@ session or coordinate someone else.
 
 ## Workflow
 
-### Search contribution
+How a search is actually run, end to end, is [`docs/RUNNING-A-SEARCH.md`](docs/RUNNING-A-SEARCH.md),
+and one complete worked instance of it is [`example/`](example/README.md). What follows is
+only what is normative.
 
-1. Read the problem brief. Attack the target through the one lens you were assigned.
-2. **Record a checkpoint** in a new `research/explorations/YYYY-MM-DD-slug.md` when the work
-   is durable — see [`research/explorations/README.md`](research/explorations/README.md) for
-   the six triggers and the validated front matter. A speculative calculation that dies in ten
-   minutes needs no file; a dead end plausible or expensive enough that the next agent would
-   repeat it does.
-3. A statement not yet stable enough for the manuscript and ledger is a **candidate**: it goes
-   in that checkpoint's `candidates:` list and nowhere else (constraint 8). When one is
-   promoted, the checkpoint that records the promotion is what ends it — see constraint 8.
-4. Return a `portfolio_delta` in your handoff — the state your route is now in, and if it is
-   blocked, the exact `cand:` id or ledger node it is blocked on plus what would reopen it.
-   The `synthesizer` applies it; you do not edit the portfolio.
+**Search contribution.** Read the problem brief and attack the target through the one lens
+you were assigned. Record a checkpoint when the work is durable — the six triggers and the
+validated front matter are in
+[`research/explorations/README.md`](research/explorations/README.md). A statement not yet
+stable enough for the manuscript is a **candidate** and goes in that checkpoint's
+`candidates:` list and nowhere else (constraint 8). Return a `portfolio_delta` in your
+handoff: the state your route is now in, and if blocked, the exact `cand:` id or node id plus
+what would reopen it. The `synthesizer` applies it; you do not edit the portfolio.
 
-### Mathematical contribution
+**Mathematical contribution.** When a claim changes, update its manuscript statement and its
+ledger state, provenance and edges together, and leave `python3 scripts/check.py` at 0
+errors. A finding reusable enough to be cited elsewhere earns a ledger node and a manuscript
+statement, not a second home in a side registry.
 
-1. Sharpen or confirm a target, or supply a standalone proof dossier.
-2. When a claim changes, update its manuscript statement and ledger state, provenance, and
-   edges together.
-3. After a ledger edit, leave `python3 scripts/check.py` at 0 errors.
-4. A finding reusable enough to be cited elsewhere earns a ledger node and a manuscript
-   statement, not a second home in a side registry.
+**Proof or refutation contribution.** Follow [`solutions/README.md`](solutions/README.md),
+which owns the five steps. Two rules are this file's: an author never certifies their own
+proof, and refuting takes the same channel rather than a shortcut — the details are
+constraints 10 and 11.
 
-### Proof or refutation contribution
-
-Follow [`solutions/README.md`](solutions/README.md). An author never certifies their own proof;
-`proofs[].mode: agent` requires a persisted review naming distinct author(s) and reviewer.
-
-Refuting takes the same channel. A witness is a candidate; the statement it establishes becomes
-a refuter node with a manuscript statement and an ordinary dossier; that dossier is certified
-like any other; and only then does the target become `refuted`, naming the proved refuter in
-`refuted_by` and not in `depends_on`. A run artifact is never a step in that chain
-(constraints 2 and 11).
-
-### Harness or repository contribution
-
-Record the rationale and validation in a new `decisions/YYYY-MM-DD-slug.md`. Do not invent a
-mathematical attempt; harness work does not by itself change mathematical status.
+**Harness or repository contribution.** Record the rationale and validation in a new
+`decisions/YYYY-MM-DD-slug.md`. Do not invent a mathematical attempt; harness work does not
+by itself change mathematical status.
 
 ## Hard constraints
 
@@ -189,19 +179,30 @@ Write Markdown mathematics in LaTeX `$...$`.
 ## Verify
 
 ```bash
-./scripts/check.sh                    # everything below, in order
+./scripts/check.sh                    # everything available, in order
+./scripts/check.sh --strict           # a missing tool is a failure, not a skip
 
 python3 scripts/check.py              # 0 errors required after any ledger edit
-python3 scripts/check.py --lane core  # one lane: core|proofs|checkpoints|portfolio|numerics|roles
-python3 scripts/check.py ready        # is this repository instantiated, or still the template?
+python3 scripts/check.py --lane core  # one lane: core|proofs|checkpoints|portfolio|numerics|roles|docs
+python3 scripts/check.py ready        # can a search start here?
+python3 scripts/check.py publish-ready    # is the manuscript fit to show?
 python3 scripts/check.py status       # the live frontier
 python3 scripts/check.py portfolio    # the live search
 python3 scripts/check.py checkpoints  # current heads of durable memory
 python3 scripts/check.py candidates   # statements proposed but not yet nodes
+python3 scripts/check.py dossiers     # active dossiers, for the standalone LaTeX build
 python3 scripts/check.py --root example   # the worked example, kept green as a fixture
 ```
 
+`check.py` never writes. Scaffolding a brief, a portfolio, a checkpoint, a module or a
+dossier from [`templates/`](templates/README.md) is `python3 scripts/new.py`; it never
+overwrites a file, and it never touches the ledger (constraint 1).
+
 `check` and `ready` answer different questions. A freshly cloned template passes `check` and
 fails `ready`, and both are correct: activation is structural, so an absent optional plane is
-valid, while `ready` asks whether the placeholders are gone and a search has something to aim
-at. Neither weakens the other.
+valid, while `ready` asks whether a search has something to aim at. Neither weakens the
+other, and neither is `publish-ready`, which asks only about the manuscript's title, author
+and abstract — publication details that block no mathematics.
+
+`check.sh` distinguishes "all checks passed" from "all *available* checks passed" and names
+what it skipped. Only PyYAML is required, declared in the root `pyproject.toml`.

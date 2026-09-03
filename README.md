@@ -18,7 +18,7 @@ Three domains. Everything else is a detail of one of them:
 | domain | source of truth |
 |---|---|
 | mathematical state | statements in [`modules/`](modules/); logical state and graph edges in [`research/program/ledger.yaml`](research/program/ledger.yaml); proofs in [`solutions/`](solutions/) |
-| search state | [`research/program/brief.md`](research/program/brief.md) — what would finish it; [`research/program/portfolio.yaml`](research/program/portfolio.yaml) — families, routes, blockers |
+| search state | `research/program/brief.md` — what would finish it; `research/program/portfolio.yaml` — families, routes, blockers. Both are gated: absent until the work opens them ([scaffolds](templates/README.md), [worked](example/research/program/brief.md)) |
 | durable evidence | checkpoints and candidates in [`research/explorations/`](research/explorations/); reviews in [`research/reviews/`](research/reviews/); run artifacts in [`research/runs/`](research/runs/); harness decisions in [`decisions/`](decisions/) |
 
 Said as one rule:
@@ -51,19 +51,32 @@ is a fixture to copy from, not this repository's history, and the live planes sh
 ## Verify
 
 ```bash
-./scripts/check.sh                        # everything, in the order that fails fastest
+./scripts/check.sh                        # everything available, fastest failure first
 ./scripts/check.sh --fast                 # skip the LaTeX build
+./scripts/check.sh --strict               # a missing tool is a failure, not a skip
 
 python3 scripts/check.py                  # 0 errors required after any ledger edit
-python3 scripts/check.py --lane core      # core|proofs|checkpoints|portfolio|numerics|roles
-python3 scripts/check.py ready            # is this repository instantiated, or still a template?
+python3 scripts/check.py --lane core      # core|proofs|checkpoints|portfolio|numerics|roles|docs
+python3 scripts/check.py ready            # can a search start here?
+python3 scripts/check.py publish-ready    # is the manuscript fit to show?
 python3 scripts/check.py status           # the live frontier
 python3 scripts/check.py portfolio        # the live search
 python3 scripts/check.py checkpoints      # current heads of durable memory
 python3 scripts/check.py node <id>        # one node: deps, consumers, fences
 python3 scripts/check.py candidates       # statements proposed but not yet nodes
+python3 scripts/check.py dossiers         # active dossiers, for the standalone LaTeX build
 python3 scripts/check.py --root example   # the worked example, kept green as a fixture
 python3 scripts/check.py --write-codex    # regenerate the Codex role adapters
+```
+
+`check.py` only reads. Writing is [`scripts/new.py`](templates/README.md), which scaffolds a
+brief, portfolio, checkpoint, module or dossier from [`templates/`](templates/README.md),
+never overwrites a file, and never touches the ledger.
+
+Only PyYAML is needed, declared in [`pyproject.toml`](pyproject.toml):
+
+```bash
+pip install pyyaml                 # or let check.sh use 'uv run', which reads the manifest
 ```
 
 A *lane* is a partition of the checker, not one of the three domains above and not one of
@@ -90,64 +103,79 @@ other modules are expected in standalone builds.
 
 <!-- Delete everything below this line once the checklist is done. -->
 
-Six steps, none of which deletes a record. The live planes ship empty and the worked example
-lives in [`example/`](example/README.md), so instantiating this template is copying and
-filling in — never removing history. Nothing needs renaming: `research/program/` is the control
-directory in every repository built from this template, so no validator needs configuration to
-find it.
+Five steps, none of which deletes a record. The live planes ship empty and the worked example
+lives in [`example/`](example/README.md), so instantiating is scaffolding and filling in —
+never removing history. Nothing needs renaming: `research/program/` is the control directory
+in every repository built from this template.
 
-`python3 scripts/check.py ready` is the checklist in executable form. Run it now: it will list
-every one of these steps that is still outstanding, and it exits 0 when you are done.
+[`docs/RUNNING-A-SEARCH.md`](docs/RUNNING-A-SEARCH.md) covers this and everything after it.
+`python3 scripts/check.py ready` is the checklist in executable form: run it now, and it will
+list whatever is still outstanding.
 
-1. **Name the program.** In [`research/program/ledger.yaml`](research/program/ledger.yaml), set
-   `meta.program` to this program's id and `meta.scope` to one sentence naming the class of
-   objects its nodes range over. That id is the only place the program's name is written down; it
-   prefixes every checker message.
-
-2. **Name the repository.** Replace `{{REPO_TITLE}}` above and the placeholders in
-   [`main.tex`](main.tex) (title, subtitle, author, abstract).
-
-3. **State the target and give it a node.** Write the question this repository is organized
+1. **Name the program and state the target.** Write the question this repository is organized
    around in [`modules/`](modules/), inside the theorem environment matching its kind, under a
-   `\label`. Add a ledger node with that id, that `kind`, and a one-line `summary`. Copy
-   [`example/modules/00-overview.tex`](example/modules/00-overview.tex) and
-   [`example/research/program/ledger.yaml`](example/research/program/ledger.yaml) for the shape.
-   This is the first gate a sustained search crosses, because the brief and the portfolio both
-   have to resolve to it.
+   `\label`. Then give it a ledger node and name the program:
 
-4. **Write the problem brief.** Copy
-   [`example/research/program/brief.md`](example/research/program/brief.md) to
-   `research/program/brief.md` and fill it in. It is the one document that supplies mathematical
-   pressure: the exact target and its negation, what counts as a complete proof and a complete
-   refutation, the edge cases a reviewer must check, the equivalent-strength traps, and a budget
-   policy that permits an honest unresolved outcome. The harness remembers and certifies; the
-   brief is what makes the search sharp. Do not start a sustained search without one.
+   ```bash
+   python3 scripts/new.py module 00-overview --node conj:main --kind conjecture
+   python3 scripts/new.py node conj:main --kind conjecture      # prints; you paste it
+   ```
 
-5. **Add program constraints, if any.** [`CLAUDE.md`](CLAUDE.md) ships twelve universal hard
+   Paste the node under `nodes:` in
+   [`research/program/ledger.yaml`](research/program/ledger.yaml) and set `meta.program` and
+   `meta.scope` there. The scaffolder does not write that file: it has one writer
+   ([`CLAUDE.md`](CLAUDE.md) constraint 1). This is the first gate a search crosses, because
+   the brief and the portfolio both have to resolve to it.
+
+2. **Write the problem brief.**
+
+   ```bash
+   python3 scripts/new.py brief --target conj:main
+   ```
+
+   It is the one document that supplies mathematical pressure: the exact negation, what
+   counts as a complete proof and a complete refutation, the edge cases a reviewer must
+   check, the equivalent-strength traps, and a budget policy that permits an honest
+   unresolved outcome. The harness remembers and certifies; the brief is what makes the
+   search sharp. Do not start a sustained search without one — and a *scaffolded* brief is
+   not a written one, which is why `ready` fails until its instructions are gone.
+
+3. **Add program constraints, if any.** [`CLAUDE.md`](CLAUDE.md) ships twelve universal hard
    constraints. Anything specific to this repository's mathematics goes in the *Program
-   constraints* section as `P1, P2, …` — kept separate so that a fork can drop them without
-   leaving a `Reserved` hole in the universal list. Merge barriers belong here, and the
-   `synthesizer` role should name the same owner.
+   constraints* section as `P1, P2, …` — kept separate so a fork can drop them without
+   leaving a `Reserved` hole. Merge barriers belong here, and the `synthesizer` role should
+   name the same owner.
 
-6. **Trim and extend the roster.** [`.claude/agents/`](.claude/agents/README.md) ships four
-   core roles — `scout`, `researcher`, `reviewer`, `synthesizer` — and three optional
-   specialists, `numerics`, `literature-scout` and `janitor`. Delete the specialists you will
-   not use. Prefer a new assignment *lens* in [`.claude/lenses/`](.claude/lenses/README.md) to
-   a new role; [`.claude/agents/MAINTAINING.md`](.claude/agents/MAINTAINING.md) is the guide.
-   Either way, finish with
-   `python3 scripts/check.py --write-codex && python3 scripts/check.py --lane roles`, which
-   also deletes the adapter of a role you removed.
+4. **Install the capability packs you need.** [`.claude/agents/`](.claude/agents/README.md)
+   ships four core roles — `scout`, `researcher`, `reviewer`, `synthesizer`. `numerics`,
+   `literature-scout` and `janitor` wait in [`packs/`](packs/README.md) until asked for:
 
-Then `./scripts/check.sh` and `python3 scripts/check.py ready` should both pass, and you can
-delete this section.
+   ```bash
+   python3 scripts/new.py role numerics
+   ```
 
-**Optional, when the work asks for it.** Create
-[`research/program/portfolio.yaml`](research/program/portfolio.yaml) when several routes, agents
-or sessions are in flight — copy
-[`example/research/program/portfolio.yaml`](example/research/program/portfolio.yaml). Keep or
-delete `experiments/numerics/targets/example.py` as you like: it is reference code the numerics
-test suite exercises, not a research record. `example/` itself can stay indefinitely; it is
-checked separately and touches nothing.
+   Prefer a new assignment *lens* in [`.claude/lenses/`](.claude/lenses/README.md) to a new
+   role; [`.claude/agents/MAINTAINING.md`](.claude/agents/MAINTAINING.md) is the guide. If
+   nothing here will run under Codex, delete `.codex/` — the roles lane will not complain.
+
+5. **Name the repository and the manuscript.** Replace `{{REPO_TITLE}}` above and the
+   placeholders in [`main.tex`](main.tex) (title, subtitle, author, abstract), then delete
+   this section. `python3 scripts/check.py publish-ready` is the checklist for exactly this
+   step — and it is deliberately *not* part of `ready`, because none of it blocks an attack
+   on the target. A repository can be deep into a search and still owe an abstract.
+
+Then `./scripts/check.sh` and `python3 scripts/check.py ready` should both pass.
+
+**Optional, when the work asks for it.** Create the search portfolio when several routes,
+agents or sessions are in flight:
+
+```bash
+python3 scripts/new.py portfolio --target conj:main
+```
+
+Keep or delete `experiments/numerics/targets/example.py` as you like: it is reference code
+the numerics test suite exercises, not a research record. `example/` itself can stay
+indefinitely; it is checked separately and touches nothing.
 
 ## What to fill in as the program grows
 

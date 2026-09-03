@@ -14,7 +14,7 @@ Passing a finite battery changes no claim or proof status, however large the bat
 An instance is not mathematics: it has no truth value, no proof, and no `\label`. That is why it
 lives here as prose rather than as a ledger node — a lemma or an obstruction, by contrast, belongs
 in `modules/` under a label with a node of its own. It shares that status with
-[`program/portfolio.yaml`](program/portfolio.yaml), which records what the search is doing rather
+`program/portfolio.yaml`, which records what the search is doing rather
 than what is claimed; the two are the repository's only non-mathematical research documents, and
 the `synthesizer` curates both.
 

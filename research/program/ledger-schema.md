@@ -17,7 +17,8 @@ nodes:
 
 The repository has exactly one ledger (`CLAUDE.md` constraint 1), and `meta` carries nothing but
 the program's identity and scope. Which agent or route owns a node is coordination state and
-lives in [`portfolio.yaml`](portfolio.yaml); `route` and `meta.route_policy` are retired here and
+lives in `portfolio.yaml` (gated; see [`portfolio-schema.md`](portfolio-schema.md)); `route` and
+`meta.route_policy` are retired here and
 are rejected by name.
 
 ## Required node fields
@@ -104,10 +105,10 @@ proofs:
     accepted_by: <human identity>
 ```
 
-`artifact` is a standalone `.tex` dossier under `solutions/`. Its audit header is parsed, not
-searched: `ledger-node` must name this node and `checked_by` must be `none`, `agent` or
-`human`. `mode: agent` requires a passing proof review by a distinct agent; `mode: human`
-requires `accepted_by`.
+`artifact` is a standalone `.tex` dossier under `solutions/`. Its header is parsed, not
+searched, and exactly one field is checked: `ledger-node` must name this node. Certification
+lives here and only here — `checked_by` in a dossier header is rejected by name. `mode: agent`
+requires a passing proof review by a distinct agent; `mode: human` requires `accepted_by`.
 
 There are exactly two modes. `mode: lean` was retired and is rejected by name: it checked only
 that a file with a `.lean` suffix sat beside the dossier, never ran the kernel, and could

@@ -1,0 +1,29 @@
+# Field contract: research/program/portfolio-schema.md. A filled-in instance is in
+# example/research/program/portfolio.yaml.
+#
+# What the search is doing — as against research/program/ledger.yaml, which records what
+# is mathematically claimed. Create this file as soon as several routes, agents, or
+# sessions are in flight and somebody has to know which of them are still alive; a
+# portfolio then requires a brief, because several coordinated routes are a sustained
+# search. It is a single-writer file: the `synthesizer` holds the `portfolio` concurrency
+# key, and everyone else proposes changes through their handoff.
+#
+# It stores coordination state only. A blocker is named by its `cand:` id or ledger node
+# id and never restated here (CLAUDE.md constraint 12).
+
+target: {{TARGET_NODE}}
+
+families:
+  - id: fam:{{SLUG}}
+    mechanism: >-
+      One sentence naming the mechanism this family tries — what kind of argument or
+      construction its routes all draw on, so a new route can be filed under it.
+    state: active
+
+approaches:
+  - id: ap:{{SLUG}}-first
+    family: fam:{{SLUG}}
+    objective: >-
+      One sentence saying what this route tries. An intention, never a claim: a route
+      that succeeds becomes a ledger node, and the route itself never does.
+    state: active
