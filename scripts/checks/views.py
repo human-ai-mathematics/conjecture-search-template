@@ -66,7 +66,7 @@ def status(report: dict) -> None:
     """The unresolved frontier derived from ledger state."""
     frontier_statuses = {"open", "refuted"}
     for item in sorted(report["ledgers"], key=lambda entry: entry["program"]):
-        groups: dict[str, dict[str, list[str]]] = {}
+        statuses: dict[str, list[str]] = {}
         for nid, node in item["nodes"].items():
             node_status = node.get("status")
             if node_status not in frontier_statuses:
@@ -74,13 +74,12 @@ def status(report: dict) -> None:
                     node_status = "applicability-blocked"
                 else:
                     continue
-            group = str(node.get("route", item["program"]))
-            groups.setdefault(group, {}).setdefault(str(node_status), []).append(nid)
-        for group, statuses in sorted(groups.items()):
-            label = item["program"] if group == item["program"] else f"{item['program']}/{group}"
-            print(f"[{label}]")
-            for node_status, node_ids in sorted(statuses.items()):
-                print(f"  {node_status} ({len(node_ids)}): {', '.join(sorted(node_ids))}")
+            statuses.setdefault(str(node_status), []).append(nid)
+        if not statuses:
+            continue
+        print(f"[{item['program']}]")
+        for node_status, node_ids in sorted(statuses.items()):
+            print(f"  {node_status} ({len(node_ids)}): {', '.join(sorted(node_ids))}")
 
 
 def node(report: dict, reference: str) -> bool:
@@ -147,8 +146,8 @@ def portfolio(report: dict) -> None:
         print(f"  {family.get('mechanism')}")
         if family.get("reopen_if"):
             print(f"  reopen if: {family['reopen_if']}")
-        if family.get("saturation_checkpoint"):
-            print(f"  closed at: {family['saturation_checkpoint']}")
+        if family.get("closure_checkpoint"):
+            print(f"  closed at: {family['closure_checkpoint']}")
         for child in children:
             approach = approaches[child]
             parent = approach.get("parent")
@@ -171,22 +170,39 @@ def portfolio(report: dict) -> None:
 
 
 def checkpoints(report: dict) -> None:
-    """The current heads of durable memory: records nothing later has superseded."""
+    """The current heads of durable memory, and what replaced everything else.
+
+    Append-only storage keeps provenance but supplies no current reading. Supersession is
+    what supplies it, so this view names the *heir* rather than only reporting that a
+    record went stale — otherwise the replacement is discoverable only by searching the
+    archive, which is the problem supersession exists to solve.
+    """
     memory = report.get("checkpoints") or {}
     records = memory.get("records") or []
+    superseded = memory.get("superseded") or {}
     if not records:
         print("No checkpoints recorded.")
+    else:
+        heads = [record for record in records if record["relative"] not in superseded]
+        print(f"{len(heads)} current checkpoint(s), {len(superseded)} superseded:")
+        for record in sorted(heads, key=lambda item: (item["date"] or "", item["relative"])):
+            approach = f" {record['approach']}" if record["approach"] else ""
+            nodes = ", ".join(record["nodes"]) or "—"
+            print(f"  {record['date']}  {record['outcome']:<11}{approach}  {record['relative']}")
+            print(f"      nodes: {nodes}")
+        for relative, heirs in sorted(superseded.items()):
+            print(f"  superseded  {relative}\n      read instead: {', '.join(heirs)}")
+
+    superseded_audits = memory.get("superseded_audits") or {}
+    audits = sorted(
+        relative for relative, metadata in (report.get("archive") or {}).items()
+        if metadata.get("type") == "audit"
+    )
+    if not audits:
         return
-    superseded = memory.get("superseded") or set()
-    heads = [record for record in records if record["relative"] not in superseded]
-    print(f"{len(heads)} current checkpoint(s), {len(superseded)} superseded:")
-    for record in sorted(heads, key=lambda item: (item["date"] or "", item["relative"])):
-        approach = f" {record['approach']}" if record["approach"] else ""
-        nodes = ", ".join(record["nodes"]) or "—"
-        print(f"  {record['date']}  {record['outcome']:<11}{approach}  {record['relative']}")
-        print(f"      nodes: {nodes}")
-    superseded_audits = memory.get("superseded_audits") or set()
-    if superseded_audits:
-        print(f"\n{len(superseded_audits)} superseded audit(s):")
-        for relative in sorted(superseded_audits):
-            print(f"  {relative}")
+    heads = [relative for relative in audits if relative not in superseded_audits]
+    print(f"\n{len(heads)} current audit(s), {len(superseded_audits)} superseded:")
+    for relative in heads:
+        print(f"  {relative}")
+    for relative, heirs in sorted(superseded_audits.items()):
+        print(f"  superseded  {relative}\n      read instead: {', '.join(heirs)}")

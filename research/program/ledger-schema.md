@@ -11,15 +11,14 @@ This is the field contract for [`ledger.yaml`](ledger.yaml).
 meta:
   program: <program-id>
   scope: <optional mathematical scope>
-  route_policy:                 # optional
-    allowed: [route-a, shared]
 nodes:
   - ...
 ```
 
-The repository has exactly one ledger. If `route_policy` exists, every node has one `route` from
-its closed vocabulary. A route is coordination ownership, not mathematical exclusivity: a node
-may support several routes through ordinary graph relations.
+The repository has exactly one ledger (`CLAUDE.md` constraint 1), and `meta` carries nothing but
+the program's identity and scope. Which agent or route owns a node is coordination state and
+lives in [`portfolio.yaml`](portfolio.yaml); `route` and `meta.route_policy` are retired here and
+are rejected by name.
 
 ## Required node fields
 

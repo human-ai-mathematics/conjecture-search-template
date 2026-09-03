@@ -17,27 +17,36 @@ from pathlib import Path
 
 import yaml
 
-from .common import contained_path, read_front_matter
+from .common import APPROACH_ID_RE, contained_path, read_front_matter
 
 PORTFOLIO_PATH = Path("research/program/portfolio.yaml")
 BRIEF_PATH = Path("research/program/brief.md")
 CHECKPOINTS = "research/explorations"
 
 FAMILY_ID_RE = re.compile(r"^fam:[a-z0-9][a-z0-9-]*$")
-APPROACH_ID_RE = re.compile(r"^ap:[a-z0-9][a-z0-9-]*$")
 
 TOP_LEVEL_FIELDS = {"target", "families", "approaches"}
 
-FAMILY_FIELDS = {"id", "mechanism", "state", "saturation_checkpoint", "reopen_if"}
+FAMILY_FIELDS = {"id", "mechanism", "state", "closure_checkpoint", "reopen_if"}
 FAMILY_STATES = {"active", "saturated", "parked"}
 #: A family that is no longer being worked owes the next agent two things: the synthesis
-#: that closed it, and the condition that would open it again.
+#: that closed it, and the condition that would open it again. ``saturated`` claims the
+#: mechanism is worked out; ``parked`` claims only that nobody is working it. The field is
+#: named for closure rather than saturation so it reads honestly for both.
 FAMILY_CLOSED_STATES = {"saturated", "parked"}
+#: Retired field names, rejected by name so an inherited portfolio is told where to look.
+OBSOLETE_FAMILY_FIELDS = {"saturation_checkpoint": "closure_checkpoint"}
 
 APPROACH_FIELDS = {
     "id", "family", "parent", "state", "blocker", "reopen_if", "related", "checkpoints",
 }
 APPROACH_STATES = {"queued", "active", "blocked", "completed", "duplicate"}
+#: A route that is no longer running left the search in a different shape than it found it.
+#: "Checkpoints = why the portfolio changed" is only true if the change carries its record.
+APPROACH_EXPLAINED_STATES = {"blocked", "completed", "duplicate"}
+#: Live work. A closed family holds neither: a queued route is planned work, so a family
+#: with one has not actually closed.
+APPROACH_LIVE_STATES = {"active", "queued"}
 RELATION_FIELDS = {"to", "relation"}
 RELATIONS = {"overlaps", "duplicates", "refines"}
 
@@ -137,36 +146,42 @@ def load(root: Path, errors: list[str]) -> dict | None:
 
     for family_id, family in sorted(families.items()):
         where = f"{context}.families"
-        for field in sorted(set(family) - FAMILY_FIELDS):
+        for field, replacement in OBSOLETE_FAMILY_FIELDS.items():
+            if field in family:
+                errors.append(
+                    f"{where} {family_id}.{field}: obsolete field; use {replacement}"
+                )
+        for field in sorted(set(family) - FAMILY_FIELDS - set(OBSOLETE_FAMILY_FIELDS)):
             errors.append(f"{where} {family_id}: unknown field '{field}'")
         mechanism = family.get("mechanism")
         if not isinstance(mechanism, str) or not mechanism.strip():
             errors.append(f"{where} {family_id}.mechanism: must say what the family tries")
         state = _state(family, family_id, FAMILY_STATES, where, errors)
         family["_state"] = state
-        checkpoint = family.get("saturation_checkpoint")
+        checkpoint = family.get("closure_checkpoint")
         reopen = family.get("reopen_if")
+        family["_closure_checkpoint"] = None
         if state in FAMILY_CLOSED_STATES:
             if checkpoint is None:
                 errors.append(
-                    f"{where} {family_id}.saturation_checkpoint: state '{state}' requires "
+                    f"{where} {family_id}.closure_checkpoint: state '{state}' requires "
                     "the checkpoint that closed the family"
                 )
-            else:
-                contained_path(root, checkpoint, CHECKPOINTS,
-                               f"{where} {family_id}.saturation_checkpoint", errors,
-                               suffix=".md")
+            elif contained_path(root, checkpoint, CHECKPOINTS,
+                                f"{where} {family_id}.closure_checkpoint", errors,
+                                suffix=".md"):
+                family["_closure_checkpoint"] = checkpoint
             if not isinstance(reopen, str) or not reopen.strip():
                 errors.append(
                     f"{where} {family_id}.reopen_if: state '{state}' requires the condition "
                     "under which the family reopens"
                 )
         elif state is not None:
-            for field, value in (("saturation_checkpoint", checkpoint), ("reopen_if", reopen)):
+            for field, value in (("closure_checkpoint", checkpoint), ("reopen_if", reopen)):
                 if value is not None:
                     errors.append(
-                        f"{where} {family_id}.{field}: valid only for a saturated or "
-                        "parked family"
+                        f"{where} {family_id}.{field}: valid only for a closed "
+                        "(saturated or parked) family"
                     )
 
     for approach_id, approach in sorted(approaches.items()):
@@ -274,19 +289,26 @@ def load(root: Path, errors: list[str]) -> dict | None:
             continue
         stragglers = sorted(
             approach_id for approach_id, approach in approaches.items()
-            if approach.get("family") == family_id and approach.get("_state") == "active"
+            if approach.get("family") == family_id
+            and approach.get("_state") in APPROACH_LIVE_STATES
         )
         if stragglers:
             errors.append(
-                f"{context}.families {family_id}: state '{family['_state']}' with active "
-                f"approach(es) {stragglers}; close them or reopen the family"
+                f"{context}.families {family_id}: state '{family['_state']}' with live "
+                f"approach(es) {stragglers}; a queued route is planned work, so close them "
+                "or reopen the family"
             )
 
     return {"path": path, "target": target, "families": families, "approaches": approaches}
 
 
-def check_brief(root: Path, node_ids: set[str], errors: list[str]) -> dict | None:
-    """Validate the problem brief's envelope; ``None`` when there is none."""
+def check_brief(root: Path, errors: list[str]) -> dict | None:
+    """Validate the problem brief's envelope; ``None`` when there is none.
+
+    Shape only. The target's resolution into the claim graph happens in :func:`resolve`
+    with every other cross-plane reference, so that an unavailable ledger produces one
+    honest dependency error instead of several silent omissions.
+    """
     path = root / BRIEF_PATH
     if not path.is_file():
         return None
@@ -303,40 +325,112 @@ def check_brief(root: Path, node_ids: set[str], errors: list[str]) -> dict | Non
     if not isinstance(target, str) or not target.strip():
         errors.append(f"{context}.target: must name the ledger node this brief scopes")
         target = None
-    elif node_ids and target not in node_ids:
-        errors.append(f"{context}.target: '{target}' is not a ledger node id")
     return {"path": path, "target": target}
 
 
-def resolve(portfolio: dict | None, brief: dict | None, node_ids: set[str],
-            candidate_ids: set[str], errors: list[str]) -> None:
-    """Check the portfolio's references out into the ledger and the candidate log.
+def _checkpoint_agreement(index: dict[str, dict], reference: str, expected: set[str],
+                          context: str, subject: str, errors: list[str]) -> None:
+    """Resolve one checkpoint reference through the parsed index and check its anchor.
 
-    Kept separate from :func:`load` because the candidate set is derived from the
-    checkpoint plane, which in turn needs this plane's approach ids.
+    Existing on disk is not enough: ``research/explorations/README.md`` is a file in the
+    right directory and is not a checkpoint, and a record whose envelope failed to parse
+    is not durable memory either. Resolving through the index is what makes "checkpoints
+    are why the portfolio changed" a fact rather than a slogan.
     """
-    if portfolio is None:
+    record = index.get(reference)
+    if record is None:
+        errors.append(
+            f"{context}: '{reference}' is not a checkpoint; it must be a dated record "
+            f"under {CHECKPOINTS}/ with a valid envelope"
+        )
+        return
+    approach = record.get("approach")
+    if approach is not None and approach not in expected:
+        errors.append(
+            f"{context}: '{reference}' declares approach '{approach}', which is not "
+            f"{subject}"
+        )
+
+
+def resolve(portfolio: dict | None, brief: dict | None, node_ids: set[str],
+            memory: dict, errors: list[str]) -> None:
+    """Check every reference out of this plane: into the ledger, candidates, and memory.
+
+    Kept separate from :func:`load` because the candidate set and the checkpoint index are
+    derived from the checkpoint plane, which in turn needs this plane's approach ids.
+    """
+    if portfolio is None and brief is None:
         return
     context = str(PORTFOLIO_PATH)
-    target = portfolio["target"]
-    if isinstance(target, str) and node_ids and target not in node_ids:
-        errors.append(f"{context}.target: '{target}' is not a ledger node id")
-    if brief is not None and brief["target"] is not None and target is not None:
-        if brief["target"] != target:
-            errors.append(
-                f"{context}.target: '{target}' disagrees with the problem brief's target "
-                f"'{brief['target']}'"
-            )
-    for approach_id, approach in sorted(portfolio["approaches"].items()):
-        blocker = approach.get("blocker")
-        if not isinstance(blocker, str) or not blocker.strip():
-            continue
-        if blocker in node_ids or blocker in candidate_ids:
-            continue
+    brief_context = str(BRIEF_PATH)
+    target = portfolio["target"] if portfolio is not None else None
+    brief_target = brief["target"] if brief is not None else None
+
+    # The brief and the portfolio must agree with each other whether or not the claim
+    # graph loaded: that comparison needs no ledger.
+    if brief_target is not None and target is not None and brief_target != target:
         errors.append(
-            f"{context}.approaches {approach_id}.blocker: '{blocker}' is neither a ledger "
-            "node nor a live candidate; state the missing lemma precisely before blocking "
-            "a route on it"
+            f"{context}.target: '{target}' disagrees with the problem brief's target "
+            f"'{brief_target}'"
+        )
+
+    # An unavailable claim graph is a dependency failure of this plane, not an absence of
+    # errors in it. Scoping restricts what is reported; it never turns an unresolved
+    # reference into a successful validation.
+    if not node_ids:
+        if target is not None or brief_target is not None:
+            errors.append(
+                f"{context}: the claim graph is unavailable or holds no nodes, so the "
+                "target and blocker references cannot be resolved; fix the core plane first"
+            )
+    else:
+        if isinstance(target, str) and target not in node_ids:
+            errors.append(f"{context}.target: '{target}' is not a ledger node id")
+        if isinstance(brief_target, str) and brief_target not in node_ids:
+            errors.append(f"{brief_context}.target: '{brief_target}' is not a ledger node id")
+
+    if portfolio is None:
+        return
+
+    candidate_ids = {entry["id"] for entry in memory.get("candidates", [])}
+    index = {record["relative"]: record for record in memory.get("records", [])}
+
+    for approach_id, approach in sorted(portfolio["approaches"].items()):
+        where = f"{context}.approaches"
+        blocker = approach.get("blocker")
+        if node_ids and isinstance(blocker, str) and blocker.strip():
+            if blocker not in node_ids and blocker not in candidate_ids:
+                errors.append(
+                    f"{where} {approach_id}.blocker: '{blocker}' is neither a ledger node "
+                    "nor a live candidate; state the missing lemma precisely before "
+                    "blocking a route on it"
+                )
+
+        references = approach["_checkpoints"]
+        if not references and approach.get("_state") in APPROACH_EXPLAINED_STATES:
+            errors.append(
+                f"{where} {approach_id}.checkpoints: state "
+                f"'{approach['_state']}' requires the checkpoint that explains the change; "
+                "a route does not stop without a reason the next agent can read"
+            )
+        for reference in references:
+            _checkpoint_agreement(
+                index, reference, {approach_id},
+                f"{where} {approach_id}.checkpoints", f"'{approach_id}'", errors,
+            )
+
+    for family_id, family in sorted(portfolio["families"].items()):
+        reference = family.get("_closure_checkpoint")
+        if reference is None:
+            continue
+        members = {
+            approach_id for approach_id, approach in portfolio["approaches"].items()
+            if approach.get("family") == family_id
+        }
+        _checkpoint_agreement(
+            index, reference, members,
+            f"{context}.families {family_id}.closure_checkpoint",
+            f"an approach in '{family_id}'", errors,
         )
 
 

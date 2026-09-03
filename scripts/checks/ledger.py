@@ -42,13 +42,12 @@ RESOLVE_FIELDS = (
     "depends_on", "assumes", "implies", "refines", "refuted_by",
 )
 
-# ``route`` is accepted only when ``meta.route_policy`` declares a vocabulary.
 # Frontier relations resolve inside the ledger but do not enter the proof DAG.
 NODE_FIELDS = {
     "id", "kind", "status", "provenance", "file", "label", "statement",
     "depends_on", "assumes", "implies", "refines", "bounded_by",
     "heuristic_barriers", "references", "import_class", "proofs",
-    "refuted_by", "route",
+    "refuted_by",
 }
 LIST_FIELDS = {
     "depends_on", "assumes", "implies", "refines", "bounded_by",
@@ -80,11 +79,19 @@ OBSOLETE_NODE_FIELDS = {
     "unlocks": "depends_on on the consuming node, or prose for non-logical relationships",
     "approach": "the search portfolio; an approach is not a mathematical claim",
     "family": "the search portfolio; an approach family is not a mathematical claim",
+    "route": "the search portfolio; a route is coordination state, not a claim "
+             "(CLAUDE.md constraint 12)",
 }
 BIB_ENTRY_RE = re.compile(r"@[A-Za-z]+\s*\{\s*([^,\s]+)\s*,")
 TOP_LEVEL_FIELDS = {"meta", "nodes"}
-META_FIELDS = {"program", "scope", "route_policy"}
-OBSOLETE_META_FIELDS = {"legacy_r2_debt", "legacy_proved_without_solution"}
+META_FIELDS = {"program", "scope"}
+OBSOLETE_META_FIELDS = {
+    "legacy_r2_debt": "a certified proof on every proved node; there are no exceptions",
+    "legacy_proved_without_solution":
+        "a certified proof on every proved node; there are no exceptions",
+    "route_policy": "the search portfolio; coordination ownership is not "
+                    "mathematical state (CLAUDE.md constraint 12)",
+}
 
 
 def all_labels(root: Path) -> set[str]:
@@ -216,50 +223,6 @@ def _acyclic(program: str, nodes: dict[str, dict]) -> list[str]:
         if color[node_id] == white:
             visit(node_id, [])
     return errors
-
-
-def _validate_route_policy(program: str, meta: dict, nodes: dict[str, dict],
-                           errors: list[str]) -> None:
-    """Validate the optional compact route vocabulary and explicit node ownership."""
-    raw_policy = meta.get("route_policy")
-    if raw_policy is None:
-        for nid, node in nodes.items():
-            if "route" in node:
-                errors.append(
-                    f"[{program}] {nid}.route: explicit routes require meta.route_policy"
-                )
-        return
-    context = f"[{program}] meta.route_policy"
-    if not isinstance(raw_policy, dict):
-        errors.append(f"{context}: must be a mapping")
-        return
-    for field in sorted(set(raw_policy) - {"allowed"}):
-        errors.append(f"{context}: unknown field '{field}'")
-
-    raw_allowed = raw_policy.get("allowed")
-    allowed: set[str] = set()
-    if not isinstance(raw_allowed, list):
-        errors.append(f"{context}.allowed: must be a list")
-    else:
-        for route in raw_allowed:
-            if not isinstance(route, str) or not route.strip():
-                errors.append(f"{context}.allowed: entries must be non-empty strings")
-                continue
-            if route in allowed:
-                errors.append(f"{context}.allowed: duplicate route '{route}'")
-            allowed.add(route)
-
-    for nid, node in nodes.items():
-        if "route" not in node:
-            errors.append(f"[{program}] {nid}.route: required by meta.route_policy")
-            continue
-        route = node.get("route")
-        if not isinstance(route, str) or not route.strip():
-            errors.append(f"[{program}] {nid}.route: must be a non-empty string")
-        elif route not in allowed:
-            errors.append(
-                f"[{program}] {nid}.route: '{route}' is not in meta.route_policy.allowed"
-            )
 
 
 def _validate_node(program: str, nid: str, node: dict, *, root: Path,
@@ -477,7 +440,7 @@ def check(root: Path, research: Path, errors: list[str],
         if not isinstance(program, str) or not program.strip():
             errors.append(f"{path}: meta.program must be a non-empty string")
             program = f"invalid:{path}"
-        for field in sorted(set(meta) - META_FIELDS - OBSOLETE_META_FIELDS):
+        for field in sorted(set(meta) - META_FIELDS - set(OBSOLETE_META_FIELDS)):
             errors.append(f"[{program}] meta: unknown field '{field}'")
         if program in program_paths:
             errors.append(
@@ -499,13 +462,11 @@ def check(root: Path, research: Path, errors: list[str],
 
     for ledger in ledgers:
         program, nodes, meta = ledger["program"], ledger["nodes"], ledger["meta"]
-        for obsolete_field in OBSOLETE_META_FIELDS:
+        for obsolete_field, replacement in OBSOLETE_META_FIELDS.items():
             if obsolete_field in meta:
                 errors.append(
-                    f"[{program}] meta.{obsolete_field}: legacy proof exceptions are forbidden; "
-                    "every proved node requires a certified solution"
+                    f"[{program}] meta.{obsolete_field}: obsolete field; use {replacement}"
                 )
-        _validate_route_policy(program, meta, nodes, errors)
         for nid, node in nodes.items():
             _validate_node(program, nid, node, root=root, labels=labels, bib_keys=bib_keys,
                            nodes=nodes, obstruction_ids=ledger["obs_ids"], errors=errors)

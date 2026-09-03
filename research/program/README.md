@@ -13,7 +13,8 @@ the validator needs no configuration to find it. The program's *name* is `meta.p
 
 | question | source |
 |---|---|
-| What exactly is the target, and what would finish it? | [`brief.md`](brief.md) |
+| Which node is the target, and what would finish it? | [`brief.md`](brief.md) |
+| What exactly does the target say? | [`../../modules/`](../../modules/), at its `\label` |
 | What is each claim's status? | [`ledger.yaml`](ledger.yaml) |
 | What ledger fields are valid? | [`ledger-schema.md`](ledger-schema.md) |
 | Which routes are alive, blocked, duplicated, saturated? | [`portfolio.yaml`](portfolio.yaml) |

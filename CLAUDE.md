@@ -5,10 +5,11 @@ This is the root contract for work entering the repository. Scoped contracts may
 requirements: [`research/program/ledger-schema.md`](research/program/ledger-schema.md) for the
 ledger, [`research/program/portfolio-schema.md`](research/program/portfolio-schema.md) for the
 search portfolio, [`solutions/README.md`](solutions/README.md) for proofs,
-[`experiments/README.md`](experiments/README.md) for numerical work, and
-[`.claude/agents/`](.claude/agents/README.md) for role permissions. They never override this
-file. Use [`research/README.md`](research/README.md) to locate each plane's source of truth;
-other READMEs are navigation maps.
+[`experiments/README.md`](experiments/README.md) for numerical work,
+[`.claude/agents/`](.claude/agents/README.md) for role permissions, and
+[`.claude/lenses/`](.claude/lenses/README.md) for the assignment lenses those roles load.
+They never override this file. Use [`research/README.md`](research/README.md) to locate each
+plane's source of truth; other READMEs are navigation maps.
 
 ## Scope
 
@@ -33,11 +34,16 @@ planes that exist.
 
 | layer | activate when | durable state |
 |---|---|---|
-| problem brief | a sustained search starts | exact target and negation, completion criteria, edge cases, known traps |
+| claim graph | a statement is precise, stable, and reusable | a manuscript statement and a ledger node |
+| problem brief | a sustained search starts | target node, exact negation, completion criteria, edge cases, known traps |
 | search portfolio | several routes, agents, or sessions are in flight | approach families, route states, blockers, saturation |
 | checkpoint memory | a result will affect future search | dated records in `research/explorations/` |
-| claim graph | a statement is precise, stable, and reusable | a manuscript statement and a ledger node |
 | certification | a proof or refutation is claimed | a standalone dossier and an independent review |
+
+The order is not arbitrary at the top. A sustained search opens with a target precise enough to
+be a ledger node, because the brief and the portfolio both name one and must resolve to it; the
+claim graph is therefore the first gate a search crosses, not a later one. After that the layers
+are independent.
 
 Numerics, literature import, and repository hygiene are capability packs on the same footing:
 present when used, irrelevant when not.
@@ -115,7 +121,9 @@ section, numbered `P1, P2, …`, so that a fork can drop them without disturbing
    tracking on the research frontier, promote it by adding a `\label` in `modules/` and a ledger
    node, at which point it is subject to every constraint above.
    `python3 scripts/check.py candidates` lists the live ones. There is no other place a
-   statement may be written down.
+   statement may be written down. A verbatim quotation of a manuscript statement, marked as a
+   copy, is not a second home — the problem brief may quote its target that way, and the
+   `reviewer`'s `sync` lens checks that the copy still agrees.
 9. **Truth and applicability are separate.** A proved implication remains `proved` when its
    antecedent is open. Put antecedents in `assumes`, conclusions in `implies`, and only claims
    actually used to prove the implication in `depends_on`. Never encode an antecedent as a proof

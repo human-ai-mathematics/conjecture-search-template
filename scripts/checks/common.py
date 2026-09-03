@@ -22,6 +22,10 @@ except ImportError:  # pragma: no cover - environment guard
 #: rather than a configured mode (CLAUDE.md, "The gates").
 PLANES = ("core", "proofs", "checkpoints", "portfolio", "numerics", "roles")
 
+#: A portfolio approach id. Shared, because the portfolio declares these ids and the
+#: checkpoint plane resolves against them; one regex keeps the two planes agreeing.
+APPROACH_ID_RE = re.compile(r"^ap:[a-z0-9][a-z0-9-]*$")
+
 
 def as_list(value: Any) -> list:
     if value is None:

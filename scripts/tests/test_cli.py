@@ -89,13 +89,15 @@ class CommandLineTests(CheckerFixture):
 
     def test_cli_portfolio_view_shows_routes_blockers_and_relations(self):
         self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        why = self.add_checkpoint("blocked", nodes=("q:open",), approach="ap:stuck")
         self.add_portfolio({
             "target": "q:open",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [
                 {"id": "ap:live", "family": "fam:one", "state": "active"},
                 {"id": "ap:stuck", "family": "fam:one", "state": "blocked",
-                 "blocker": "q:open", "reopen_if": "a new mechanism appears"},
+                 "blocker": "q:open", "reopen_if": "a new mechanism appears",
+                 "checkpoints": [why]},
             ],
         })
 
@@ -108,18 +110,27 @@ class CommandLineTests(CheckerFixture):
         self.assertIn("blocked on: q:open", result.stdout)
         self.assertIn("reopen if: a new mechanism appears", result.stdout)
 
-    def test_cli_checkpoint_view_shows_current_heads(self):
+    def test_cli_checkpoint_view_shows_heads_and_names_the_superseding_record(self):
+        """A current-memory view must say what to read instead, not just what is stale."""
         self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
         old = self.add_checkpoint("first", nodes=("q:open",))
         self.add_checkpoint("second", date="2026-08-27", nodes=("q:open",),
                             supersedes=(old,))
+        stale = self.add_review("stale-audit", report_type="audit", date="2026-08-25")
+        self.add_review("current-audit", report_type="audit", date="2026-08-26",
+                        supersedes=(stale,))
 
         result = self.cli("checkpoints")
 
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIn("1 current checkpoint(s), 1 superseded", result.stdout)
         self.assertIn("2026-08-27-second.md", result.stdout)
-        self.assertNotIn("2026-08-26-first.md", result.stdout)
+        self.assertIn("superseded  research/explorations/2026-08-26-first.md", result.stdout)
+        self.assertIn("read instead: research/explorations/2026-08-27-second.md",
+                      result.stdout)
+        self.assertIn("1 current audit(s), 1 superseded", result.stdout)
+        self.assertIn("read instead: research/reviews/2026-08-26-current-audit.md",
+                      result.stdout)
 
     def test_a_view_refuses_to_render_over_a_broken_repository(self):
         malformed = node("thm:bad")

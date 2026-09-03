@@ -41,48 +41,17 @@ Every invocation is given one lens: **`certify`** (does this proof actually prov
   front matter. An audit that replaces an earlier audit as the current reading names it in
   `supersedes:`; neither record is edited or deleted.
 
-## Lens `certify` — what you must actually check
+## Assignment lenses
 
-1. **Statement agreement.** The dossier theorem, the ledger `statement:`, and the manuscript
-   statement at the `\label` the node `refines` must agree mathematically — not merely
-   resolve. This is precisely what `check.py` cannot do (`CLAUDE.md` constraint 4).
-2. **Barriers.** The proof must respect every hard `bounded_by` obstruction. Check advisory
-   `heuristic_barriers` without treating them as established facts.
-3. **Hypothesis accounting.** List every hypothesis actually used. Flag any used but
-   unstated, and any stated but unused (the latter is a sharpening opportunity, not a
-   defect).
-4. **Dependency and applicability.** An open `depends_on` is a proof defect. An open
-   `assumes` blocks application of a proved implication but does not downgrade its truth.
-5. **Citation debt.** Every external result must be checked against its actual source and
-   classified `published`, `preprint-reviewed`, or `preprint-unreviewed`. An unreviewed
-   preprint remains `open`. If the source is unavailable with your declared tools, stop that
-   part and hand an exact verification request to `literature-scout`; do not infer a pass.
-6. **The steps.** Go through the argument line by line. Constants, quantifier order, domains,
-   boundary conventions, and limit interchanges are where these proofs fail.
-7. **Standalone build.** `cd solutions && latexmk -pdf -outdir=../build <id>.tex`.
+You are given exactly one. Read its file, and no other. See
+[`.claude/lenses/README.md`](../lenses/README.md).
 
-## Lens `sync` — prose ↔ ledger ↔ dossier agreement
+| lens | file | the question it answers |
+|---|---|---|
+| `certify` | [`.claude/lenses/certify.md`](../lenses/certify.md) | does this proof actually prove this? |
+| `sync` | [`.claude/lenses/sync.md`](../lenses/sync.md) | do the manuscript, ledger, dossier and brief say the same thing? |
 
-`check.py` verifies that labels resolve, the DAG is acyclic, and provenance has the right
-shape. It does **not** verify that the `.tex` prose, the ledger `statement:`, and the dossier
-theorem say the same thing. That gap is this lens's entire job.
-
-For each node in scope:
-
-1. Resolve the effective anchor (`label` if present, else `id`) and confirm it occurs in
-   `file`.
-2. Read the `\label`ed environment in full and compare it against the ledger `statement:` —
-   same quantifiers, same constants, same hypotheses, same direction of inequality.
-3. For every active `proofs[].artifact`, compare the dossier theorem against both.
-4. Check that the environment kind matches the ledger `kind` (a `\begin{conjecture}` behind
-   `kind: theorem` is a real defect).
-5. Check that every `assumes` antecedent is visible in the implication, and that a `refuted`
-   node's prose negates the exact quantified statement.
-6. Run `python3 scripts/check.py` as a read-only baseline. The orchestrator reruns it after
-   applying any accepted proposal.
-
-Return exact manuscript patch proposals as `path:line` plus replacement text; make no edits.
-If which side is wrong is a mathematical question, report it as blocked rather than guessing.
+Each file states what it must check and the bullets it adds to the report below.
 
 ## Report
 
@@ -90,14 +59,6 @@ The persisted file states findings, corrections, and exclusions in its body. In 
 
 - Verdict and report path.
 - The list of checked steps and the list of steps you could not verify.
-- For `sync`, a table: node | anchor resolves | statement agrees | dossier agrees | verdict,
-  with both texts quoted for every disagreement.
-- A **proposed ledger delta**: for `certify`, one `proofs` record with `artifact`,
-  `mode: agent`, and `review`, plus the logically correct status and relations. This delta
-  exists only for a `proof-review` with `verdict: pass`; an audit proposes no certification.
 - Explicitly, anything outside your scope, so it is not mistaken for checked.
-- Finish with the shared handoff envelope. Use `outcome: complete` and
-  `next_role: orchestrator` only for a passing proof review. For defects use
-  `outcome: revise`, `next_role: researcher`, and put exhaustive file/line-specific repair
-  instructions in `next_prompt`; the orchestrator passes them verbatim. Use `blocked` for
-  unavailable sources or genuinely undecidable scope.
+- Whatever your lens file adds to this list.
+- Finish with the shared handoff envelope from [`README.md`](README.md).

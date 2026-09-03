@@ -22,13 +22,16 @@ Those are `scout`, `researcher`, `reviewer`, and `synthesizer`.
 Proving, refuting, mining an existing proof, and building a construction are **assignment
 lenses** for the `researcher`, not separate role contracts — they share a write surface, a set
 of prohibitions, and a handoff. Certifying a dossier and auditing manuscript/ledger agreement
-are likewise the two lenses of the `reviewer`. The lens is named by the orchestrator in the
-assignment, and a role that surveys several lenses at once produces a shallow pass on all of
-them.
+are likewise the two lenses of the `reviewer`. Each lens is one file in
+[`../lenses/`](../lenses/README.md), named by the orchestrator in the assignment and loaded on
+its own: a role that surveys several lenses at once produces a shallow pass on all of them,
+and one that *reads* several pays for strategies it was not asked to run.
 
-Everything else is an optional specialist, activated by the work: `numerics` when there is
+The other three are **optional specialists**, activated by the work: `numerics` when there is
 something to compute, `literature-scout` when there is something to import, `janitor` when the
-repository needs tidying.
+repository needs tidying. A repository that does none of those should delete the ones it does
+not use — `python3 scripts/check.py --write-codex` removes the orphaned adapter, and nothing
+else refers to a role by name.
 
 **Author and reviewer never coincide.** A `researcher` cannot write `research/reviews/`, and a
 `reviewer` cannot write `solutions/`. That is an epistemic control, not administrative
@@ -121,8 +124,8 @@ orchestrator's act, like any other ledger edit.
 | role | lenses | writes | cardinality |
 |---|---|---|---|
 | [`scout`](scout.md) | — | nothing | N, parallel |
-| [`researcher`](researcher.md) | `prove`, `refute`, `mine`, `construct` | one dossier; one new checkpoint | 1 per dossier; N across distinct lenses and targets |
-| [`reviewer`](reviewer.md) | `certify`, `sync` | one new review | 1 cold reviewer per dossier |
+| [`researcher`](researcher.md) | [`prove`](../lenses/prove.md), [`refute`](../lenses/refute.md), [`mine`](../lenses/mine.md), [`construct`](../lenses/construct.md) | one dossier; one new checkpoint | 1 per dossier; N across distinct lenses and targets |
+| [`reviewer`](reviewer.md) | [`certify`](../lenses/certify.md), [`sync`](../lenses/sync.md) | one new review | 1 cold reviewer per dossier |
 | [`synthesizer`](synthesizer.md) | — | `portfolio.yaml`, `research/instances.md`; one new checkpoint | **singleton** |
 | [`numerics`](numerics.md) | — | `experiments/numerics/`, generated runs, one new checkpoint | singleton for code; N for distinct stable runs |
 | [`literature-scout`](literature-scout.md) | — | one new checkpoint | N; bibliography remains single-writer |
@@ -130,11 +133,16 @@ orchestrator's act, like any other ledger edit.
 
 ### Adding a program-specific role
 
-The seven roles above are the backbone: they are about orienting, attacking, checking,
-converging, computing, importing and tidying, and none of them mentions this repository's
-mathematics. Prefer a new **lens** on an existing role to a new role. When a program genuinely
-wants its own — a prober for a particular gate, a refiner for a particular family of statements
-— write it as a new `.md` file here, add a row above, then:
+Four core roles carry the search — orienting, attacking, checking, converging — and three
+optional specialists carry computing, importing and tidying. None of the seven mentions this
+repository's mathematics, which is why the roster is the same in every repository built from
+this template.
+
+Prefer a new **lens** to a new role. A lens costs one file in [`../lenses/`](../lenses/README.md)
+and no permissions; a role costs a contract, a generated adapter, a roster row, and a
+concurrency key. When a program genuinely wants its own — a prober for a particular gate, a
+refiner for a particular family of statements — write it as a new `.md` file here, add a row
+above, then:
 
 ```bash
 python3 scripts/check.py --write-codex

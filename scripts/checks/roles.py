@@ -1,9 +1,16 @@
-"""The roles plane: canonical Claude role definitions and generated Codex adapters.
+"""The roles plane: canonical Claude role definitions, assignment lenses, and adapters.
 
 The roster is the set of ``.claude/agents/*.md`` files: adding a role is a one-file
 operation. Each role's frontmatter is self-describing, so no list of role names is
 duplicated here or in any configuration file. Codex cannot read the Markdown, so this
 plane also owns generation of ``.codex/agents/*.toml`` and rejects a stale adapter.
+
+``.claude/lenses/*.md`` holds the assignment lenses. A lens is one strategy a role can be
+pointed at; it has no tools and no write surface of its own, so it is not a role and gets
+no adapter. Both clients read a lens from disk at run time, which is what keeps a
+four-strategy role from paying for all four on every invocation. The link is checked in
+both directions: a lens nobody declares and a declared lens that does not exist are both
+errors.
 """
 from __future__ import annotations
 
@@ -14,10 +21,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 CLAUDE_AGENTS = Path(".claude/agents")
+CLAUDE_LENSES = Path(".claude/lenses")
 CODEX_AGENTS = Path(".codex/agents")
 
 WRITE_TOOLS = {"Edit", "Write"}
 REQUIRED_FRONTMATTER = ("name", "description", "tools", "read_only", "reasoning")
+REQUIRED_LENS_FRONTMATTER = ("name", "role")
 BOOLEANS = {"true": True, "false": False}
 REASONING_EFFORTS = {"high", "ultra"}
 CODEX_MODEL = "gpt-5.6-sol"
@@ -124,6 +133,60 @@ def load_roles(root: Path, errors: list[str]) -> dict[str, Role]:
     return roles
 
 
+def _validate_lenses(root: Path, roles: dict[str, Role], errors: list[str]) -> dict[str, str]:
+    """Check the lens files against the roles that declare them, both directions.
+
+    A lens is not a role: it inherits every permission from the role it belongs to, so the
+    only things worth checking are that it is well formed and that it is actually reachable.
+    An orphan lens is dead prose nobody will load; a declared lens that does not exist is a
+    role contract pointing at nothing.
+    """
+    directory = root / CLAUDE_LENSES
+    if not directory.is_dir():
+        return {}
+
+    lenses: dict[str, str] = {}
+    for path in sorted(directory.glob("*.md")):
+        if path.name == "README.md":
+            continue
+        relative = path.relative_to(root).as_posix()
+        try:
+            metadata, _body = _parse_frontmatter(path)
+        except (OSError, UnicodeError, ValueError) as exc:
+            errors.append(f"{relative}: {exc}")
+            continue
+        missing_fields = [key for key in REQUIRED_LENS_FRONTMATTER if not metadata.get(key)]
+        if missing_fields:
+            errors.append(f"{relative}: missing fields {missing_fields}")
+            continue
+        if metadata["name"] != path.stem:
+            errors.append(
+                f"{relative}: name '{metadata['name']}' must match filename stem"
+            )
+        owner = metadata["role"]
+        if owner not in roles:
+            errors.append(f"{relative}: role '{owner}' is not a role")
+            continue
+        lenses[relative] = owner
+
+    for relative, owner in sorted(lenses.items()):
+        if relative not in roles[owner].body:
+            errors.append(
+                f"{relative}: no role declares this lens; "
+                f"{roles[owner].relative} must reference it or the file is dead prose"
+            )
+    for name, role in sorted(roles.items()):
+        references = set(re.findall(r"\.claude/lenses/([A-Za-z0-9._-]+)\.md", role.body))
+        for reference in sorted(references - {"README"}):
+            declared = (CLAUDE_LENSES / f"{reference}.md").as_posix()
+            if lenses.get(declared) != name:
+                errors.append(
+                    f"{role.relative}: declares lens '{reference}', which is not a lens "
+                    f"belonging to '{name}'"
+                )
+    return lenses
+
+
 def render_codex_adapter(role: Role) -> str:
     sandbox_mode = "read-only" if role.read_only else "workspace-write"
     return "\n".join([
@@ -221,5 +284,6 @@ def check(root: Path, errors: list[str], *, write_codex: bool = False) -> dict[s
     if write_codex and len(errors) == before:
         errors.extend(write_codex_adapters(root, roles))
     _validate_readme(root, roles, errors)
+    _validate_lenses(root, roles, errors)
     _validate_codex_adapters(root, roles, errors)
     return roles

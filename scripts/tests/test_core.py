@@ -418,43 +418,26 @@ class CoreTests(CheckerFixture):
         self.assertIn("def:proved: kind definition requires status defined", errors)
         self.assertNotIn("def:defined", errors)
 
-    def test_route_policy_requires_explicit_routes_and_checks_vocabulary(self):
+    def test_route_state_is_retired_from_the_ledger(self):
+        """Constraint 12 in the ledger's own direction: coordination is not a claim.
+
+        ``route`` and ``meta.route_policy`` were the pre-portfolio coordination
+        mechanism. They are rejected by name rather than merely dropped, so a ledger
+        inherited from an earlier copy of this template is told where the state moved.
+        """
         self.add_ledger(
             "main",
             "program",
-            [
-                node("thm:default-route"),
-                node("thm:allowed-route", route="shared"),
-                node("thm:bad-route", route="unlisted"),
-            ],
-            meta_fields={
-                "route_policy": {
-                    "allowed": ["eldan-localization", "shared"],
-                }
-            },
+            [node("thm:owned", route="shared")],
+            meta_fields={"route_policy": {"allowed": ["shared"]}},
         )
 
         errors = self.errors()
 
-        self.assertIn("thm:default-route.route: required", errors)
-        self.assertNotIn("thm:allowed-route.route", errors)
-        self.assertIn("thm:bad-route.route: 'unlisted' is not", errors)
-
-        self.add_ledger(
-            "main",
-            "program",
-            [node("thm:bad-policy", route="shared")],
-            meta_fields={
-                "route_policy": {
-                    "default": "missing",
-                    "allowed": ["shared", "shared", ""],
-                }
-            },
-        )
-        errors = self.errors()
-        self.assertIn("route_policy.allowed: duplicate route 'shared'", errors)
-        self.assertIn("route_policy.allowed: entries must be non-empty strings", errors)
-        self.assertIn("route_policy: unknown field 'default'", errors)
+        self.assertIn("thm:owned.route: obsolete field", errors)
+        self.assertIn("meta.route_policy: obsolete field", errors)
+        self.assertIn("the search portfolio", errors)
+        self.assertNotIn("unknown field 'route_policy'", errors)
 
     def test_malformed_field_types_report_without_crashing(self):
         malformed = node("thm:bad")
@@ -466,7 +449,6 @@ class CoreTests(CheckerFixture):
             "solution": {},
             "depends_on": [{}],
             "bounded_by": [{}],
-            "route": {},
         })
         self.add_ledger("main", "program", [malformed])
 

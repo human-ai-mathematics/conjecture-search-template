@@ -44,3 +44,5 @@ approaches:
     related:
       - to: ap:example-finite-battery
         relation: duplicates
+    checkpoints:
+      - research/explorations/2026-09-03-example-dedup.md

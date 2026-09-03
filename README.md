@@ -38,7 +38,8 @@ Layers activate structurally, not by a mode flag: a repository with no portfolio
 portfolio rules, and the checker validates only the planes that exist. The gates are listed in
 [`CLAUDE.md`](CLAUDE.md); `AGENTS.md` is a symlink to it, so Claude Code and Codex receive the
 same contract. Agent roles and their write permissions are in
-[`.claude/agents/`](.claude/agents/README.md).
+[`.claude/agents/`](.claude/agents/README.md); the strategies they are pointed at are in
+[`.claude/lenses/`](.claude/lenses/README.md).
 
 ## Verify
 
@@ -100,11 +101,13 @@ every repository built from this template, so no validator needs configuration t
    leaving a `Reserved` hole in the universal list. Merge barriers belong here, and the
    `synthesizer` role should name the same owner.
 
-5. **Add program-specific roles, if any.** The seven roles in
-   [`.claude/agents/`](.claude/agents/README.md) are the backbone and mention no mathematics.
-   Prefer a new assignment *lens* on `researcher` or `reviewer` to a new role. If a program
-   genuinely needs one, write the file, add a roster row, then
-   `python3 scripts/check.py --write-codex && python3 scripts/check.py --plane roles`.
+5. **Trim and extend the roster.** [`.claude/agents/`](.claude/agents/README.md) ships four
+   core roles — `scout`, `researcher`, `reviewer`, `synthesizer` — and three optional
+   specialists, `numerics`, `literature-scout` and `janitor`. Delete the specialists you will
+   not use. Prefer a new assignment *lens* in [`.claude/lenses/`](.claude/lenses/README.md) to
+   a new role. Either way, finish with
+   `python3 scripts/check.py --write-codex && python3 scripts/check.py --plane roles`, which
+   also deletes the adapter of a role you removed.
 
 6. **Confirm it is green.** `./scripts/check.sh` should pass on a fresh clone, before you have
    written anything.
@@ -120,6 +123,9 @@ every repository built from this template, so no validator needs configuration t
    - `research/reviews/2026-09-01-prop-example-proof-review.md`
    - `research/explorations/2026-09-02-example-exploration.md` and the
      `research/runs/` artifact it cites
+   - `research/explorations/2026-09-03-example-dedup.md`
+   - `research/program/brief.md` (rewrite it for your target; do not start a sustained
+     search without one)
    - `experiments/numerics/targets/example.py` and its registry entry
 
    Delete this section at the same time.

@@ -1,7 +1,7 @@
-"""Roles plane: canonical role definitions and their generated Codex adapters.
+"""Roles plane: canonical role definitions, assignment lenses, and generated adapters.
 
 These run against a copy of the real `.claude/` and `.codex/` trees, so the shipped
-roster is what is actually checked.
+roster and lens set are what is actually checked.
 """
 from __future__ import annotations
 
@@ -38,6 +38,51 @@ class RoleTests(unittest.TestCase):
     def role_files(self) -> list[Path]:
         return [path for path in sorted((self.root / ".claude/agents").glob("*.md"))
                 if path.name != "README.md"]
+
+    def lens_files(self) -> list[Path]:
+        return [path for path in sorted((self.root / ".claude/lenses").glob("*.md"))
+                if path.name != "README.md"]
+
+    def test_every_shipped_lens_is_declared_by_the_role_it_belongs_to(self):
+        """A lens is reachable or it is dead prose; the roster is not a second list."""
+        self.assertTrue(self.lens_files(), "the template ships no lens")
+        result = self.run_checker()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+        for path in self.lens_files():
+            with self.subTest(lens=path.stem):
+                owner = next(line.split(":", 1)[1].strip()
+                             for line in path.read_text().splitlines()
+                             if line.startswith("role:"))
+                role = self.root / f".claude/agents/{owner}.md"
+                self.assertIn(f".claude/lenses/{path.stem}.md", role.read_text())
+
+    def test_an_orphan_lens_and_a_dangling_declaration_are_both_errors(self):
+        orphan = self.root / ".claude/lenses/orphan.md"
+        orphan.write_text("---\nname: orphan\nrole: researcher\n---\n\nNobody loads this.\n")
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(".claude/lenses/orphan.md: no role declares this lens", result.stdout)
+
+        orphan.unlink()
+        (self.root / ".claude/lenses/prove.md").unlink()
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("declares lens 'prove', which is not a lens belonging to 'researcher'",
+                      result.stdout)
+
+    def test_a_lens_is_not_a_role_and_gets_no_adapter(self):
+        """Lenses carry no tools and no write surface, so they need no Codex adapter."""
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        adapters = {path.stem for path in (self.root / ".codex/agents").glob("*.toml")}
+        self.assertEqual(adapters, {path.stem for path in self.role_files()})
+        self.assertFalse(adapters & {path.stem for path in self.lens_files()})
 
     def test_generated_adapters_match_canonical_roles(self):
         result = self.run_checker()

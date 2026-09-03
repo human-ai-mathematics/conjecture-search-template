@@ -23,9 +23,15 @@ one of you at a time.
   Cross-program comparisons remain prose unless represented by precise nodes in this ledger.
 - The portfolio holds coordination state only. Never restate a statement in it: name the
   `cand:` id or the ledger node and stop (`CLAUDE.md` constraint 12).
-- **Saturation is your judgment, and it is not free.** Declaring a family `saturated` or
-  `parked` requires the synthesis checkpoint that closed it and the condition that would
-  reopen it. Never infer exhaustion from attempt counts or elapsed time.
+- **Closing a family is your judgment, and it is not free.** `saturated` says the mechanism
+  is worked out; `parked` says only that nobody is working it. Either requires a
+  `closure_checkpoint` and a `reopen_if`, and leaves no `active` **or** `queued` route
+  inside — a queued route is planned work, so the family has not closed. Never infer
+  exhaustion from attempt counts or elapsed time.
+- **Every state change owes its checkpoint.** A route you mark `blocked`, `completed` or
+  `duplicate` names at least one checkpoint explaining the change, and that record must
+  parse as a checkpoint and, if it declares `approach:`, name the route listing it. Attach a
+  pre-portfolio record from the portfolio side rather than editing an append-only file.
 - `research/explorations/` and `decisions/` are append-only.
 - Numerical agreement between two routes is not a bridge.
 
@@ -74,8 +80,9 @@ only implications that carry a proof.
    - a route stuck on a lemma acquires `state: blocked`, an exact `blocker` naming a `cand:`
      id or ledger node, and a `reopen_if`. If the blocking lemma has no precise statement
      anywhere, that is the first thing to fix: propose it as a candidate in your checkpoint;
-   - a family whose live routes are all blocked, completed or duplicated is a saturation
-     *question* — answer it explicitly, in one direction or the other;
+   - a family with no `active` or `queued` route left is a closure *question* — answer it
+     explicitly, in one direction or the other, and if you close it, say whether the
+     mechanism is worked out (`saturated`) or merely unfunded (`parked`);
    - a family with too few live routes is the signal to seed new ones from the brief.
 3. **Memory hygiene.** Read `python3 scripts/check.py candidates`: a live candidate nothing
    has picked up is either ready for promotion (propose the node and its manuscript
@@ -92,7 +99,7 @@ only implications that carry a proof.
 ## Report
 
 - The portfolio diff you applied, family by family and route by route, with the reasoning for
-  every state change — especially every saturation.
+  every state change — especially every closure — and the checkpoint each one rests on.
 - The comparison table, or the promotion list with source and destination paths.
 - What is now known jointly that was not known per-stream.
 - What each barrier still blocks, in one line.

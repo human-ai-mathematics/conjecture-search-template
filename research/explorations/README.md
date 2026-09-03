@@ -75,6 +75,12 @@ state changed, the portfolio says what that state now is. The portfolio's `check
 points back, which is how a record written before the portfolio existed can still be attached
 to a route without editing it.
 
+The link is checked. A `blocked`, `completed` or `duplicate` route must name at least one
+checkpoint; every path it names must resolve to a record here that actually parses as a
+checkpoint; and a record declaring `approach:` must name the route that lists it. Declaring
+`approach:` is never required — the portfolio may attach a record from its side — but
+declaring the wrong one is an error.
+
 ### `retires` versus `supersedes`
 
 They mean different things and neither deletes anything:

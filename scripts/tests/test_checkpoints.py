@@ -167,21 +167,21 @@ class CheckpointTests(CheckerFixture):
         """Supersession changes what to read first; it deletes nothing."""
         self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
         first = self.add_checkpoint("first", nodes=("q:open",))
-        self.add_checkpoint("second", date="2026-08-27", nodes=("q:open",),
-                            supersedes=(first,))
+        second = self.add_checkpoint("second", date="2026-08-27", nodes=("q:open",),
+                                     supersedes=(first,))
 
         report = self.check()
         memory = report["checkpoints"]
 
         self.assertEqual(failures(report), [])
         self.assertEqual(len(memory["records"]), 2)
-        self.assertEqual(memory["superseded"], {first})
+        self.assertEqual(memory["superseded"], {first: [second]})
 
     def test_an_audit_may_be_superseded_but_a_proof_review_may_not(self):
         self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
         stale = self.add_review("stale-audit", report_type="audit", date="2026-08-25")
-        self.add_review("current-audit", report_type="audit", date="2026-08-26",
-                        supersedes=(stale,))
+        fresh = self.add_review("current-audit", report_type="audit", date="2026-08-26",
+                                supersedes=(stale,))
         solution = self.add_solution("proof", node_ids=("q:open",))
         review = self.add_review("proof-review", date="2026-08-27",
                                  node_ids=("q:open",), solutions=(solution,))
@@ -195,7 +195,7 @@ class CheckpointTests(CheckerFixture):
         errors = "\n".join(failures(report))
 
         self.assertIn(f"'{review}' is not an audit", errors)
-        self.assertEqual(report["checkpoints"]["superseded_audits"], {stale})
+        self.assertEqual(report["checkpoints"]["superseded_audits"], {stale: [fresh]})
 
 
 if __name__ == "__main__":

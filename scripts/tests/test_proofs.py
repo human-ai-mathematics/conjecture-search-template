@@ -156,7 +156,7 @@ class ProofsTests(CheckerFixture):
             "type: proof-review\n"
             "date: '2026-08-25'\n"
             "verdict: pass\n"
-            "authors: [/root/prover]\n"
+            "authors: [/root/researcher]\n"
             "reviewer: /root/reviewer\n"
             "nodes: [thm:outside]\n"
             f"solutions: [{solution}]\n"
@@ -323,7 +323,7 @@ class ProofsTests(CheckerFixture):
 
                 errors = self.errors()
 
-                self.assertIn(f"meta.{field}: legacy proof exceptions are forbidden", errors)
+                self.assertIn(f"meta.{field}: obsolete field; use a certified proof", errors)
 
     def test_legacy_proof_fields_are_rejected(self):
         self.add_ledger(

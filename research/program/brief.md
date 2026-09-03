@@ -11,21 +11,34 @@ target: q:example
      attack a conjecture honestly; each says what belongs in it. -->
 
 The harness remembers, validates and certifies. It does not supply mathematical
-pressure. That is this file's job: it is the one document that knows what the target
-actually says, how it usually fails, and what would count as finishing.
+pressure. That is this file's job: it is the one document that knows how the target
+usually fails, what would count as finishing, and which disguises a dead route wears.
 
 It is a mutable, single-writer document owned by the orchestrator (`brief` concurrency
-key). It carries no claim status: the statement itself lives in `modules/` under its
-`\label`, and its logical state lives in [`ledger.yaml`](ledger.yaml).
+key), and it owns none of the mathematics. Three things, three homes:
 
-## The exact statement
+| what | where |
+|---|---|
+| the canonical quantified target | `modules/`, under the target node's `\label` |
+| its identity, status, provenance and relations | [`ledger.yaml`](ledger.yaml) |
+| its negation, completion criteria, edge cases, traps and search policy | this file |
 
-State the target with every quantifier, in this repository's normalization. Name the
-ledger node and its manuscript anchor. Where a definition is doing real work — a
-convention, a sign, a scaling — name the `kind: definition` node it rests on.
+## The target
 
-> `q:example`: placeholder for the question this repository is organized around. Replace
-> it with a precise statement someone could prove or refute.
+Name the ledger node and its manuscript anchor, then quote the manuscript statement
+verbatim below, so an agent gets the exact quantifiers without a second hop. The
+blockquote is a **copy, not a source**: if it and the manuscript disagree, the manuscript
+is right and the copy is a defect, which is what the `reviewer`'s `sync` lens checks
+(`CLAUDE.md` constraint 8). Never sharpen the statement here — sharpen it in `modules/`
+and re-copy.
+
+Where a definition is doing real work — a convention, a sign, a scaling — name the
+`kind: definition` node it rests on.
+
+> **Target** `q:example`, stated at `\label{q:example}` in
+> [`../../modules/00-overview.tex`](../../modules/00-overview.tex). Placeholder for the
+> question this repository is organized around. Replace it with a precise statement
+> someone could prove or refute.
 
 ## The exact negation
 

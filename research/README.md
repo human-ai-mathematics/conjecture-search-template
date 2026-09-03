@@ -12,7 +12,7 @@ is what people and agents write *about* the mathematics.
 
 | program | entry point | purpose |
 |---|---|---|
-| *(this repository's program)* | [`program/brief.md`](program/brief.md) | the exact target, what counts as done, and the known traps |
+| *(this repository's program)* | [`program/brief.md`](program/brief.md) | which node is the target, what counts as done, and the known traps |
 
 There is one ledger, at `program/ledger.yaml`. All ledger writes pass through one orchestrator
 (`CLAUDE.md` constraint 1). There is one portfolio, at `program/portfolio.yaml`, written only
@@ -22,10 +22,10 @@ by the `synthesizer` (constraint 12).
 
 | content | location |
 |---|---|
-| the exact target and what finishing means | [`program/brief.md`](program/brief.md) |
+| accepted mathematical prose, the canonical quantified target included | [`../modules/`](../modules/) |
+| what finishing means, the exact negation, and the known traps | [`program/brief.md`](program/brief.md) |
 | ledger fields and invariants | [`program/ledger-schema.md`](program/ledger-schema.md) |
 | portfolio and brief fields | [`program/portfolio-schema.md`](program/portfolio-schema.md) |
-| accepted mathematical prose | [`../modules/`](../modules/) |
 | claim state and logical edges | `program/ledger.yaml` |
 | which routes are alive, blocked, or saturated | `program/portfolio.yaml` |
 | hard/advisory proof barriers | proved/open obstruction nodes via `bounded_by`/`heuristic_barriers` |

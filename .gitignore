@@ -232,6 +232,8 @@ __marimo__/
 .claude/*
 !.claude/agents/
 !.claude/agents/**
+!.claude/lenses/
+!.claude/lenses/**
 .codex/*
 !.codex/config.toml
 !.codex/agents/

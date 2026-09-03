@@ -25,8 +25,10 @@ be a different agent.
 - **No ad-hoc numerics.** Specify the diagnostic and hand it to `numerics`
   (`CLAUDE.md` constraint 2). No `python3 -c`, no throwaway script. An exact arithmetic
   contradiction from a run is a *candidate*, not a result.
-- No numerical evidence may appear as a proof step, a justification, or a plausibility
-  argument. Every step stands or falls analytically.
+- No numerical evidence may appear in a dossier: not as a step, not as a justification, not
+  as a reason a step is plausible. Every proof step stands or falls analytically. Outside a
+  dossier, reproducible output from `numerics` is exactly what directional evidence is for —
+  use it to choose between routes and to generate conjectures, and never to discharge one.
 - A proved implication is `proved` even when its antecedent is open. Antecedent into
   `assumes`, conclusion into `implies`, and only facts used in the proof into `depends_on`
   (`CLAUDE.md` constraint 9).
@@ -55,96 +57,29 @@ A tentative statement is recorded there as a `cand:` candidate and nowhere else
 
 ## Assignment lenses
 
-### `prove`
+You are given exactly one. Read its file, and no other — reading a second lens is not
+thoroughness, it is how a pass goes shallow. See
+[`.claude/lenses/README.md`](../lenses/README.md).
 
-1. Read the node, its manuscript statement, its `depends_on` closure, and every
-   `bounded_by` and `heuristic_barriers` node in full. Hard fences must be respected;
-   advisory barriers must be addressed or explicitly set aside.
-2. Copy `solutions/TEMPLATE.tex`. Fill the audit header completely: ledger node, `refines`
-   label, `bounded_by`, `checked_by: none`, author identity, date. Leave the reviewer field
-   empty — you are not it.
-3. State the refined theorem, then prove it. `\ref`/`\cite` freely; `??` standalone is
-   expected.
-4. Compile: `cd solutions && latexmk -pdf -outdir=../build <id>.tex`.
-5. Mark every step you could not close with an explicit `\begin{remark}` naming exactly what
-   remains. A gap you flag is a contribution; a gap you paper over is the failure mode this
-   repository exists to catch.
+| lens | file | what you do |
+|---|---|---|
+| `prove` | [`.claude/lenses/prove.md`](../lenses/prove.md) | build a standalone proof dossier |
+| `refute` | [`.claude/lenses/refute.md`](../lenses/refute.md) | negate the exact statement and hunt a witness |
+| `mine` | [`.claude/lenses/mine.md`](../lenses/mine.md) | extract what an existing proof really buys |
+| `construct` | [`.claude/lenses/construct.md`](../lenses/construct.md) | build the object and verify it analytically |
 
-### `refute`
-
-1. Write the exact logical negation, quantifier order included, **before** choosing an
-   instance. A single witness refutes a universal claim; failure of a uniform constant may
-   require a family whose relevant quantity diverges.
-2. Read the relevant obstruction nodes: an existing fence may already contain your attack in
-   sharper form.
-3. Construct the worst instance your failure lens admits. Prefer an **exact** witness
-   (closed form, exact spectral computation) over a sampled one: an exact witness can
-   escalate to a dossier, a sampled one cannot.
-4. Survival of any finite battery validates nothing. Never report "the conjecture holds".
-   The only honest positive outcome is "this lens found no break; here is the sharpest
-   instance it reached and the margin that remains".
-
-The generic failure lenses below apply to most statements. Replace them with this program's
-own once you know where its statements actually break — that list is one of the more
-valuable things a research program accumulates, and it belongs in the problem brief.
-
-| lens | what you push on |
-|---|---|
-| `extremal` | the boundary of the hypotheses: the largest, smallest, or most concentrated admissible instance |
-| `degenerate` | the cases the author probably did not picture — equalities, rank deficiency, empty or singleton structure |
-| `limit` | behaviour as a parameter goes to $0$ or $\infty$, where a pointwise bound can fail uniformly |
-| `symmetry` | instances with extra symmetry, which often collapse a quantity the proof needed to be generic |
-| `scale` | the statement under rescaling and reparameterization: a claim that is not scale-consistent is usually false or misstated |
-
-### `mine`
-
-A proved node states one thing; its proof usually establishes more, or less, than the
-statement admits. Mine `solutions/*.tex`, manuscript proofs in `modules/`, the "could not
-verify" lists in `research/reviews/`, and archived checkpoints. For each proof:
-
-1. **Where is each hypothesis actually used?** Stated but never used is an immediate
-   generalization. Used but not stated is a defect — report it against the dossier and its
-   review.
-2. **What breaks first if you relax it?** Name the step and the quantity that blows up.
-3. **Does the mechanism transfer?** State the transfer as a claim someone could prove, in a
-   common normalization — never as an analogy.
-4. **What is the true bottleneck?** The step whose improvement improves the conclusion, as
-   against the steps that are merely long.
-5. **What does the proof establish that the statement does not claim?** Explicit constants,
-   uniformity, a stronger norm, a wider class.
-
-"We could clearly extend this" is worth nothing. Either the existing argument already proves
-the stronger statement — quote the step that does it — or it does not.
-
-### `construct`
-
-Build the object: the extremal configuration, the counterexample family, the explicit
-transport map, the certificate. State exactly what it is and is not, give the verification
-that it has the claimed properties analytically, and say which node or candidate it settles.
-A construction whose properties are checked only numerically is a candidate.
+Each file states its method and the bullets it adds to the report below. If you were given
+no lens, ask for one; do not pick.
 
 ## Report
 
 - The lens, the target, and the statement attacked or proved **verbatim**.
-- For `prove`: dossier path, whether the standalone build succeeded (paste failing lines if
-  not), the fence-by-fence check against `bounded_by`, every unclosed step, and every
-  hypothesis actually used — including any used but not stated.
-- For `refute`: outcome as `exact witness` / `directional break` / `survived with margin X` /
-  `fenced already`. If exact, the witness in closed form and precisely which conclusion it
-  contradicts.
-- For `mine`: per proof, the mechanism in three lines, the hypothesis-usage table, the
-  bottleneck, and any defect found in an existing dossier or review — defects matter more
-  than the generalizations.
 - The exact quantifiers, hypotheses, implication antecedents, and applicability blockers.
-- **No applicable ledger delta from a fresh dossier.** A dossier with `checked_by: none` is
-  an uncertified candidate: state the future `proofs[].artifact` path as a deferred artifact
-  only.
 - A **proposed portfolio delta**: the state your approach should now be in, its exact blocker
   as a `cand:` or node id if it is blocked, the condition that would reopen it, and any
-  approach you found yourself duplicating.
-- Any adversarial instance worth adding to `research/instances.md`, with justification; only
-  the `synthesizer` curates it.
-- Finish with the shared handoff envelope. Use `next_role: reviewer` when a dossier is ready,
+  approach you found yourself duplicating. The `synthesizer` applies it; you do not edit
+  `research/program/portfolio.yaml`.
+- Whatever your lens file adds to this list.
+- Finish with the shared handoff envelope from [`README.md`](README.md). Use
   `next_role: numerics` only for an exact diagnostic with a predeclared refuting threshold,
-  and `orchestrator` otherwise. Put the theorem, used hypotheses, fence check, and build
-  result in `next_prompt` so a cold reviewer can be launched from repository artifacts.
+  and `orchestrator` when no lens says otherwise.

@@ -14,8 +14,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from .common import (check_record_date, contained_path, optional_string_list,
-                     read_front_matter, repo_relative)
+from .common import (APPROACH_ID_RE, check_record_date, contained_path,
+                     optional_string_list, read_front_matter, repo_relative)
 
 EXPLORATIONS = "research/explorations"
 RUNS = "research/runs"
@@ -34,7 +34,6 @@ EXPLORATION_OUTCOMES = {"dead-end", "directional", "candidate", "proposed"}
 # ledger node id, and an approach id is namespaced so it can never be mistaken for either.
 CANDIDATE_ID_RE = re.compile(r"^cand:[a-z0-9][a-z0-9-]*$")
 CANDIDATE_FIELDS = {"id", "statement"}
-APPROACH_ID_RE = re.compile(r"^ap:[a-z0-9][a-z0-9-]*$")
 
 
 def _read_metadata(path: Path, root: Path, errors: list[str]) -> dict | None:
@@ -121,17 +120,21 @@ def _read_metadata(path: Path, root: Path, errors: list[str]) -> dict | None:
 
 
 def check_supersession(root: Path, records: list[dict], directory: str, genre: str,
-                       errors: list[str]) -> set[str]:
-    """Validate one genre's supersession links and return the superseded records.
+                       errors: list[str]) -> dict[str, list[str]]:
+    """Validate one genre's supersession links; map each superseded record to its heirs.
 
     A record may only supersede an earlier record of its own genre. Strict ordering is
     what makes the relation acyclic without a graph walk, and it is also the honest
     reading: a later summary replaces an earlier one, never the reverse.
+
+    The result maps superseded path to the records that replaced it, so a reader is told
+    what to read *instead* rather than only that something is stale. Membership tests
+    against the returned mapping behave as they did against a set.
     """
     order = {record["relative"]: index for index, record in enumerate(
         sorted(records, key=lambda item: (item["date"] or "", item["relative"]))
     )}
-    superseded: set[str] = set()
+    superseded: dict[str, list[str]] = {}
     for record in records:
         context = f"{record['path']}.supersedes"
         for reference in record["supersedes"]:
@@ -150,7 +153,9 @@ def check_supersession(root: Path, records: list[dict], directory: str, genre: s
                     "supersession only ever points backwards"
                 )
             else:
-                superseded.add(target)
+                superseded.setdefault(target, []).append(record["relative"])
+    for heirs in superseded.values():
+        heirs.sort()
     return superseded
 
 
@@ -165,7 +170,7 @@ def check(root: Path, node_ids: set[str], approach_ids: set[str] | None,
     directory = root / EXPLORATIONS
     records: list[dict] = []
     if not directory.is_dir():
-        return {"records": [], "candidates": [], "superseded": set()}
+        return {"records": [], "candidates": [], "superseded": {}}
 
     declared: dict[str, dict] = {}
     retired: dict[str, tuple[int, str]] = {}

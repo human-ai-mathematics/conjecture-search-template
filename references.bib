@@ -3,6 +3,9 @@
 % biblatex + biber; main.tex loads it once via \addbibresource and prints one
 % bibliography. Every module and every solution dossier cites into this file.
 %
-% A ledger node with `status: imported` must list BibTeX keys from this file in
-% its `references:` field, and scripts/check_ledger.py verifies that each key
-% resolves here. Add the entry before you add the node.
+% A ledger node with `provenance: literature` must carry an `import_class` and list
+% BibTeX keys from this file in its `references:` field; scripts/check.py verifies
+% that each key resolves here. Add the entry before you add the node.
+%
+% An unreviewed preprint cannot support a proved node: `import_class:
+% preprint-unreviewed` keeps the node open until the result is checked at source.

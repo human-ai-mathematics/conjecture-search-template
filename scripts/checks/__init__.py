@@ -35,7 +35,7 @@ def analyze(root: Path | None = None, research: Path | None = None,
     archive = proofs.check(root, ledgers, errors["proofs"])
 
     live_portfolio = portfolio.load(root, errors["portfolio"])
-    brief = portfolio.check_brief(root, node_ids, errors["portfolio"])
+    brief = portfolio.check_brief(root, errors["portfolio"])
 
     memory = checkpoints.check(
         root, node_ids, portfolio.approach_ids(live_portfolio), errors["checkpoints"]
@@ -44,8 +44,7 @@ def analyze(root: Path | None = None, research: Path | None = None,
         root, archive, errors["checkpoints"]
     )
 
-    portfolio.resolve(live_portfolio, brief, node_ids,
-                      {entry["id"] for entry in memory["candidates"]}, errors["portfolio"])
+    portfolio.resolve(live_portfolio, brief, node_ids, memory, errors["portfolio"])
 
     artifacts = numerics.check(root, errors["numerics"])
     role_definitions = roles.check(root, errors["roles"], write_codex=write_codex)
