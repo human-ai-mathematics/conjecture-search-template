@@ -1,6 +1,6 @@
-"""The core plane: the claim graph, its manuscript anchors, and its bibliography.
+"""The core lane: the claim graph, its manuscript anchors, and its bibliography.
 
-This is the plane that owns *what is mathematically claimed*. It validates node
+This is the lane that owns *what is mathematically claimed*. It validates node
 identity and schema, the acyclic proof DAG, the separation of proof dependencies from
 implication antecedents, the two classes of obstruction, and the coupling between a
 node id and a ``\\label`` in ``modules/``. Proof certification lives in ``proofs.py``;
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import yaml
 
-from .common import as_list
+from .common import as_list, contained_path, repo_relative
 
 #: One repository, one program, one ledger (CLAUDE.md constraint 1). The program
 #: names itself in ``meta.program``; the path is fixed so no configuration file
@@ -27,6 +27,15 @@ KIND = {
     "theorem", "lemma", "proposition", "corollary", "definition", "assumption",
     "question", "conjecture", "obstruction", "example",
 }
+
+#: The LaTeX environments that carry a claim. Deliberately the same words as ``KIND``:
+#: a ``\label`` inside one of these, in ``modules/``, is a ledger node whose ``kind`` is
+#: the environment's name. Everything else — ``\section``, ``\subsection``, ``equation``,
+#: ``remark`` — is structural or expository and carries no node.
+CLAIM_ENVIRONMENTS = frozenset(KIND)
+
+ENVIRONMENT_RE = re.compile(r"\\(begin|end)\{([A-Za-z][A-Za-z0-9*]*)\}")
+LABEL_RE = re.compile(r"\\label\{([^}]+)\}")
 
 # One logical-status vocabulary. Mathematical form belongs in ``kind``;
 # speculative prose is not a ledger classification.
@@ -44,7 +53,7 @@ RESOLVE_FIELDS = (
 
 # Frontier relations resolve inside the ledger but do not enter the proof DAG.
 NODE_FIELDS = {
-    "id", "kind", "status", "provenance", "file", "label", "statement",
+    "id", "kind", "status", "provenance", "file", "summary",
     "depends_on", "assumes", "implies", "refines", "bounded_by",
     "heuristic_barriers", "references", "import_class", "proofs",
     "refuted_by",
@@ -81,6 +90,10 @@ OBSOLETE_NODE_FIELDS = {
     "family": "the search portfolio; an approach family is not a mathematical claim",
     "route": "the search portfolio; a route is coordination state, not a claim "
              "(CLAUDE.md constraint 12)",
+    "label": "the node id itself as the manuscript anchor; an override made the "
+             "id-is-the-anchor rule untrue and had no second reader",
+    "statement": "summary for the ledger's one-line gloss; the statement itself lives "
+                 "in modules/ under this node's \\label and nowhere else",
 }
 BIB_ENTRY_RE = re.compile(r"@[A-Za-z]+\s*\{\s*([^,\s]+)\s*,")
 TOP_LEVEL_FIELDS = {"meta", "nodes"}
@@ -94,14 +107,74 @@ OBSOLETE_META_FIELDS = {
 }
 
 
-def all_labels(root: Path) -> set[str]:
-    labels: set[str] = set()
+def _labels_with_environments(text: str) -> list[tuple[str, str | None]]:
+    """Pair every ``\\label`` in one file with the claim environment enclosing it.
+
+    The enclosing environment is the innermost open *claim* environment, so a label
+    inside a ``proof`` or an ``itemize`` nested in a ``theorem`` still belongs to the
+    theorem. A label with no claim environment above it — a ``\\section`` anchor, an
+    equation tag, a ``remark`` — is structural and pairs with ``None``.
+    """
+    events = sorted(
+        [(match.start(), "env", match.group(1), match.group(2))
+         for match in ENVIRONMENT_RE.finditer(text)]
+        + [(match.start(), "label", match.group(1), None)
+           for match in LABEL_RE.finditer(text)]
+    )
+    stack: list[str] = []
+    found: list[tuple[str, str | None]] = []
+    for _position, kind, first, second in events:
+        if kind == "env":
+            if first == "begin":
+                stack.append(second)
+            elif stack and second in stack:
+                # Close to the matching \begin, tolerating unbalanced prose above it.
+                del stack[stack.index(second):]
+        else:
+            enclosing = next(
+                (name for name in reversed(stack) if name in CLAIM_ENVIRONMENTS), None
+            )
+            found.append((first, enclosing))
+    return found
+
+
+def manuscript_labels(root: Path, errors: list[str] | None = None) -> dict[str, dict]:
+    """Every ``\\label`` under ``modules/``, with its environment and file.
+
+    The invariant this supports is narrower and truer than "a label is a node id":
+    every *claim-bearing theorem-environment* label is exactly one ledger node, and a
+    structural label is not a node at all. Returned as a mapping so a duplicate is
+    detectable — a set silently merged two anchors that disagree.
+    """
+    labels: dict[str, dict] = {}
     modules = root / "modules"
-    if not modules.exists():
+    if not modules.is_dir():
         return labels
-    for path in modules.rglob("*.tex"):
-        labels |= set(re.findall(r"\\label\{([^}]+)\}", path.read_text()))
+    for path in sorted(modules.rglob("*.tex")):
+        relative = path.relative_to(root).as_posix()
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            if errors is not None:
+                errors.append(f"{relative}: cannot read manuscript module: {exc}")
+            continue
+        for label, environment in _labels_with_environments(text):
+            if label in labels and errors is not None:
+                errors.append(
+                    f"{relative}: duplicate manuscript label '{label}', already at "
+                    f"{labels[label]['file']}; one anchor, one place"
+                )
+                continue
+            labels[label] = {"environment": environment, "file": relative}
     return labels
+
+
+def unclaimed_labels(labels: dict[str, dict], node_ids: set[str]) -> list[str]:
+    """Claim-environment labels in ``modules/`` that no ledger node answers for."""
+    return sorted(
+        label for label, entry in labels.items()
+        if entry["environment"] is not None and label not in node_ids
+    )
 
 
 def bibliography_keys(root: Path) -> set[str] | None:
@@ -113,14 +186,6 @@ def bibliography_keys(root: Path) -> set[str] | None:
         return set(BIB_ENTRY_RE.findall(path.read_text(encoding="utf-8")))
     except (OSError, UnicodeError):
         return None
-
-
-def labels_in_file(path: Path) -> set[str]:
-    """Return LaTeX labels in one readable file without leaking I/O exceptions."""
-    try:
-        return set(re.findall(r"\\label\{([^}]+)\}", path.read_text(encoding="utf-8")))
-    except (OSError, UnicodeError):
-        return set()
 
 
 def _load(path: Path, errors: list[str]) -> dict | None:
@@ -226,7 +291,7 @@ def _acyclic(program: str, nodes: dict[str, dict]) -> list[str]:
 
 
 def _validate_node(program: str, nid: str, node: dict, *, root: Path,
-                   labels: set[str], bib_keys: set[str] | None,
+                   labels: dict[str, dict], bib_keys: set[str] | None,
                    nodes: dict[str, dict], obstruction_ids: set[str],
                    errors: list[str]) -> None:
     for field, replacement in OBSOLETE_NODE_FIELDS.items():
@@ -237,7 +302,7 @@ def _validate_node(program: str, nid: str, node: dict, *, root: Path,
     for field in sorted(LIST_FIELDS & set(node)):
         if not isinstance(node[field], list):
             errors.append(f"[{program}] {nid}.{field}: must be a list")
-    for field in ("kind", "status", "provenance", "file", "statement"):
+    for field in ("kind", "status", "provenance", "file", "summary"):
         if field not in node:
             errors.append(f"[{program}] {nid}: missing '{field}'")
 
@@ -305,49 +370,45 @@ def _validate_node(program: str, nid: str, node: dict, *, root: Path,
     elif "references" in node:
         errors.append(f"[{program}] {nid}: references is only valid with provenance literature")
 
-    declared_file: Path | None = None
+    declared_file: str | None = None
     if "file" in node:
-        file_ref = node.get("file")
-        context = f"[{program}] {nid}.file"
-        if not isinstance(file_ref, str) or not file_ref.strip():
-            errors.append(f"{context}: must be a non-empty string")
-        else:
-            relative_file = Path(file_ref)
-            if relative_file.is_absolute():
-                errors.append(f"{context}: want a repo-relative path, got '{file_ref}'")
-            else:
-                resolved_file = (root / relative_file).resolve()
-                try:
-                    resolved_file.relative_to(root.resolve())
-                except ValueError:
-                    errors.append(f"{context}: path escapes repository root: '{file_ref}'")
-                else:
-                    if not resolved_file.is_file():
-                        errors.append(f"{context}: '{file_ref}' does not exist")
-                    else:
-                        declared_file = resolved_file
+        # Confined to modules/ like every other cross-lane pointer is confined to its
+        # own directory: the manuscript is the only place a claim may be stated, so a
+        # node anchored anywhere else has no anchor a reader would think to look at.
+        resolved_file = contained_path(
+            root, node.get("file"), "modules", f"[{program}] {nid}.file", errors,
+            suffix=".tex", outside="a claim is stated in modules/, nowhere else",
+        )
+        if resolved_file is not None:
+            declared_file = repo_relative(root, resolved_file)
 
-    effective_label = node.get("label", nid)
-    if "label" in node and (
-        not isinstance(node.get("label"), str) or not node["label"].strip()
-    ):
-        errors.append(f"[{program}] {nid}.label: must be a non-empty LaTeX label")
-    elif isinstance(effective_label, str):
-        if effective_label not in labels:
+    anchor = labels.get(nid)
+    if anchor is None:
+        errors.append(
+            f"[{program}] {nid}: no manuscript label '{nid}' in modules/; the node id "
+            "is the anchor"
+        )
+    else:
+        if anchor["environment"] is None:
             errors.append(
-                f"[{program}] {nid}: effective manuscript label "
-                f"'{effective_label}' not found in modules/"
+                f"[{program}] {nid}: '{nid}' labels a structural element in "
+                f"{anchor['file']}, not a claim environment; a node states a claim"
             )
-        elif declared_file is not None and effective_label not in labels_in_file(declared_file):
+        elif isinstance(kind, str) and anchor["environment"] != kind:
             errors.append(
-                f"[{program}] {nid}.file: '{node.get('file')}' does not contain "
-                f"effective label '{effective_label}'"
+                f"[{program}] {nid}.kind: '{kind}' disagrees with the "
+                f"\\begin{{{anchor['environment']}}} it labels in {anchor['file']}"
+            )
+        if declared_file is not None and declared_file != anchor["file"]:
+            errors.append(
+                f"[{program}] {nid}.file: '{declared_file}' does not contain '{nid}'; "
+                f"it is in {anchor['file']}"
             )
 
-    if "statement" in node and (
-        not isinstance(node.get("statement"), str) or not node["statement"].strip()
+    if "summary" in node and (
+        not isinstance(node.get("summary"), str) or not node["summary"].strip()
     ):
-        errors.append(f"[{program}] {nid}.statement: must be a non-empty string")
+        errors.append(f"[{program}] {nid}.summary: must be a non-empty string")
 
     for field in RESOLVE_FIELDS:
         for ref in as_list(node.get(field)):
@@ -393,13 +454,13 @@ def _validate_node(program: str, nid: str, node: dict, *, root: Path,
 
 def check(root: Path, research: Path, errors: list[str],
           configured_ledger: str | Path | None = None,
-          labels: set[str] | None = None) -> list[dict]:
+          labels: dict[str, dict] | None = None) -> list[dict]:
     """Validate the claim graph and return one record per loaded ledger.
 
     ``configured_ledger`` is passed in production so the single ledger is explicit and a
     stray second one is an error; fixture trees omit it and discover ledgers recursively.
     """
-    labels = all_labels(root) if labels is None else labels
+    labels = manuscript_labels(root, errors) if labels is None else labels
     bib_keys = bibliography_keys(root)
     ledgers: list[dict] = []
     program_paths: dict[str, Path] = {}
@@ -481,11 +542,22 @@ def check(root: Path, research: Path, errors: list[str],
                     f"via {' -> '.join(path)}"
                 )
 
+    # The other direction of the anchor invariant. A node without its label is caught
+    # per node above; a claim stated in the manuscript that no node answers for is
+    # caught here, once, against every ledger loaded.
+    declared = {nid for ledger in ledgers for nid in ledger["nodes"]}
+    for label in unclaimed_labels(labels, declared):
+        errors.append(
+            f"{labels[label]['file']}: \\label{{{label}}} states a "
+            f"\\begin{{{labels[label]['environment']}}} that no ledger node answers "
+            "for; give it a node or make it structural"
+        )
+
     return ledgers
 
 
 def node_ids(ledgers: list[dict]) -> set[str]:
-    """Every node id, bare and program-qualified, for cross-plane reference checks."""
+    """Every node id, bare and program-qualified, for cross-lane reference checks."""
     ids = {nid for ledger in ledgers for nid in ledger["nodes"]}
     ids |= {f"{ledger['program']}/{nid}" for ledger in ledgers for nid in ledger["nodes"]}
     return ids

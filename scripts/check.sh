@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 # Every validator in this repository, in the order that fails fastest.
 #
-# Structure first — scripts/check.py, every plane at once (cheap, and the thing
+# Structure first — scripts/check.py, every lane at once (cheap, and the thing
 # most edits touch) — then the numerical harness, then the document. A green run
 # establishes structure only: it says nothing about whether a proof is correct
 # (CLAUDE.md constraint 4).
 #
-# While iterating on one plane, run it directly instead:
-#   python3 scripts/check.py --plane portfolio
+# While iterating on one lane, run it directly instead:
+#   python3 scripts/check.py --lane portfolio
+#
+# `check.py ready` is deliberately NOT run here. It asks whether the repository has been
+# instantiated, and a freshly cloned template must stay green on this script while
+# correctly failing that one.
 #
 #   ./scripts/check.sh            # everything
 #   ./scripts/check.sh --fast     # skip the LaTeX build
@@ -29,6 +33,7 @@ run() {
 }
 
 run "structure"       python3 scripts/check.py
+run "worked example"  python3 scripts/check.py --root example
 run "checker tests"   python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 
 if command -v uv >/dev/null 2>&1; then

@@ -1,9 +1,9 @@
-"""The roles plane: canonical Claude role definitions, assignment lenses, and adapters.
+"""The roles lane: canonical Claude role definitions, assignment lenses, and adapters.
 
 The roster is the set of ``.claude/agents/*.md`` files: adding a role is a one-file
 operation. Each role's frontmatter is self-describing, so no list of role names is
 duplicated here or in any configuration file. Codex cannot read the Markdown, so this
-plane also owns generation of ``.codex/agents/*.toml`` and rejects a stale adapter.
+lane also owns generation of ``.codex/agents/*.toml`` and rejects a stale adapter.
 
 ``.claude/lenses/*.md`` holds the assignment lenses. A lens is one strategy a role can be
 pointed at; it has no tools and no write surface of its own, so it is not a role and gets
@@ -22,6 +22,13 @@ from pathlib import Path
 
 CLAUDE_AGENTS = Path(".claude/agents")
 CLAUDE_LENSES = Path(".claude/lenses")
+
+#: Files in .claude/agents/ that document the roster rather than declare a role.
+#: README.md is the runtime contract every role body must reference;
+#: MAINTAINING.md is the maintainer's roster and extension guide.
+RUNTIME_CONTRACT = "README.md"
+ROSTER = "MAINTAINING.md"
+NOT_ROLES = frozenset({RUNTIME_CONTRACT, ROSTER})
 CODEX_AGENTS = Path(".codex/agents")
 
 WRITE_TOOLS = {"Edit", "Write"}
@@ -73,11 +80,11 @@ def load_roles(root: Path, errors: list[str]) -> dict[str, Role]:
     roles: dict[str, Role] = {}
     directory = root / CLAUDE_AGENTS
     paths = sorted(directory.glob("*.md"))
-    if not [path for path in paths if path.name != "README.md"]:
+    if not [path for path in paths if path.name not in NOT_ROLES]:
         errors.append(f"{CLAUDE_AGENTS}/ declares no role")
 
     for path in paths:
-        if path.name == "README.md":
+        if path.name in NOT_ROLES:
             continue
         relative = path.relative_to(root).as_posix()
         try:
@@ -142,12 +149,25 @@ def _validate_lenses(root: Path, roles: dict[str, Role], errors: list[str]) -> d
     role contract pointing at nothing.
     """
     directory = root / CLAUDE_LENSES
+    declared_by_roles = {
+        name: sorted(set(re.findall(r"\.claude/lenses/([A-Za-z0-9._-]+)\.md", role.body))
+                     - {"README"})
+        for name, role in roles.items()
+    }
     if not directory.is_dir():
+        # Returning early here let a role's lens declarations dangle unchecked, which is
+        # the one arrangement where a researcher is told to load a file nobody ships.
+        for name, references in sorted(declared_by_roles.items()):
+            for reference in references:
+                errors.append(
+                    f"{roles[name].relative}: declares lens '{reference}', but "
+                    f"{CLAUDE_LENSES}/ does not exist"
+                )
         return {}
 
     lenses: dict[str, str] = {}
     for path in sorted(directory.glob("*.md")):
-        if path.name == "README.md":
+        if path.name == RUNTIME_CONTRACT:
             continue
         relative = path.relative_to(root).as_posix()
         try:
@@ -175,14 +195,13 @@ def _validate_lenses(root: Path, roles: dict[str, Role], errors: list[str]) -> d
                 f"{relative}: no role declares this lens; "
                 f"{roles[owner].relative} must reference it or the file is dead prose"
             )
-    for name, role in sorted(roles.items()):
-        references = set(re.findall(r"\.claude/lenses/([A-Za-z0-9._-]+)\.md", role.body))
-        for reference in sorted(references - {"README"}):
+    for name, references in sorted(declared_by_roles.items()):
+        for reference in references:
             declared = (CLAUDE_LENSES / f"{reference}.md").as_posix()
             if lenses.get(declared) != name:
                 errors.append(
-                    f"{role.relative}: declares lens '{reference}', which is not a lens "
-                    f"belonging to '{name}'"
+                    f"{roles[name].relative}: declares lens '{reference}', which is not "
+                    f"a lens belonging to '{name}'"
                 )
     return lenses
 
@@ -219,9 +238,14 @@ def write_codex_adapters(root: Path, roles: dict[str, Role]) -> list[str]:
     return []
 
 
-def _validate_readme(root: Path, roles: dict[str, Role], errors: list[str]) -> None:
-    path = root / CLAUDE_AGENTS / "README.md"
-    relative = (CLAUDE_AGENTS / "README.md").as_posix()
+def _validate_roster(root: Path, roles: dict[str, Role], errors: list[str]) -> None:
+    """The roster table names every role and nothing else.
+
+    It lives in the maintainer's guide rather than the runtime contract: a role loads
+    README.md to execute a task and never needs the table of its colleagues.
+    """
+    path = root / CLAUDE_AGENTS / ROSTER
+    relative = (CLAUDE_AGENTS / ROSTER).as_posix()
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as exc:
@@ -231,7 +255,7 @@ def _validate_readme(root: Path, roles: dict[str, Role], errors: list[str]) -> N
     for name in sorted(roles):
         if name not in linked:
             errors.append(f"{relative}: roster does not link role '{name}'")
-    for name in sorted(linked - set(roles) - {"README"}):
+    for name in sorted(linked - set(roles) - {stem.removesuffix(".md") for stem in NOT_ROLES}):
         errors.append(f"{relative}: roster links '{name}.md', which is not a role")
 
 
@@ -283,7 +307,7 @@ def check(root: Path, errors: list[str], *, write_codex: bool = False) -> dict[s
     roles = load_roles(root, errors)
     if write_codex and len(errors) == before:
         errors.extend(write_codex_adapters(root, roles))
-    _validate_readme(root, roles, errors)
+    _validate_roster(root, roles, errors)
     _validate_lenses(root, roles, errors)
     _validate_codex_adapters(root, roles, errors)
     return roles

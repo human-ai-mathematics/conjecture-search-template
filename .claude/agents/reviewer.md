@@ -38,8 +38,11 @@ Every invocation is given one lens: **`certify`** (does this proof actually prov
   quoted date matching the filename, non-empty duplicate-free `authors`, `nodes`,
   `solutions`, and a `reviewer` distinct from every author.
 - A failed, partial, or blocked review writes a new report with the smaller `type: audit`
-  front matter. An audit that replaces an earlier audit as the current reading names it in
-  `supersedes:`; neither record is edited or deleted.
+  front matter. An audit that replaces an earlier audit **of the same subject** as the
+  current reading names it in `supersedes:`; neither record is edited or deleted. Currency
+  is per subject: name nothing when your subject is new, and never supersede an unrelated
+  audit merely because it is older. `check.py checkpoints` prints the audit heads, and that
+  list is only as honest as this field.
 
 ## Assignment lenses
 

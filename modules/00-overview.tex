@@ -1,71 +1,34 @@
-% modules/00-overview.tex — seed module for the template's worked example.
+% modules/00-overview.tex — the manuscript's first module.
 %
-% Every \label here is a ledger node id in research/program/ledger.yaml. Delete
-% this file and its three nodes once the repository has real content; keep the
-% shape: an obstruction that fences the search, an open question, and a proved
-% statement that carries a dossier under solutions/.
+% Claim-bearing theorem environments here carry a \label, and every such label is a
+% ledger node id in research/program/ledger.yaml with a matching `kind`. Structural
+% labels (\section, \subsection, equations) are not nodes and need none.
+%
+% This file ships with orientation prose and no claims. A worked module holding an
+% obstruction, an open question and a proved proposition is in example/modules/.
 \documentclass[../main.tex]{subfiles}
 \begin{document}
 
 \section{Orientation}
 \label{sec:overview}
 
-Replace this module. It exists so that a freshly cloned template is green under
-every validator, and so that each artifact genre has one worked example to copy.
+Replace this section. State what this document studies, which question it is
+organized around, and which conventions everything else rests on.
 
 A convention this program fixes --- a sign, a scaling, a log base, which constant
-absorbs what --- is stated here as a \texttt{\textbackslash begin\{definition\}}
-under its own \texttt{\textbackslash label} and carries a ledger node with
-\texttt{kind: definition} and \texttt{status: defined}. Claims resting on it name
-it in \texttt{depends\_on}, so changing it is a mathematical edit the checker can
-see. There is no separate notation or normalization file: a second list would be a
-copy of the dependency graph that nothing keeps honest.
+absorbs what --- is stated as a \texttt{\textbackslash begin\{definition\}} under its
+own \texttt{\textbackslash label} and carries a ledger node with
+\texttt{kind: definition} and \texttt{status: defined}. Claims resting on it name it
+in \texttt{depends\_on}, so changing it is a mathematical edit the checker can see.
+There is no separate notation or normalization file: a second list would be a copy of
+the dependency graph that nothing keeps honest.
 
-\subsection{An obstruction}
-
-An obstruction is a fence: a statement violating it is wrong by construction, so
-it is read \emph{before} a proof is attempted or a numerical run is spent
-(\texttt{CLAUDE.md} constraint 5). It is an ordinary ledger node --- \texttt{kind:
-obstruction}, stated here under a \texttt{\textbackslash label} like any other ---
-and it is stated here, rather than in a registry of its own, because a fence is
-only useful next to the mathematics it fences.
-
-State both halves. An obstruction that records only what it rules out, or only
-that something is hard, fences nothing: the escape routes are what the next agent
-reads.
-
-\begin{remark}[worked example of an obstruction]
-\label{obs:example}
-  \emph{Rules out.} Establishing a universal statement from a finite battery of
-  instances. Agreement across every instance tried constrains nothing about the
-  untried ones, so no run --- however large --- discharges a universal claim.
-
-  \emph{Leaves open.} Refutation. One instance suffices to refute a universal
-  statement, and an exact arithmetic witness for such an instance is a genuine
-  candidate --- though it still requires an independently reviewed refutation
-  dossier before it carries logical force (\texttt{CLAUDE.md} constraint 2).
-\end{remark}
-
-\subsection{An open question}
-
-\begin{question}
-\label{q:example}
-  Replace this with the question the repository is actually organized around.
-  An \texttt{open} node is one nobody has discharged; it carries no proof
-  provenance, and saying it is ``probably true'' is not a ledger classification.
-\end{question}
-
-\subsection{A proved statement}
-
-\begin{proposition}
-\label{prop:example}
-  Let $a_1,\dots,a_n$ be real numbers and let $\bar a = n^{-1}\sum_{i=1}^n a_i$.
-  Then $\sum_{i=1}^n (a_i - \bar a)^2 = \sum_{i=1}^n a_i^2 - n \bar a^2$.
-\end{proposition}
-
-The proof is a standalone dossier, \texttt{solutions/prop-example.tex}, certified
-by an independent review under \texttt{research/reviews/}. The manuscript states
-the result; the dossier is what a reviewer or Lean checks
-(\texttt{solutions/README.md}).
+An obstruction is a fence: a statement violating it is wrong by construction, so it is
+read \emph{before} a proof is attempted or a numerical run is spent
+(\texttt{CLAUDE.md} constraint 5). It is an ordinary ledger node ---
+\texttt{kind: obstruction}, stated under a \texttt{\textbackslash label} in an
+\texttt{obstruction} environment like any other claim --- and it lives here, rather
+than in a registry of its own, because a fence is only useful next to the mathematics
+it fences. State both halves: what it rules out, and what it leaves open.
 
 \end{document}

@@ -53,6 +53,7 @@ supersedes:
 | `artifacts` | optional | Repo-relative `research/runs/` artifacts cited; each must exist. |
 | `candidates` | required iff `outcome: candidate` | Candidate statements proposed here. |
 | `retires` | optional | Candidate ids an earlier checkpoint proposed and this one kills. |
+| `promotes` | optional | Candidate ids an earlier checkpoint proposed and this one turned into ledger nodes. |
 | `supersedes` | optional | Strictly earlier checkpoints this one replaces as the current reading. |
 
 ### Outcomes
@@ -85,7 +86,8 @@ declaring the wrong one is an error.
 
 They mean different things and neither deletes anything:
 
-- `retires:` says a tentative **statement** is no longer live;
+- `retires:` says a tentative **statement** is no longer live because it died;
+- `promotes:` says a tentative statement is no longer live because it became a node;
 - `supersedes:` says a later **record** should be read instead of an earlier one.
 
 `python3 scripts/check.py checkpoints` prints the current heads — every record nothing later
@@ -107,9 +109,13 @@ candidates:
       A precise statement someone could later prove or refute.
 ```
 
+The candidate's `statement:` is canonical — nothing else in the repository holds that text,
+which is the whole reason a candidate is allowed to carry one. Contrast a ledger node, whose
+`summary:` is a gloss because `modules/` holds the statement.
+
 Ids are namespaced `cand:<slug>` so they can never be mistaken for a node id, and they are
-unique across the whole log. A candidate is **live** until some later checkpoint names it in
-`retires:`; nothing is edited in place to kill one.
+unique across the whole log. A candidate is **live** until some later checkpoint retires or
+promotes it; nothing is edited in place to kill one.
 
 ```bash
 python3 scripts/check.py candidates   # every live candidate, with where it came from
@@ -120,9 +126,34 @@ answering a question about itself. A candidate is also the only admissible targe
 portfolio `blocker:` other than a ledger node: if a route is worth formally blocking, its
 missing lemma is worth stating precisely.
 
+### Promotion is one act
+
 Promote a candidate when it is precise, stable, and useful enough to reuse or track on the
-frontier: it then earns a `\label` in `modules/` and a ledger node. Proved internal nodes
-additionally require a certified dossier.
+frontier. Promotion is four things done together, not a node addition with paperwork to
+follow:
+
+1. the statement gets a `\label` in `modules/`, inside the claim environment matching its
+   kind;
+2. it gets a ledger node with that id (proved internal nodes additionally require a
+   certified dossier);
+3. **a checkpoint records the promotion**, which is what ends the candidate:
+
+   ```yaml
+   promotes:
+     - candidate: cand:example-identity-stability
+       node: lem:example-identity-stability
+   ```
+
+4. every portfolio route blocked on the candidate is repointed at the node.
+
+Steps 3 and 4 are checked: a promoted candidate leaves `check.py candidates`, a `promotes:`
+entry naming a node that does not exist is an error, and a `blocker:` still naming the
+promoted candidate is an error that tells you which node to use. Without step 3 the
+candidate stayed live forever and one statement had two homes, which is exactly what
+`CLAUDE.md` constraint 8 exists to prevent.
+
+The node id need not resemble the candidate id — `cand:x` normally becomes `lem:x` or
+`thm:x` — which is why the promotion is recorded as a pair rather than inferred.
 
 ## Body
 

@@ -8,8 +8,9 @@ nodes:
 ---
 
 Worked example of the second thing a checkpoint does: explain a *search* change rather than
-a mathematical one. It is also the template's only record carrying `approach:`. Delete it
-with the rest of the worked example — see the list in the root `README.md`.
+a mathematical one. It is also the example's only record carrying `approach:`; the other is
+attached from the portfolio's side, which is how a record written before the portfolio
+existed gets placed on a route without editing it.
 
 ## What was tried
 

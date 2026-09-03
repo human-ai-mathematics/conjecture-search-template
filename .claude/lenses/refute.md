@@ -36,6 +36,38 @@ research program accumulates, and it belongs in the problem brief.
 | `symmetry` | instances with extra symmetry, which often collapse a quantity the proof needed to be generic |
 | `scale` | the statement under rescaling and reparameterization: a claim that is not scale-consistent is usually false or misstated |
 
+## From witness to `status: refuted`
+
+Finding the witness is the first of five steps, not the last. Refutation is the same path
+as proof with the roles in a different order, and it ends in the same place: a certified
+dossier. Until then a witness is a *candidate*, whatever its arithmetic says
+(`CLAUDE.md` constraint 2).
+
+1. **Record it as a candidate.** The witness, or the divergent family, goes into the
+   `candidates:` front matter of your checkpoint under a `cand:` id, with the exact
+   closed form. It has no manuscript anchor, no status and no node yet (constraint 8).
+2. **Have it promoted to a refuter node.** The statement the witness proves — "there
+   exists an instance with ...", or "the constant diverges along ..." — is a claim in its
+   own right. Propose it to the orchestrator as a manuscript statement plus a ledger node
+   of the right `kind`. The checkpoint that records the promotion retires the candidate in
+   the same act, through `promotes:`; a promotion that leaves the candidate live has left
+   one statement two homes.
+3. **Prove the refuter.** It is now an ordinary open node and needs an ordinary dossier
+   under `solutions/`, written by a `researcher` on the `prove` lens. A closed-form
+   witness usually makes this short; it never makes it optional, and a run artifact is
+   never a step in it.
+4. **Get it certified.** A `reviewer` on the `certify` lens checks that dossier like any
+   other, and additionally that the refuter really negates the target's exact quantified
+   statement — a single witness for a universal claim, a certified divergent family for a
+   dimension-free or uniform constant (constraint 11).
+5. **Then the target's status changes.** The orchestrator sets the target to
+   `status: refuted` with the now-proved refuter in `refuted_by`. The refuter does *not*
+   go in `depends_on`: that field records facts a proof used, and a refuted node has no
+   proof.
+
+You perform step 1 and report the rest. Do not propose a status change yourself, and never
+report a target as refuted before its refuter is certified.
+
 ## Report additions
 
 - Outcome as `exact witness` / `directional break` / `survived with margin X` /

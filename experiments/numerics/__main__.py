@@ -23,7 +23,8 @@ def main(argv: list[str] | None = None) -> int:
                             help="target-owned run profile (default: standard; see 'list')")
     run_parser.add_argument("--seed", type=int, default=0)
     run_parser.add_argument("--out", default=None,
-                            help="artifact path (default research/runs/<timestamp>-<target>.jsonl)")
+                            help="artifact path under research/runs/ "
+                                 "(default research/runs/<timestamp>-<target>.jsonl)")
 
     args = parser.parse_args(argv)
 
@@ -34,8 +35,17 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     from . import artifact
+    out = args.out
+    if out is not None:
+        # The production CLI writes only into the archive. `artifact.run(out=...)` stays
+        # unconstrained so test helpers can write to a temporary directory, but an
+        # artifact outside research/runs/ is one no reader and no checker will ever see.
+        try:
+            out = artifact.confine_to_runs(out)
+        except ValueError as exc:
+            parser.error(str(exc))
     try:
-        path = artifact.run(args.target, seed=args.seed, profile=args.profile, out=args.out)
+        path = artifact.run(args.target, seed=args.seed, profile=args.profile, out=out)
     except ValueError as exc:
         parser.error(str(exc))
     print(f"wrote {path}")

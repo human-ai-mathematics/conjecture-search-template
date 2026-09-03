@@ -10,7 +10,7 @@ contract; everything below is what `certify` adds.
 
 ## What you must actually check
 
-1. **Statement agreement.** The dossier theorem, the ledger `statement:`, and the manuscript
+1. **Statement agreement.** The dossier theorem, the ledger `summary:`, and the manuscript
    statement at the `\label` the node `refines` must agree mathematically — not merely
    resolve. This is precisely what `check.py` cannot do (`CLAUDE.md` constraint 4).
 2. **Barriers.** The proof must respect every hard `bounded_by` obstruction. Check advisory
@@ -26,6 +26,20 @@ contract; everything below is what `certify` adds.
 6. **The steps.** Go through the argument line by line. Constants, quantifier order, domains,
    boundary conventions, and limit interchanges are where these proofs fail.
 7. **Standalone build.** `cd solutions && latexmk -pdf -outdir=../build <id>.tex`.
+
+## Certifying a refutation
+
+A refuter is certified as an ordinary proof — it *is* one — plus one question the prove
+case does not ask: **does this refuter negate the target's exact quantified statement?** A
+single witness discharges a universal claim; a dimension-free or uniform constant generally
+needs a certified family with the relevant divergence, and a witness for one dimension does
+not touch it (`CLAUDE.md` constraint 11). Quote the target, quote the negation, and say
+which of the two shapes the dossier supplies.
+
+Certify the refuter node. The target's transition to `status: refuted` with `refuted_by` is
+the orchestrator's act on the strength of your report, and it is a separate delta. The
+refuter belongs in `refuted_by` only — never in the target's `depends_on`, which records
+facts used in a proof the target does not have.
 
 ## Report additions
 

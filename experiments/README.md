@@ -109,8 +109,29 @@ observe("K_7", "every 2-colouring contains a monochromatic triangle",
 
 The target id is a **stable public name**: artifacts keep the id they were written with and the
 archive is append-only, so renaming a target breaks the trail from a checkpoint back to its
-evidence. `python3 scripts/check.py --plane numerics` validates that trail's near end: every
-artifact still parses and still carries its provenance header.
+evidence. `python3 scripts/check.py --lane numerics` validates that trail's near end: every
+artifact still parses, still carries its provenance header, and records no half-observation —
+a record with any of `claim`, `evidence`, `outcome` carries all four, which is the shape that
+lets an unlabelled number look like evidence.
+
+## Provenance
+
+Every header records which source tree produced the run: `git_commit`, `git_dirty`, and
+`git_diff_sha256` — a hash of the uncommitted diff when there is one, and `null` when the
+worktree is clean or there is no checkout. The commit alone could not reproduce a run whose
+target implementation was still uncommitted, which is the normal case while a diagnostic is
+being written.
+
+This is provenance, not eligibility. Nothing gates on it: a dirty run is a run, and its
+numbers are worth exactly what any numbers are worth (`CLAUDE.md` constraint 2). The retired
+`evidence_eligible` field decided whether output *counted*, and nothing here does.
+
+The three fields arrived with artifact schema 3. Artifacts are immutable, so an older one is
+asked only for what its own version promised.
+
+`numerics run --out` writes only under `research/runs/`. An artifact somewhere else is one no
+reader and no checker will ever see; the library entry point `artifact.run(out=...)` stays
+unconstrained so test helpers can write to a temporary directory.
 
 Before writing a target, fix the discriminating threshold: what value would count against the
 candidate, and what value is merely consistent with it. A diagnostic with no refuting outcome is

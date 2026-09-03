@@ -35,7 +35,8 @@ claim has actually been checked. Import class is the point, not a formality.
   repeating it). A literature sweep is durable by construction; record it.
 
 Every checkpoint carries the front matter validated by `check.py`; see
-`research/explorations/README.md`, and name the approach the search serves in `approach:`.
+`research/explorations/README.md`. Name the route the search serves in `approach:` when this
+repository has a portfolio; when it has none, name the ledger nodes in `nodes:`.
 A statement this work threw off that nothing yet depends on stays there as a `cand:`
 candidate — it does not become a ledger node and it has no other home (`CLAUDE.md`
 constraint 8).

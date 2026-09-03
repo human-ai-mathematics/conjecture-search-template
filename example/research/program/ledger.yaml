@@ -1,0 +1,78 @@
+# The worked example's claim graph. This is a fixture, not this repository's
+# program: it exists so every artifact genre ships with one instance to copy, and
+# so `python3 scripts/check.py --root example` keeps that instance honest.
+#
+# The real ledger is research/program/ledger.yaml and ships empty. The rules are
+# the same in both: what the *search* is doing lives in portfolio.yaml and never
+# here (CLAUDE.md constraint 12); statements live in modules/; the field-level
+# schema is research/program/ledger-schema.md.
+#
+# The nodes below are: an obstruction that fences the search, an open question, a
+# proved statement with a certified dossier, and a conjecture refuted by a proved
+# refuter — so that proving and refuting each have a worked instance.
+
+meta:
+  program: example
+  scope: >-
+    Finite real sequences and the elementary identities they satisfy — the scope of
+    a fixture, chosen so the mathematics never distracts from the structure.
+
+nodes:
+
+  # ---------------------------------------------------------------------------
+  # OBSTRUCTIONS — ordinary nodes; the fence itself is stated at the \label
+  # ---------------------------------------------------------------------------
+  - id: obs:example
+    kind: obstruction
+    status: open
+    provenance: internal
+    file: modules/00-overview.tex
+    summary: "A finite battery of instances cannot establish a universal statement; numerical agreement over the instances tried constrains nothing about the untried ones."
+
+  # ---------------------------------------------------------------------------
+  # OPEN TARGETS
+  # ---------------------------------------------------------------------------
+  - id: q:example
+    kind: question
+    status: open
+    provenance: internal
+    file: modules/00-overview.tex
+    summary: "Placeholder for the question this repository is organized around. Replace it with a precise statement someone could prove or refute."
+    heuristic_barriers: [obs:example]
+
+  # ---------------------------------------------------------------------------
+  # ESTABLISHED
+  # ---------------------------------------------------------------------------
+  - id: prop:example
+    kind: proposition
+    status: proved
+    provenance: internal
+    file: modules/00-overview.tex
+    summary: "For real a_1..a_n with mean abar, sum_i (a_i - abar)^2 = sum_i a_i^2 - n abar^2."
+    proofs:
+      - artifact: solutions/prop-example.tex
+        mode: agent
+        review: research/reviews/2026-09-01-prop-example-proof-review.md
+
+  # ---------------------------------------------------------------------------
+  # REFUTED — the other way a search ends, and it ends the same way: certified
+  # ---------------------------------------------------------------------------
+  - id: conj:example
+    kind: conjecture
+    status: refuted
+    provenance: internal
+    file: modules/00-overview.tex
+    summary: "Every finite real sequence with n >= 2 has centred sum of squares at least half its sum of squares."
+    refuted_by: [prop:example-refuter]
+
+  - id: prop:example-refuter
+    kind: proposition
+    status: proved
+    provenance: internal
+    file: modules/00-overview.tex
+    summary: "The sequence (1,1) has centred sum of squares 0 and half sum of squares 1, so conj:example fails."
+    depends_on: [prop:example]
+    proofs:
+      - artifact: solutions/prop-example-refuter.tex
+        mode: agent
+        review: research/reviews/2026-09-03-prop-example-refuter-proof-review.md

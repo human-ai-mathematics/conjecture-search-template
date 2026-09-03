@@ -1,4 +1,4 @@
-"""The checkpoints plane: durable search memory and the candidate statements it carries.
+"""The checkpoints lane: durable search memory and the candidate statements it carries.
 
 A checkpoint is one dated file in ``research/explorations/`` recording a durable search
 event — not every attempt. Its envelope records what the work *engaged*: which ledger
@@ -22,7 +22,7 @@ RUNS = "research/runs"
 
 EXPLORATION_FIELDS = {
     "type", "date", "nodes", "outcome", "artifacts", "candidates", "retires",
-    "approach", "supersedes",
+    "promotes", "approach", "supersedes",
 }
 EXPLORATION_REQUIRED = {"type", "date", "outcome"}
 
@@ -34,6 +34,12 @@ EXPLORATION_OUTCOMES = {"dead-end", "directional", "candidate", "proposed"}
 # ledger node id, and an approach id is namespaced so it can never be mistaken for either.
 CANDIDATE_ID_RE = re.compile(r"^cand:[a-z0-9][a-z0-9-]*$")
 CANDIDATE_FIELDS = {"id", "statement"}
+
+#: Promotion is one act, not three. Adding the manuscript statement and the node while
+#: leaving the candidate live left two homes for one statement, which is exactly what
+#: constraint 8 forbids; recording the promotion here retires the candidate, points the
+#: portfolio at the node, and leaves the audit trail in the append-only log.
+PROMOTION_FIELDS = {"candidate", "node"}
 
 
 def _read_metadata(path: Path, root: Path, errors: list[str]) -> dict | None:
@@ -81,6 +87,7 @@ def _read_metadata(path: Path, root: Path, errors: list[str]) -> dict | None:
         "retires": optional_string_list(raw, "retires", context, errors),
         "supersedes": optional_string_list(raw, "supersedes", context, errors),
         "candidates": [],
+        "promotes": [],
     }
 
     if "candidates" in raw:
@@ -104,6 +111,28 @@ def _read_metadata(path: Path, root: Path, errors: list[str]) -> dict | None:
                 errors.append(f"{where}.statement: must be a non-empty string")
                 continue
             metadata["candidates"].append({"id": candidate_id, "statement": statement})
+
+    if "promotes" in raw:
+        value = raw["promotes"]
+        if not isinstance(value, list):
+            errors.append(f"{context}.promotes: must be a list")
+            value = []
+        for index, entry in enumerate(value):
+            where = f"{context}.promotes[{index}]"
+            if not isinstance(entry, dict):
+                errors.append(f"{where}: must be a mapping with 'candidate' and 'node'")
+                continue
+            for field in sorted(set(entry) - PROMOTION_FIELDS):
+                errors.append(f"{where}: unknown field '{field}'")
+            candidate_id = entry.get("candidate")
+            node_id = entry.get("node")
+            if not isinstance(candidate_id, str) or not CANDIDATE_ID_RE.match(candidate_id):
+                errors.append(f"{where}.candidate: want 'cand:<slug>', got '{candidate_id}'")
+                continue
+            if not isinstance(node_id, str) or not node_id.strip():
+                errors.append(f"{where}.node: must name the ledger node it became")
+                continue
+            metadata["promotes"].append({"candidate": candidate_id, "node": node_id})
 
     declared = [entry["id"] for entry in metadata["candidates"]]
     if bool(declared) != (outcome == "candidate"):
@@ -163,17 +192,18 @@ def check(root: Path, node_ids: set[str], approach_ids: set[str] | None,
           errors: list[str]) -> dict:
     """Validate every dated checkpoint; return live candidates and the record index.
 
-    A candidate is retired by a later checkpoint naming it in ``retires``; the log
-    itself is never rewritten (CLAUDE.md constraint 7), so "live" is derived here
-    rather than recorded anywhere.
+    A candidate leaves the live list two ways: a later checkpoint retires it, or a later
+    checkpoint promotes it to a ledger node. The log itself is never rewritten
+    (CLAUDE.md constraint 7), so "live" is derived here rather than recorded anywhere.
     """
     directory = root / EXPLORATIONS
     records: list[dict] = []
     if not directory.is_dir():
-        return {"records": [], "candidates": [], "superseded": {}}
+        return {"records": [], "candidates": [], "promoted": {}, "superseded": {}}
 
     declared: dict[str, dict] = {}
     retired: dict[str, tuple[int, str]] = {}
+    promoted: dict[str, dict] = {}
 
     for order, path in enumerate(sorted(directory.rglob("*.md"))):
         if path.name == "README.md":
@@ -226,8 +256,42 @@ def check(root: Path, node_ids: set[str], approach_ids: set[str] | None,
                     "order": order,
                 }
 
-        for candidate_id in metadata["retires"]:
+        for promotion in metadata["promotes"]:
+            candidate_id, node_id = promotion["candidate"], promotion["node"]
+            if node_id not in node_ids:
+                errors.append(
+                    f"{context}.promotes: '{node_id}' is not a ledger node id; a "
+                    "promotion is complete only once the node exists"
+                )
             if candidate_id in {entry["id"] for entry in metadata["candidates"]}:
+                errors.append(
+                    f"{context}.promotes: '{candidate_id}' is proposed by this same "
+                    "checkpoint; a candidate is promoted by a later one"
+                )
+            elif candidate_id in promoted:
+                errors.append(
+                    f"{context}.promotes: '{candidate_id}' was already promoted in "
+                    f"{promoted[candidate_id]['source']}"
+                )
+            elif candidate_id in retired:
+                errors.append(
+                    f"{context}.promotes: '{candidate_id}' was already retired in "
+                    f"{retired[candidate_id][1]}"
+                )
+            else:
+                promoted[candidate_id] = {
+                    "node": node_id, "source": relative, "order": order,
+                    "date": metadata["date"],
+                }
+
+        for candidate_id in metadata["retires"]:
+            if candidate_id in promoted:
+                errors.append(
+                    f"{context}.retires: '{candidate_id}' was promoted to "
+                    f"'{promoted[candidate_id]['node']}' in "
+                    f"{promoted[candidate_id]['source']}; promotion already ends it"
+                )
+            elif candidate_id in {entry["id"] for entry in metadata["candidates"]}:
                 errors.append(
                     f"{context}.retires: '{candidate_id}' is proposed by this same checkpoint"
                 )
@@ -248,11 +312,23 @@ def check(root: Path, node_ids: set[str], approach_ids: set[str] | None,
                 f"{declared[candidate_id]['source']} proposes it"
             )
 
+    for candidate_id, promotion in sorted(promoted.items()):
+        if candidate_id not in declared:
+            errors.append(f"{promotion['source']}.promotes: '{candidate_id}' was never proposed")
+        elif declared[candidate_id]["order"] > promotion["order"]:
+            errors.append(
+                f"{promotion['source']}.promotes: '{candidate_id}' is promoted before "
+                f"{declared[candidate_id]['source']} proposes it"
+            )
+        else:
+            promotion["statement"] = declared[candidate_id]["statement"]
+
     superseded = check_supersession(root, records, EXPLORATIONS, "a checkpoint", errors)
     return {
         "records": records,
         "candidates": [entry for candidate_id, entry in sorted(declared.items())
-                       if candidate_id not in retired],
+                       if candidate_id not in retired and candidate_id not in promoted],
+        "promoted": promoted,
         "superseded": superseded,
     }
 

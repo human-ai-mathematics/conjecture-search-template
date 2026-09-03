@@ -8,24 +8,24 @@ role: reviewer
 You were assigned this lens and no other. Read `.claude/agents/reviewer.md` for the shared
 contract; everything below is what `sync` adds.
 
-`check.py` verifies that labels resolve, the DAG is acyclic, and provenance has the right
-shape. It does **not** verify that the `.tex` prose, the ledger `statement:`, and the dossier
-theorem say the same thing. That gap is this lens's entire job.
+`check.py` verifies that labels resolve, that each node's `kind` matches the environment it
+labels, that the DAG is acyclic, and that provenance has the right shape. It does **not**
+verify that the `.tex` prose, the ledger `summary:`, and the dossier theorem say the same
+thing. That gap is this lens's entire job — everything mechanical is already red or green
+before you start.
 
 ## Method
 
 For each node in scope:
 
-1. Resolve the effective anchor (`label` if present, else `id`) and confirm it occurs in
-   `file`.
-2. Read the `\label`ed environment in full and compare it against the ledger `statement:` —
-   same quantifiers, same constants, same hypotheses, same direction of inequality.
-3. For every active `proofs[].artifact`, compare the dossier theorem against both.
-4. Check that the environment kind matches the ledger `kind` (a `\begin{conjecture}` behind
-   `kind: theorem` is a real defect).
-5. Check that every `assumes` antecedent is visible in the implication, and that a `refuted`
+1. Read the `\label`ed environment in full and compare it against the ledger `summary:` —
+   same quantifiers, same constants, same hypotheses, same direction of inequality. The
+   manuscript is canonical and the summary is a gloss: a disagreement is a defect in the
+   summary unless the mathematics says otherwise.
+2. For every active `proofs[].artifact`, compare the dossier theorem against both.
+3. Check that every `assumes` antecedent is visible in the implication, and that a `refuted`
    node's prose negates the exact quantified statement.
-6. Run `python3 scripts/check.py` as a read-only baseline. The orchestrator reruns it after
+4. Run `python3 scripts/check.py` as a read-only baseline. The orchestrator reruns it after
    applying any accepted proposal.
 
 ## The brief's quoted target
@@ -41,8 +41,8 @@ mathematical one.
 
 ## Report additions
 
-- A table: node | anchor resolves | statement agrees | dossier agrees | brief copy agrees |
-  verdict, with **both texts quoted** for every disagreement.
+- A table: node | summary agrees | dossier agrees | brief copy agrees | verdict, with
+  **both texts quoted** for every disagreement.
 - Exact manuscript and brief patch proposals as `path:line` plus replacement text. Make no
   edits.
 - If which side is wrong is a mathematical question, report it as blocked rather than guessing.

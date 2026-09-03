@@ -1,17 +1,19 @@
-"""Numerics plane: the envelopes of the immutable run artifacts.
+"""Numerics lane: the envelopes of the immutable run artifacts.
 
 A run artifact is worth exactly as much as its provenance header (CLAUDE.md
-constraint 2), so this plane checks that the header a later reader needs in order to
+constraint 2), so this lane checks that the header a later reader needs in order to
 reproduce or retract the numbers is still there and still parses.
 """
 from __future__ import annotations
 
+import ast
 import sys
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from checks import numerics as numerics_lane  # noqa: E402
 from fixtures import CheckerFixture, node  # noqa: E402
 
 
@@ -78,6 +80,91 @@ class NumericsTests(CheckerFixture):
         self.add_run("2026-08-26T000000Z-mislabelled.jsonl", target="fixture")
 
         self.assertIn("filename must end with '-fixture.jsonl'", self.errors())
+
+    def test_a_current_artifact_records_which_source_tree_produced_it(self):
+        """git_commit alone cannot reproduce a run whose target was still uncommitted."""
+        self.add_run("2026-08-26T000000Z-fixture.jsonl",
+                     header={"git_commit": None, "git_dirty": None,
+                             "git_diff_sha256": None})
+        self.assertEqual(self.errors(), "")
+
+        self.add_run("2026-08-27T000000Z-fixture.jsonl",
+                     lines=[
+                         '{"_provenance": {"schema_version": 3, "date": "2026-08-27",'
+                         ' "target": "fixture", "profile": "p", "stochastic": false,'
+                         ' "config": {}, "environment": {}}}',
+                         '{"kind": "note"}',
+                     ])
+
+        errors = self.errors()
+
+        self.assertIn("_provenance is missing 'git_commit'", errors)
+        self.assertIn("_provenance is missing 'git_dirty'", errors)
+
+    def test_an_older_artifact_is_asked_only_for_what_its_version_promised(self):
+        """Artifacts are immutable, so a schema bump cannot retroactively break one."""
+        self.add_run("2026-08-26T000000Z-fixture.jsonl",
+                     lines=[
+                         '{"_provenance": {"schema_version": 2, "date": "2026-08-26",'
+                         ' "target": "fixture", "profile": "p", "stochastic": false,'
+                         ' "config": {}, "environment": {}}}',
+                         '{"kind": "note"}',
+                     ])
+
+        self.assertEqual(self.errors(), "")
+
+    def test_half_an_observation_is_not_evidence(self):
+        self.add_run("2026-08-26T000000Z-fixture.jsonl",
+                     lines=[
+                         '{"_provenance": {"schema_version": 2, "date": "2026-08-26",'
+                         ' "target": "fixture", "profile": "p", "stochastic": false,'
+                         ' "config": {}, "environment": {}}}',
+                         '{"kind": "observation", "instance": "n=3", "evidence": "exact"}',
+                     ])
+
+        errors = self.errors()
+
+        self.assertIn("half an observation", errors)
+        self.assertIn("an unlabelled number is not evidence", errors)
+
+    def test_an_outcome_must_belong_to_its_evidence_class(self):
+        self.add_run("2026-08-26T000000Z-fixture.jsonl",
+                     lines=[
+                         '{"_provenance": {"schema_version": 2, "date": "2026-08-26",'
+                         ' "target": "fixture", "profile": "p", "stochastic": false,'
+                         ' "config": {}, "environment": {}}}',
+                         '{"kind": "observation", "instance": "n=3", "claim": "c",'
+                         ' "evidence": "calibration", "outcome": "contradicts"}',
+                     ])
+
+        errors = self.errors()
+
+        self.assertIn("evidence 'calibration' allows ['match', 'mismatch']", errors)
+
+    def test_the_archive_vocabulary_matches_the_harness_that_writes_it(self):
+        """Duplicated on purpose, so the two copies are checked rather than trusted."""
+        source = (Path(__file__).resolve().parents[2]
+                  / "experiments/numerics/contract.py").read_text(encoding="utf-8")
+        # Read the literals out of the source rather than importing the package, which
+        # would drag in numpy and couple the checker's test suite to the harness.
+        wanted = {"EVIDENCE_CLASSES", "OUTCOMES", "OBSERVATION_FIELDS"}
+        found = {}
+        for statement in ast.parse(source).body:
+            if not isinstance(statement, (ast.Assign, ast.AnnAssign)):
+                continue
+            targets = (statement.targets if isinstance(statement, ast.Assign)
+                       else [statement.target])
+            for target in targets:
+                if isinstance(target, ast.Name) and target.id in wanted:
+                    found[target.id] = ast.literal_eval(statement.value)
+
+        self.assertEqual(sorted(found), sorted(wanted))
+        self.assertEqual(tuple(found["EVIDENCE_CLASSES"]),
+                         tuple(numerics_lane.EVIDENCE_CLASSES))
+        self.assertEqual(tuple(found["OBSERVATION_FIELDS"]),
+                         tuple(numerics_lane.OBSERVATION_FIELDS))
+        self.assertEqual({key: tuple(value) for key, value in found["OUTCOMES"].items()},
+                         {key: tuple(value) for key, value in numerics_lane.OUTCOMES.items()})
 
 
 if __name__ == "__main__":

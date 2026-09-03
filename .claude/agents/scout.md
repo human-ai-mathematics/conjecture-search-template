@@ -28,8 +28,8 @@ facts, not opinions about how to proceed. Many scouts run in parallel; each is c
 2. Resolve the node in `research/program/ledger.yaml` and read
    `python3 scripts/check.py node <id>` for its derived consumers and the approaches blocked
    on it.
-3. Open the manuscript anchor: the node `id` is its LaTeX `\label` unless `label:` overrides
-   it; the file is the node's `file`.
+3. Open the manuscript anchor: the node `id` **is** its LaTeX `\label`, inside the claim
+   environment matching its `kind`, in the file the node's `file` names under `modules/`.
 4. Follow `depends_on`, and separately record `assumes`, `implies`, and `refines`.
 5. Read every hard `bounded_by` and advisory `heuristic_barriers` obstruction in full.
 6. Read `python3 scripts/check.py portfolio`: which families are active, which routes are
@@ -45,7 +45,8 @@ facts, not opinions about how to proceed. Many scouts run in parallel; each is c
 
 Return a compact brief, no preamble:
 
-- **Node** — id, kind, status, route/refines, one-line statement, manuscript path and label.
+- **Node** — id, kind, status, refines, the manuscript statement as it actually reads (not
+  the ledger's `summary:` gloss), and its path.
 - **Relations** — proof dependencies, implication antecedents/conclusions, and refinements.
 - **Barriers** — hard and advisory lists kept visibly separate.
 - **Search state** — which approaches have attacked this node, their states, exact blockers,

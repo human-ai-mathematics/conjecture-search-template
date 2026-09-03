@@ -7,6 +7,7 @@ targets come and go. Passing proves nothing mathematical (CLAUDE.md constraint 4
 """
 from __future__ import annotations
 
+import hashlib
 import json
 
 import pytest
@@ -141,14 +142,44 @@ def test_artifact_write_never_overwrites(tmp_path):
     assert json.loads(lines[2]) == {"kind": "run-summary", "passed": True}
 
 
-def test_provenance_does_not_gate_on_worktree_state(monkeypatch):
+def test_provenance_records_the_worktree_without_gating_on_it(monkeypatch):
+    """The dirty flag is provenance. Nothing decides whether output "counts"."""
     monkeypatch.setattr(artifact, "_git", lambda *args: "abc123")
     header = artifact.provenance(target="test", profile="standard", stochastic=False,
                                  config={"seed": 0})
     assert header["git_commit"] == "abc123"
     assert header["config"] == {"seed": 0}
-    assert "git_dirty" not in header
+    assert header["git_dirty"] is True
+    assert header["git_diff_sha256"] == hashlib.sha256(b"abc123").hexdigest()
     assert "evidence_eligible" not in header
+    assert "evidence_run" not in header
+
+
+def test_a_clean_worktree_records_no_diff(monkeypatch):
+    monkeypatch.setattr(artifact, "_git",
+                        lambda *args: "" if args[0] in {"diff", "status"} else "abc123")
+
+    state = artifact.source_state()
+
+    assert state == {"git_commit": "abc123", "git_dirty": False, "git_diff_sha256": None}
+
+
+def test_source_state_is_complete_outside_a_checkout(monkeypatch):
+    monkeypatch.setattr(artifact, "_git", lambda *args: None)
+
+    state = artifact.source_state()
+
+    assert state == {"git_commit": None, "git_dirty": None, "git_diff_sha256": None}
+
+
+def test_the_cli_writes_only_into_the_archive(tmp_path):
+    outside = tmp_path / "stray.jsonl"
+    with pytest.raises(SystemExit):
+        main(["run", "example", "--out", str(outside)])
+    assert not outside.exists()
+
+    inside = artifact.confine_to_runs("nested/run.jsonl")
+    assert inside.parent.parent == artifact.runs_dir().resolve()
 
 
 # --- the CLI -------------------------------------------------------------------------------

@@ -27,7 +27,7 @@ thoroughness; it is the shallow-pass failure the `researcher` contract warns abo
 
 ## The contract
 
-Each file carries `name` and `role` front matter. `python3 scripts/check.py --plane roles`
+Each file carries `name` and `role` front matter. `python3 scripts/check.py --lane roles`
 checks that `name` matches the filename, that `role` names a real role, that every lens a role
 declares exists, and that every lens file is declared by its role. A lens nobody loads and a
 lens that does not exist are both errors.

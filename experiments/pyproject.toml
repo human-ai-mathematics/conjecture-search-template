@@ -1,7 +1,7 @@
 [project]
 name = "numerics"
 version = "0.1.0"
-description = "Numerical channel for this repository's research program: guides and refutes; never proves."
+description = "Numerical channel for this repository's research program: guides the search and finds candidate refutations; certifies nothing."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

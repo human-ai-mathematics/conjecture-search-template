@@ -1,17 +1,18 @@
 # What the search is doing — as against research/program/ledger.yaml, which records
 # what is mathematically claimed. Field contract: research/program/portfolio-schema.md.
 #
-# This file is optional. Delete it while one person is working one route; create it as
-# soon as several routes, agents, or sessions are in flight and somebody has to know
-# which of them are still alive. It is a single-writer file: the `synthesizer` holds the
-# `portfolio` concurrency key, and everyone else proposes changes through their handoff.
+# This file is optional and absent by default. Create it as soon as several routes,
+# agents, or sessions are in flight and somebody has to know which of them are still
+# alive; a portfolio then requires a brief, because several coordinated routes are a
+# sustained search. It is a single-writer file: the `synthesizer` holds the `portfolio`
+# concurrency key, and everyone else proposes changes through their handoff.
 #
 # It stores coordination state only. A blocker is named by its `cand:` id or ledger node
 # id and never restated here (CLAUDE.md constraint 12).
 #
-# The three approaches below are the template's worked example, matching the seed nodes
-# in ledger.yaml. Delete this file, or replace its contents, when the repository has a
-# real search.
+# The three approaches below are the worked example's, matching the nodes in this
+# directory's ledger.yaml. Each carries an `objective`: a family says what mechanism it
+# tries, and a route says what it tries within that family.
 
 target: q:example
 
@@ -25,6 +26,9 @@ families:
 approaches:
   - id: ap:example-finite-battery
     family: fam:example-numerical
+    objective: >-
+      Run the identity over a battery of adversarial instances and see whether any of
+      them breaks it.
     state: blocked
     blocker: obs:example
     reopen_if: >-
@@ -35,11 +39,17 @@ approaches:
 
   - id: ap:example-roundoff-bound
     family: fam:example-numerical
+    objective: >-
+      Bound the floating-point discrepancy the battery measured, so a numerical
+      disagreement can be told apart from a genuine counterexample.
     parent: ap:example-finite-battery
     state: queued
 
   - id: ap:example-exhaustive-search
     family: fam:example-numerical
+    objective: >-
+      Enumerate every instance up to a size bound rather than sampling, hoping the
+      exhaustiveness buys what the battery could not.
     state: duplicate
     related:
       - to: ap:example-finite-battery

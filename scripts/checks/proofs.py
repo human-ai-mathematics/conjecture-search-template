@@ -1,13 +1,14 @@
-"""The proofs plane: dossiers, certification modes, and persisted review provenance.
+"""The proofs lane: dossiers, certification modes, and persisted review provenance.
 
 A proved internal node points at one or more standalone dossiers under ``solutions/``,
 each with an explicit certification mode. Agent certification is the only mode that
-delegates trust to another agent, so it is the one this plane checks hardest: the
+delegates trust to another agent, so it is the one this lane checks hardest: the
 review report must exist, be typed ``proof-review``, name a reviewer distinct from every
 author, and declare the node and dossier in its immutable historical scope.
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from .common import (as_list, check_record_date, contained_path, mentions_token,
@@ -17,8 +18,25 @@ from .common import (as_list, check_record_date, contained_path, mentions_token,
 REVIEWS = "research/reviews"
 SOLUTIONS = "solutions"
 
-PROOF_MODES = {"agent", "human", "lean"}
+PROOF_MODES = {"agent", "human"}
 PROOF_FIELDS = {"artifact", "mode", "review", "accepted_by"}
+
+#: Modes that once existed and no longer do, with the reason. Rejected by name so a
+#: ledger carrying one gets an explanation rather than a bare vocabulary error.
+RETIRED_PROOF_MODES = {
+    "lean": "not implemented — the checker only looked for an adjacent .lean file and "
+            "never ran the kernel, so a mode that certifies nothing could support "
+            "status: proved. Restore it when check.py invokes Lean with pinned tooling",
+}
+
+#: The dossier's audit header, parsed rather than grepped. `ledger-node` enumerates the
+#: ids the dossier discharges; `checked_by` states how far it has been checked. Nothing
+#: else in the header is validated, because nothing else has a single owner: the ledger's
+#: proofs[] record owns the mode and the review path, and the review's own front matter
+#: owns author and reviewer identity.
+HEADER_LIMIT = 2500
+HEADER_MODES = {"none", "agent", "human"}
+HEADER_GLOSS_RE = re.compile(r"\s{2,}")
 
 REVIEW_TYPES = {"proof-review", "audit"}
 #: An audit certifies nothing, so it carries only what every dated record carries —
@@ -96,21 +114,66 @@ def read_archive(root: Path, errors: list[str]) -> dict[str, dict]:
     return metadata_by_ref
 
 
+def parse_dossier_header(text: str) -> dict[str, str]:
+    """Read the ``%   field : value`` lines of a dossier's audit header.
+
+    Only the leading ``HEADER_LIMIT`` characters are considered, and only comment lines
+    of that exact shape. The value ends at the first run of two or more spaces, which is
+    what separates it from the inline gloss the template writes beside it. Returns the
+    fields it found; an absent field is simply missing, which the caller reports in its
+    own words.
+    """
+    fields: dict[str, str] = {}
+    for line in text[:HEADER_LIMIT].splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("%") or ":" not in stripped:
+            continue
+        name, _, value = stripped.lstrip("% ").partition(":")
+        name = name.strip()
+        if name and name not in fields:
+            fields[name] = HEADER_GLOSS_RE.split(value.strip(), maxsplit=1)[0].strip()
+    return fields
+
+
 def _dossier(root: Path, program: str, nid: str, reference: object,
              errors: list[str]) -> Path | None:
-    """Validate and return one natural-language proof dossier path."""
+    """Validate and return one natural-language proof dossier path.
+
+    The header is parsed, not searched. Grepping the first 2500 characters for the word
+    ``ledger-node`` and, separately, for the node id let the two sit a page apart and
+    still pass; a dossier that does not *say* which node it discharges is not a dossier
+    an independent reviewer can pick up.
+    """
     context = f"[{program}] {nid}.proofs[].artifact"
     artifact = contained_path(root, reference, SOLUTIONS, context, errors,
                               suffix=".tex", outside="must stay under solutions/")
     if artifact is None:
         return None
     try:
-        header = artifact.read_text(encoding="utf-8")[:2500]
+        text = artifact.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as exc:
         errors.append(f"{context}: cannot read '{reference}': {exc}")
         return None
-    if "ledger-node" not in header or not mentions_token(header, nid):
-        errors.append(f"{context}: dossier header does not enumerate the ledger node '{nid}'")
+
+    header = parse_dossier_header(text)
+    declared = header.get("ledger-node", header.get("ledger-nodes"))
+    if declared is None:
+        errors.append(
+            f"{context}: dossier header has no 'ledger-node' field naming what it proves"
+        )
+    elif not mentions_token(declared, nid):
+        errors.append(
+            f"{context}: dossier header declares ledger-node '{declared}', not '{nid}'"
+        )
+
+    checked_by = header.get("checked_by")
+    if checked_by is None:
+        errors.append(f"{context}: dossier header has no 'checked_by' field")
+    elif checked_by not in HEADER_MODES:
+        errors.append(
+            f"{context}: dossier header checked_by '{checked_by}': "
+            f"want one of {sorted(HEADER_MODES)}"
+        )
     return artifact
 
 
@@ -145,6 +208,10 @@ def _certification(root: Path, program: str, nid: str, node: dict, nodes: dict[s
                     errors.append(f"{context}.artifact: duplicate active proof '{artifact_ref}'")
                 seen_artifacts.add(artifact_ref)
             mode = proof.get("mode")
+            if isinstance(mode, str) and mode in RETIRED_PROOF_MODES:
+                errors.append(f"{context}.mode: '{mode}' is retired — "
+                              f"{RETIRED_PROOF_MODES[mode]}")
+                continue
             if mode not in PROOF_MODES:
                 errors.append(f"{context}.mode: want one of {sorted(PROOF_MODES)}, got '{mode}'")
                 continue
@@ -165,29 +232,19 @@ def _certification(root: Path, program: str, nid: str, node: dict, nodes: dict[s
                     )
                 if review is not None:
                     errors.append(f"{context}.review: valid only with mode agent")
-            elif mode == "lean":
-                for field, value in (("review", review), ("accepted_by", accepted_by)):
-                    if value is not None:
-                        errors.append(f"{context}.{field}: not valid with mode lean")
-                if artifact is not None and not artifact.with_suffix(".lean").is_file():
-                    errors.append(
-                        f"{context}: mode lean requires adjacent "
-                        f"'{artifact.with_suffix('.lean').name}'"
-                    )
 
     refuters = as_list(node.get("refuted_by"))
     if status == "refuted":
         if not refuters:
             errors.append(f"[{program}] {nid}: refuted node requires refuted_by")
-        dependencies = set(as_list(node.get("depends_on")))
+        # Deliberately no depends_on requirement. `depends_on` is the acyclic graph of
+        # facts a proof uses, and a refuted node has no proof; recording its refuter
+        # there described a proof that does not exist. `refuted_by` naming a proved
+        # refuter is the whole of the provenance (CLAUDE.md constraint 11).
         for ref in refuters:
             if isinstance(ref, str) and ref in nodes:
                 if nodes[ref].get("status") != "proved":
                     errors.append(f"[{program}] {nid}.refuted_by: '{ref}' is not proved")
-                if ref not in dependencies:
-                    errors.append(
-                        f"[{program}] {nid}.refuted_by: '{ref}' must also appear in depends_on"
-                    )
     elif "refuted_by" in node:
         errors.append(f"[{program}] {nid}.refuted_by: valid only with status refuted")
 

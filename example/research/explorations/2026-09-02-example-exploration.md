@@ -15,8 +15,8 @@ candidates:
 ---
 
 Worked example of a dated exploration, kept so the template ships one of each artifact
-genre. Delete it together with `research/runs/2026-09-02T092336.680787Z-example.jsonl`,
-the `example` numerics target, and the three seed ledger nodes.
+genre. It records no search anyone ran: it is a fixture in `example/`, not history, and
+copying from it is the point (`CLAUDE.md` constraint 7).
 
 ## What was tried
 

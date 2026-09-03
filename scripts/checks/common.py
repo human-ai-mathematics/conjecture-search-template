@@ -1,7 +1,7 @@
-"""Helpers shared by every validation plane.
+"""Helpers shared by every validation lane.
 
 Nothing here knows about the mathematics. These are the four things more than one
-plane needs: reading a dated Markdown record's YAML envelope, checking that its date
+lane needs: reading a dated Markdown record's YAML envelope, checking that its date
 agrees with its filename, validating a list of unique strings, and resolving a
 repo-relative path without letting it escape the repository.
 """
@@ -17,13 +17,15 @@ try:
 except ImportError:  # pragma: no cover - environment guard
     raise SystemExit("PyYAML required: pip install pyyaml")
 
-#: The validation planes, in the order the default lane reports them. A plane whose
-#: files are absent contributes nothing: that is what makes activation structural
-#: rather than a configured mode (CLAUDE.md, "The gates").
-PLANES = ("core", "proofs", "checkpoints", "portfolio", "numerics", "roles")
+#: The validation lanes, in the order a default run reports them. A lane is an
+#: implementation partition of the checker, not one of the repository's three
+#: domains and not one of CLAUDE.md's activation gates. A lane whose files are
+#: absent contributes nothing: that is what makes activation structural rather
+#: than a configured mode.
+LANES = ("core", "proofs", "checkpoints", "portfolio", "numerics", "roles")
 
 #: A portfolio approach id. Shared, because the portfolio declares these ids and the
-#: checkpoint plane resolves against them; one regex keeps the two planes agreeing.
+#: checkpoint lane resolves against them; one regex keeps the two lanes agreeing.
 APPROACH_ID_RE = re.compile(r"^ap:[a-z0-9][a-z0-9-]*$")
 
 
@@ -133,8 +135,8 @@ def contained_path(root: Path, reference: object, directory: str, context: str,
     """Resolve one repo-relative reference that must stay under ``directory``.
 
     Returns the resolved path, or ``None`` when the reference is unusable. Every
-    cross-plane pointer in this repository — a dossier, a review, a run artifact, a
-    checkpoint — is confined to its own directory, so that a plane cannot quietly
+    cross-lane pointer in this repository — a dossier, a review, a run artifact, a
+    checkpoint — is confined to its own directory, so that a lane cannot quietly
     acquire evidence from somewhere the reader is not looking.
     """
     if not isinstance(reference, str) or not reference.strip():

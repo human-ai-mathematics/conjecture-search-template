@@ -12,8 +12,9 @@ solutions:
 ---
 
 Worked example of a certifying review, kept so the template ships one of each
-artifact genre. Delete it together with `solutions/prop-example.tex` and the
-`prop:example` node.
+artifact genre. Its mirror is the refutation review beside it,
+`2026-09-03-prop-example-refuter-proof-review.md`: a refuter is certified through this
+same channel, and only then does its target become `refuted`.
 
 ## Findings
 

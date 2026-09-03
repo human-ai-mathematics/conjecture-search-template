@@ -40,8 +40,8 @@ Every other agent must route computation through you.
   lands in `research/runs/` earns one.
 
 Every checkpoint carries the front matter validated by `check.py`; see
-`research/explorations/README.md`, and name the approach the diagnostic serves in
-`approach:`. A statement this work threw off that nothing yet depends on stays there as a
+`research/explorations/README.md`. Name the route the diagnostic serves in `approach:` when
+this repository has a portfolio; when it has none, name the ledger nodes in `nodes:`. A statement this work threw off that nothing yet depends on stays there as a
 `cand:` candidate — it does not become a ledger node and it has no other home
 (`CLAUDE.md` constraint 8).
 

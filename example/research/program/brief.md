@@ -5,10 +5,12 @@ target: q:example
 
 # Problem brief
 
-<!-- This is the worked example's brief, pointing at the seed node q:example. Rewrite
-     it for this repository's real target — do not delete it and start a sustained
-     search without one. The sections below are the ones an agent needs before it can
-     attack a conjecture honestly; each says what belongs in it. -->
+<!-- This is the worked example's brief, pointing at the example node q:example. Copy it
+     to research/program/brief.md and rewrite it for your target — do not start a
+     sustained search without one. It deliberately keeps its instructions rather than
+     being filled in, which is why `check.py ready --root example` reports this tree as
+     not instantiated: being the thing you copy is its whole job. The sections below are
+     the ones an agent needs before it can attack a conjecture honestly. -->
 
 The harness remembers, validates and certifies. It does not supply mathematical
 pressure. That is this file's job: it is the one document that knows how the target

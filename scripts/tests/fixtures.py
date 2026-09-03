@@ -1,4 +1,4 @@
-"""Shared fixture tree for the plane checkers.
+"""Shared fixture tree for the lane checkers.
 
 Every test builds a throwaway repository in a temporary directory, so nothing here can
 touch the real ledger, the append-only checkpoints, or the immutable run artifacts.
@@ -22,7 +22,7 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "scripts"))
 
 from checks import analyze, failures  # noqa: E402
-from checks.common import PLANES  # noqa: E402
+from checks.common import LANES  # noqa: E402
 
 CHECK = REPO / "scripts/check.py"
 
@@ -34,7 +34,7 @@ def node(node_id: str, *, status: str = "proved", kind: str = "theorem", **field
         "status": status,
         "provenance": "internal",
         "file": "modules/test.tex",
-        "statement": f"fixture statement for {node_id}",
+        "summary": f"fixture summary for {node_id}",
     }
     result.update(fields)
     return result
@@ -71,15 +71,21 @@ class CheckerFixture(unittest.TestCase):
         if meta_fields:
             meta.update(meta_fields)
         fixture_nodes = [dict(item) for item in nodes]
-        manuscript_labels = []
-        for item in fixture_nodes:
-            label = item.get("label", item.get("id"))
-            if isinstance(label, str) and label.strip():
-                manuscript_labels.append(label)
-        if manuscript_labels:
+        # Anchor each node the way the manuscript must: inside the claim environment
+        # named by its own `kind`, so the fixture tree satisfies the same invariant a
+        # real modules/ does.
+        anchors = [
+            (item["id"], str(item.get("kind") or "theorem"))
+            for item in fixture_nodes
+            if isinstance(item.get("id"), str) and item["id"].strip()
+        ]
+        if anchors:
             with self.module.open("a", encoding="utf-8") as stream:
-                for label in manuscript_labels:
-                    stream.write(f"\\label{{{label}}}\n")
+                for label, kind in anchors:
+                    stream.write(
+                        f"\\begin{{{kind}}}\n\\label{{{label}}}\nfixture\n"
+                        f"\\end{{{kind}}}\n"
+                    )
         if certify_fixture_proofs:
             bare_proved = [
                 item for item in fixture_nodes
@@ -93,7 +99,9 @@ class CheckerFixture(unittest.TestCase):
                 solution_path.parent.mkdir(parents=True, exist_ok=True)
                 covered = "; ".join(str(item.get("id")) for item in bare_proved)
                 solution_path.write_text(
-                    f"% ledger-nodes: {covered}\nstandalone fixture proofs\n"
+                    f"%   ledger-node : {covered}\n"
+                    "%   checked_by  : human\n"
+                    "standalone fixture proofs\n"
                 )
                 for item in bare_proved:
                     item["proofs"] = [{
@@ -109,7 +117,11 @@ class CheckerFixture(unittest.TestCase):
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         covered = "; ".join(node_ids)
-        path.write_text(f"% ledger-nodes: {covered}\nstandalone proof fixture\n")
+        path.write_text(
+            f"%   ledger-node : {covered}\n"
+            "%   checked_by  : none\n"
+            "standalone proof fixture\n"
+        )
         return relative
 
     def add_review(self, name: str, *, verdict: str = "pass",
@@ -146,11 +158,15 @@ class CheckerFixture(unittest.TestCase):
             path.write_text("".join(f"{line}\n" for line in lines))
             return relative
         provenance = {
-            "schema_version": 2,
+            "schema_version": 3,
             "date": "2026-08-26",
             "target": target,
             "profile": "standard",
+            "stochastic": False,
             "config": {"seed": 1},
+            "git_commit": "0" * 40,
+            "git_dirty": False,
+            "git_diff_sha256": None,
             "environment": {"python": "3.13.0"},
         }
         if header is not None:
@@ -166,6 +182,7 @@ class CheckerFixture(unittest.TestCase):
                        artifacts: tuple[str, ...] = (),
                        candidates: tuple[dict, ...] = (),
                        retires: tuple[str, ...] = (),
+                       promotes: tuple[dict, ...] = (),
                        approach: str | None = None,
                        supersedes: tuple[str, ...] = (),
                        front_matter: dict | None = None,
@@ -178,7 +195,7 @@ class CheckerFixture(unittest.TestCase):
             metadata["approach"] = approach
         for field, value in (("nodes", nodes), ("artifacts", artifacts),
                              ("candidates", candidates), ("retires", retires),
-                             ("supersedes", supersedes)):
+                             ("promotes", promotes), ("supersedes", supersedes)):
             if value:
                 metadata[field] = [dict(item) if isinstance(item, dict) else item
                                    for item in value]
@@ -189,10 +206,25 @@ class CheckerFixture(unittest.TestCase):
         )
         return relative
 
-    def add_portfolio(self, document: dict) -> Path:
+    def add_portfolio(self, document: dict, *, brief: bool = True) -> Path:
+        """Write a portfolio, filling in what every well-formed one carries.
+
+        Each approach gets an ``objective`` unless the test supplies one, and a matching
+        brief is written unless the test is exercising the portfolio-implies-brief rule.
+        """
+        document = dict(document)
+        approaches = [dict(item) for item in document.get("approaches") or []]
+        for item in approaches:
+            item.setdefault("objective", f"fixture objective for {item.get('id')}")
+        if approaches:
+            document["approaches"] = approaches
         path = self.root / "research/program/portfolio.yaml"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(yaml.safe_dump(document, sort_keys=False))
+        if brief and not (self.root / "research/program/brief.md").is_file():
+            target = document.get("target")
+            if isinstance(target, str):
+                self.add_brief(target)
         return path
 
     def add_brief(self, target: str, *, body: str = "fixture brief\n") -> Path:
@@ -209,8 +241,8 @@ class CheckerFixture(unittest.TestCase):
     def check(self, **kwargs) -> dict:
         return analyze(self.root, self.research, **kwargs)
 
-    def errors(self, planes: tuple[str, ...] = PLANES, **kwargs) -> str:
-        return "\n".join(failures(self.check(**kwargs), planes))
+    def errors(self, lanes: tuple[str, ...] = LANES, **kwargs) -> str:
+        return "\n".join(failures(self.check(**kwargs), lanes))
 
     def cli(self, *arguments: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(

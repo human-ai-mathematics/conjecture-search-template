@@ -1,7 +1,7 @@
-"""The command-line surface: plane selection and the derived views.
+"""The command-line surface: lane selection and the derived views.
 
 These run the real ``scripts/check.py`` against a fixture tree through ``--root``, so
-the entry point, the plane filter, and the views are exercised as a user meets them.
+the entry point, the lane filter, and the views are exercised as a user meets them.
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ class CommandLineTests(CheckerFixture):
         self.add_checkpoint("dangling", nodes=("q:ghost",))
 
         everything = self.cli()
-        core_only = self.cli("--plane", "core")
+        core_only = self.cli("--lane", "core")
 
         self.assertIn("FAIL [core]", everything.stdout)
         self.assertIn("FAIL [checkpoints]", everything.stdout)
@@ -41,12 +41,12 @@ class CommandLineTests(CheckerFixture):
         self.assertNotIn("FAIL [checkpoints]", core_only.stdout)
 
     def test_a_plane_with_no_files_reports_nothing(self):
-        """Activation is structural: an absent plane has no rules to obey."""
+        """Activation is structural: an absent lane has no rules to obey."""
         self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
 
-        for plane in ("portfolio", "numerics", "checkpoints", "roles"):
-            with self.subTest(plane=plane):
-                result = self.cli("--plane", plane)
+        for lane in ("portfolio", "numerics", "checkpoints", "roles"):
+            with self.subTest(lane=lane):
+                result = self.cli("--lane", lane)
                 self.assertEqual(result.returncode, 0, result.stdout)
 
     def test_cli_status_and_node_views_are_derived(self):
@@ -131,6 +131,60 @@ class CommandLineTests(CheckerFixture):
         self.assertIn("1 current audit(s), 1 superseded", result.stdout)
         self.assertIn("read instead: research/reviews/2026-08-26-current-audit.md",
                       result.stdout)
+
+    def test_the_deprecated_plane_alias_still_selects_a_lane(self):
+        """Old habits and old docs keep working, with one note on stderr."""
+        malformed = node("thm:bad")
+        malformed["status"] = []
+        self.add_ledger("program", "program", [malformed])
+        self.add_checkpoint("dangling", nodes=("q:ghost",))
+
+        result = self.cli("--plane", "core")
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("--plane is deprecated; use --lane", result.stderr)
+        self.assertIn("FAIL [core]", result.stdout)
+        self.assertNotIn("FAIL [checkpoints]", result.stdout)
+
+    def test_a_scoped_run_summarises_only_the_lanes_it_was_asked_for(self):
+        """A green scoped run must not report an error count it also exits 0 on."""
+        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_checkpoint("dangling", nodes=("q:ghost",))
+
+        result = self.cli("--lane", "core")
+
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("0 error(s)", result.stdout)
+
+    def test_a_ledger_with_no_nodes_prints_no_dangling_separator(self):
+        self.add_ledger("program", "program", [])
+
+        result = self.cli()
+
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("[program] 0 nodes", result.stdout)
+        self.assertNotIn("0 nodes —", result.stdout)
+
+    def test_ready_fails_on_a_template_and_passes_on_an_instantiated_repository(self):
+        """A fresh clone is structurally correct and deliberately not ready."""
+        self.add_ledger("program", "program", [])
+
+        template = self.cli("ready")
+
+        self.assertEqual(template.returncode, 1)
+        self.assertIn("not ready", template.stdout)
+        self.assertIn("meta.program is still 'program'", template.stdout)
+        self.assertIn("no nodes", template.stdout)
+        self.assertIn("research/program/brief.md: absent", template.stdout)
+
+        self.add_ledger("program", "real-program",
+                        [node("q:target", status="open", kind="question")])
+        self.add_brief("q:target", body="The negation, spelled out.\n")
+
+        instantiated = self.cli("ready")
+
+        self.assertEqual(instantiated.returncode, 0, instantiated.stdout)
+        self.assertIn("ready:", instantiated.stdout)
 
     def test_a_view_refuses_to_render_over_a_broken_repository(self):
         malformed = node("thm:bad")

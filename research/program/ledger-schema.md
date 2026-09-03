@@ -24,14 +24,43 @@ are rejected by name.
 
 | field | values / meaning |
 |---|---|
-| `id` | Stable id, normally the LaTeX label. |
+| `id` | Stable id. It **is** the manuscript anchor: `\label{<id>}` in `modules/`. |
 | `kind` | `theorem`, `proposition`, `lemma`, `corollary`, `conjecture`, `assumption`, `question`, `definition`, `obstruction`, or `example`. |
 | `status` | `open`, `proved`, `refuted`, or `defined`. `defined` is valid exactly for definitions. |
 | `provenance` | `internal` or `literature`. This is independent of logical status. |
-| `file` | Existing manuscript file containing the effective label. |
-| `statement` | Concise statement agreeing with that anchor. |
+| `file` | The file under `modules/` holding that `\label`. |
+| `summary` | One line glossing the statement, for the derived views. **Not canonical.** |
 
-Optional `label` overrides `id` as the manuscript anchor.
+### The anchor invariant
+
+> Every claim-bearing theorem-environment label in `modules/` corresponds to exactly one
+> ledger node, whose `kind` is that environment. Structural labels do not.
+
+Concretely, and all of it checked:
+
+- `\label{<id>}` appears in `modules/`, inside a claim environment whose name equals the
+  node's `kind`. The ten claim environments are the ten `kind` values, declared in
+  `preamble.tex`; `remark` is deliberately not among them, which is why an obstruction has
+  an `obstruction` environment rather than borrowing one.
+- A `\label` on a `\section`, an equation, or a `remark` is structural: it needs no node,
+  and a node may not claim it.
+- A claim-environment label with no node is an error. So is the same label twice anywhere
+  under `modules/`.
+- `file` is confined to `modules/` and must be the file that actually holds the label.
+- There is no `label:` override. It made "the id is the anchor" untrue and had no second
+  reader; it is rejected by name.
+
+### `summary` is a gloss, not a home
+
+The statement lives in `modules/` and nowhere else (`CLAUDE.md` constraint 8). `summary`
+exists so `check.py status` and `check.py node` are readable without opening LaTeX, and the
+`reviewer`'s `sync` lens treats any disagreement as a defect in the summary. The field was
+called `statement`, which invited exactly the drift it was supposed to survive; that name is
+now rejected.
+
+Note the deliberate asymmetry with a **candidate**, whose `statement:` in checkpoint front
+matter *is* canonical — nothing else holds that text, which is the whole reason a candidate
+is allowed to carry one.
 
 Literature nodes also require `import_class: published | preprint-reviewed |
 preprint-unreviewed` and non-empty `references` containing BibTeX keys. An unreviewed preprint is
@@ -49,11 +78,17 @@ All relation fields are YAML lists of same-ledger node ids.
 | `refines` | Statements made more precise or stronger by this node. |
 | `bounded_by` | Proved obstruction nodes: hard mathematical fences. |
 | `heuristic_barriers` | Open obstruction nodes: advisory method barriers only. |
-| `refuted_by` | Proved refuters of a refuted node; each must also occur in `depends_on`. |
+| `refuted_by` | Proved refuters of a refuted node. Not a proof dependency: see below. |
 
 This distinction prevents a standard category error. A theorem of the form $A\Rightarrow B$ can
 be proved while $A$ remains open: store $A$ in `assumes`, $B$ in `implies`, and keep the theorem
 `proved`. `check.py status` reports such a result as applicability-blocked.
+
+A refuted node names its refuters in `refuted_by` and stops there. It does **not** repeat them
+in `depends_on`: that field is the graph of facts a proof used, and a refuted statement has no
+proof. Each refuter must itself be `proved`, which is the whole of the provenance
+(`CLAUDE.md` constraint 11). The refuter is an ordinary node with an ordinary dossier — the
+worked instance is `example/solutions/prop-example-refuter.tex`.
 
 ## Proof records
 
@@ -69,10 +104,15 @@ proofs:
     accepted_by: <human identity>
 ```
 
-`artifact` is a standalone `.tex` dossier under `solutions/` whose header names the node.
-`mode: agent` requires a passing proof review by a distinct agent. `mode: human` requires
-`accepted_by`. `mode: lean` is reserved for later integration and currently only checks for an
-adjacent `.lean` file; it is not a present project priority.
+`artifact` is a standalone `.tex` dossier under `solutions/`. Its audit header is parsed, not
+searched: `ledger-node` must name this node and `checked_by` must be `none`, `agent` or
+`human`. `mode: agent` requires a passing proof review by a distinct agent; `mode: human`
+requires `accepted_by`.
+
+There are exactly two modes. `mode: lean` was retired and is rejected by name: it checked only
+that a file with a `.lean` suffix sat beside the dossier, never ran the kernel, and could
+nonetheless support `status: proved`. Restore it when `check.py` invokes Lean with pinned
+tooling, and not before.
 
 A dossier may be modular: it may cite already certified `depends_on` nodes rather than duplicate
 their proofs. Multiple records allow genuinely alternative proofs to coexist.
@@ -95,8 +135,8 @@ the manuscript, ledger, dossier, quantifiers, and mathematics.
 ## Verify
 
 ```bash
-python3 scripts/check.py --plane core
+python3 scripts/check.py --lane core
 python3 scripts/check.py status
-python3 scripts/check.py node q:example
+python3 scripts/check.py node <id>
 python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 ```

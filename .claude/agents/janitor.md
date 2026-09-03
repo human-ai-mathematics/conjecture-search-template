@@ -23,8 +23,15 @@ orchestrator reviews and applies your list.
   are single-writer state. A file there that looks stale is history, not litter.
 - A "stale-looking" document may be a deliberately immutable historical record. When a decision
   record or checkpoint references something that no longer exists, that is expected — do not
-  propose repairing history. A checkpoint or audit that a later record names in `supersedes:`
-  is superseded, not stale: it stays exactly as it is.
+  propose repairing history. Several records under `decisions/` and `research/reviews/`
+  deliberately name paths that later moved into `example/` or were deleted; the mapping is in
+  `decisions/2026-09-03-harness-consistency-and-readiness.md` and
+  `example/README.md`, and neither the old records nor those two answers need touching. A
+  checkpoint or audit that a later record names in `supersedes:` is superseded, not stale: it
+  stays exactly as it is.
+- `example/` is a fixture, not history, so constraint 7 does not shield it — but it is checked
+  by `python3 scripts/check.py --root example`, so propose nothing there that would turn that
+  red, and never propose giving it a `.claude/` or moving it under `research/` or `modules/`.
 - Duplication is not automatically a defect: `CLAUDE.md` is normative and other documents are
   maps, so a map restating a rule is fine. Propose deduplication only where a *second* document
   could contradict the first as things change.

@@ -9,18 +9,40 @@ from __future__ import annotations
 
 import sys
 from collections import Counter
+from pathlib import Path
 
 import yaml
 
-from .common import PLANES, as_list
+from .common import LANES, as_list, repo_relative
 from .ledger import applicability_blockers
 
+#: Strings this template ships that a real repository must have replaced. Each is a
+#: literal placeholder, never a guess at what a filled-in value looks like: a readiness
+#: gate that infers is worse than none, and a real program may legitimately own a node
+#: called ``…:example``.
+PLACEHOLDERS: tuple[tuple[str, str, str], ...] = (
+    ("README.md", "{{REPO_TITLE}}", "name the repository"),
+    ("main.tex", "<Document title>", "set the manuscript title"),
+    ("main.tex", "<author>", "set the manuscript author"),
+    ("main.tex", "Replace this abstract.", "write the abstract"),
+    ("README.md", "# Instantiating this template",
+     "delete the instantiation section once its steps are done"),
+    ("research/program/brief.md", "<!-- This is the worked example's brief",
+     "rewrite the brief for this repository's target"),
+    ("research/program/brief.md", "Write the logical negation, with quantifier order intact",
+     "write the exact negation in the brief"),
+    ("research/program/brief.md", "Two lists, both explicit.",
+     "write what counts as a complete proof and a complete refutation"),
+)
 
-def summary(report: dict, planes: tuple[str, ...] = PLANES) -> None:
+BRIEF = "research/program/brief.md"
+
+
+def summary(report: dict, lanes: tuple[str, ...] = LANES) -> None:
     """The stable structural summary printed by the default command."""
     ledgers = report["ledgers"]
     total = sum(len(item["nodes"]) for item in ledgers)
-    error_count = sum(len(report["errors"][plane]) for plane in planes)
+    error_count = sum(len(report["errors"][lane]) for lane in lanes)
     print(
         f"\n{len(ledgers)} ledger(s), {total} nodes, {len(report['labels'])} labels. "
         f"{error_count} error(s)."
@@ -28,7 +50,8 @@ def summary(report: dict, planes: tuple[str, ...] = PLANES) -> None:
     for item in sorted(ledgers, key=lambda entry: (entry["program"], str(entry["path"]))):
         counts = Counter(str(node.get("status")) for node in item["nodes"].values())
         statuses = ", ".join(f"{key}={value}" for key, value in sorted(counts.items()))
-        print(f"  [{item['program']}] {len(item['nodes'])} nodes — {statuses}")
+        breakdown = f" — {statuses}" if statuses else ""
+        print(f"  [{item['program']}] {len(item['nodes'])} nodes{breakdown}")
 
     live_portfolio = report.get("portfolio")
     if live_portfolio is not None:
@@ -47,6 +70,60 @@ def summary(report: dict, planes: tuple[str, ...] = PLANES) -> None:
         print(f"  {len(report['roles'])} agent role(s)")
 
 
+def ready(report: dict, root: Path | None) -> bool:
+    """Is this repository instantiated, or is it still the shipped template?
+
+    A different question from ``check``. Activation is structural, so an absent optional
+    plane is valid and must stay valid — a fresh clone is *correct* and *not ready*.
+    This view asks only whether the placeholders are gone and a sustained search has
+    something to aim at, and it prints what to do rather than what is wrong.
+    """
+    base = Path(root) if root is not None else Path(__file__).resolve().parents[2]
+    blockers: list[str] = []
+
+    nodes = sum(len(item["nodes"]) for item in report["ledgers"])
+    if not nodes:
+        blockers.append(
+            "research/program/ledger.yaml: no nodes — state the target in modules/ and "
+            "give it a node"
+        )
+    for item in report["ledgers"]:
+        where = repo_relative(base, item["path"])
+        if item["program"] == "program":
+            blockers.append(f"{where}: meta.program is still 'program' — name this program")
+        scope = str((item["meta"] or {}).get("scope") or "")
+        if "One sentence naming the class of objects" in scope:
+            blockers.append(f"{where}: meta.scope is still the shipped sentence")
+
+    if report.get("brief") is None:
+        blockers.append(
+            f"{BRIEF}: absent — a sustained search opens with a brief naming its target"
+        )
+
+    for relative, needle, remedy in PLACEHOLDERS:
+        path = base / relative
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            blockers.append(f"{relative}: cannot read: {exc}")
+            continue
+        if needle in text:
+            blockers.append(f"{relative}: {remedy}")
+
+    if blockers:
+        print(f"not ready — {len(blockers)} thing(s) to do:")
+        for blocker in dict.fromkeys(blockers):
+            print(f"  {blocker}")
+        print("\nThis is not a defect. A freshly cloned template is correct and not yet")
+        print("instantiated; see the instantiation checklist in README.md.")
+        return False
+    print("ready: the placeholders are gone and the brief names a target in the ledger.")
+    print("A green check is still structure only (CLAUDE.md constraint 4).")
+    return True
+
+
 def candidates(report: dict) -> None:
     """List the candidate statements no checkpoint has retired yet.
 
@@ -54,12 +131,17 @@ def candidates(report: dict) -> None:
     node and a manuscript statement by an orchestrator decision (CLAUDE.md constraint 8).
     """
     live = report.get("candidates") or []
+    promoted = (report.get("checkpoints") or {}).get("promoted") or {}
     if not live:
         print("No live candidate statements.")
-        return
     for entry in live:
         print(f"{entry['id']}  ({entry['date']}, {entry['source']})")
         print(f"  {entry['statement']}")
+    if promoted:
+        print(f"\n{len(promoted)} promoted — now ledger nodes, no longer candidates:")
+        for candidate_id, promotion in sorted(promoted.items()):
+            print(f"  {candidate_id} -> {promotion['node']}  "
+                  f"({promotion['date']}, {promotion['source']})")
 
 
 def status(report: dict) -> None:
@@ -153,6 +235,8 @@ def portfolio(report: dict) -> None:
             parent = approach.get("parent")
             print(f"  - {child} [{approach.get('state')}]"
                   + (f" < {parent}" if parent else ""))
+            if approach.get("objective"):
+                print(f"      {approach['objective'].strip()}")
             if approach.get("blocker"):
                 print(f"      blocked on: {approach['blocker']}")
             if approach.get("reopen_if"):

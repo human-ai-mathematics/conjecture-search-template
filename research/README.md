@@ -23,6 +23,7 @@ by the `synthesizer` (constraint 12).
 | content | location |
 |---|---|
 | accepted mathematical prose, the canonical quantified target included | [`../modules/`](../modules/) |
+| a worked instance of every genre below, as a fixture to copy | [`../example/`](../example/README.md) |
 | what finishing means, the exact negation, and the known traps | [`program/brief.md`](program/brief.md) |
 | ledger fields and invariants | [`program/ledger-schema.md`](program/ledger-schema.md) |
 | portfolio and brief fields | [`program/portfolio-schema.md`](program/portfolio-schema.md) |
@@ -48,7 +49,8 @@ portfolio holds none of those: a route is not a claim.
 2. Do the work. Put numerical work through `numerics`.
 3. Record a checkpoint when the result is durable, with its validated front matter. A tentative
    statement stays there as a `cand:` candidate until it is precise, stable, and worth tracking
-   (`CLAUDE.md` constraint 8).
+   (`CLAUDE.md` constraint 8). Promoting one is a single act: manuscript `\label`, ledger node,
+   `promotes:` in a checkpoint, and any portfolio blocker repointed at the node.
 4. Return a `portfolio_delta` in the handoff; the `synthesizer` applies it.
 5. Send accepted statement and ledger changes through the orchestrator.
 6. For a proof, supply a standalone dossier and independent review.
@@ -58,6 +60,7 @@ portfolio holds none of those: a route is not a claim.
 
 ```bash
 python3 scripts/check.py
+python3 scripts/check.py ready
 python3 scripts/check.py status
 python3 scripts/check.py portfolio
 python3 scripts/check.py checkpoints

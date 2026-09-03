@@ -53,6 +53,21 @@ If a later audit invalidates an earlier passing proof, remove the node's active 
 downgrade its status as appropriate and retain both reports; the old proof review remains a
 historical event, not current authority.
 
+## Audit currency is per subject
+
+`python3 scripts/check.py checkpoints` prints the current audit heads — every `type: audit`
+report nothing later supersedes. That list is only as honest as its curation, and two
+unrelated audits are not competing versions of one document: an audit of the numerics
+harness does not go stale because someone later audited the roles.
+
+So: when you write an audit that replaces an earlier reading **of the same subject**, name
+that earlier report in `supersedes:`. When your subject is new, name nothing. Neither
+record is ever edited or deleted; supersession only ever changes which one to read first.
+
+An audit that says "a further pass is still needed" and is never superseded will keep
+showing up as current long after that pass happened, which is a curation failure rather
+than a checker one — nothing can infer it.
+
 ## Audit front matter
 
 A non-certifying report uses only:
@@ -91,6 +106,6 @@ certify an analytic step.
 Validate the archive and every active certification pointer with:
 
 ```bash
-python3 scripts/check.py --plane proofs
+python3 scripts/check.py --lane proofs
 python3 scripts/check.py checkpoints    # also lists superseded audits
 ```

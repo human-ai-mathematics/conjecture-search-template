@@ -14,6 +14,7 @@ the validator needs no configuration to find it. The program's *name* is `meta.p
 | question | source |
 |---|---|
 | Which node is the target, and what would finish it? | [`brief.md`](brief.md) |
+| What does a filled-in one of any of these look like? | [`../../example/`](../../example/README.md) |
 | What exactly does the target say? | [`../../modules/`](../../modules/), at its `\label` |
 | What is each claim's status? | [`ledger.yaml`](ledger.yaml) |
 | What ledger fields are valid? | [`ledger-schema.md`](ledger-schema.md) |
@@ -27,7 +28,9 @@ the validator needs no configuration to find it. The program's *name* is `meta.p
 
 `brief.md` and `portfolio.yaml` are optional and activated by the work: the brief when a
 sustained search starts, the portfolio when several routes, agents, or sessions are in flight.
-An absent file is not a gap, and the checker validates only the planes that exist.
+An absent file is not a gap, and the checker validates only what exists. The one dependency
+between them runs one way: a portfolio requires a brief, because several coordinated routes
+*are* a sustained search; a brief needs no portfolio.
 
 A fixed normalization — a sign, a scaling, a log base, which constant absorbs what — is a node
 like any other: `kind: definition`, `status: defined`, stated in `../../modules/` under its
@@ -39,9 +42,20 @@ mathematical edit, and the ledger is where that is visible.
 A statement enters the ledger when it is precise, stable, and worth reusing or tracking on the
 frontier. Until then it is a candidate: it lives in the `candidates:` front matter of the
 checkpoint that proposed it, has no `\label`, no status and no certification, and is listed by
-`python3 scripts/check.py candidates` (`CLAUDE.md` constraint 8). Promotion is the act of
-giving it a manuscript statement and a node here — nothing is copied from one registry to
-another, because there is no other registry.
+`python3 scripts/check.py candidates` (`CLAUDE.md` constraint 8). Promotion gives it a
+manuscript statement and a node here — nothing is copied from one registry to another, because
+there is no other registry — and it is a single act: the checkpoint recording it through
+`promotes:` is what ends the candidate, and any route blocked on it moves to the node.
+
+## Proving and refuting end in the same place
+
+A refutation is not a shortcut past certification. The witness is a candidate; the statement it
+establishes becomes a refuter node with its own manuscript statement and its own dossier; that
+dossier is independently reviewed like any other; and only then does the target become
+`status: refuted`, naming the proved refuter in `refuted_by`. The refuter never enters the
+target's `depends_on` — that field records facts a proof used, and a refuted statement has no
+proof. Quantifiers decide what suffices: one witness for a universal claim, generally a
+certified divergent family for a uniform or dimension-free constant (constraint 11).
 
 ## Two writers, two planes
 
@@ -74,6 +88,7 @@ remains proved when an antecedent is open; `assumes` records that applicability 
 
 ```bash
 python3 scripts/check.py
+python3 scripts/check.py ready
 python3 scripts/check.py status
 python3 scripts/check.py portfolio
 python3 scripts/check.py candidates

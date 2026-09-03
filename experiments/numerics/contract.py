@@ -20,7 +20,11 @@ from types import ModuleType
 from typing import Any, Mapping
 
 
-ARTIFACT_SCHEMA_VERSION = 2
+#: 2 -> 3 added the source-tree fields (git_dirty, git_diff_sha256) that make an
+#: uncommitted target implementation reconstructible. Artifacts are immutable, so older
+#: versions stay valid and the archive checker asks each artifact only for what its own
+#: version promised.
+ARTIFACT_SCHEMA_VERSION = 3
 
 #: How far a number can be trusted. A value may be labelled `exact` only when it is
 #: closed-form or rationally certified; sampled, MCMC, FEM, quadrature, finite-grid and

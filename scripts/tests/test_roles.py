@@ -1,4 +1,4 @@
-"""Roles plane: canonical role definitions, assignment lenses, and generated adapters.
+"""Roles lane: canonical role definitions, assignment lenses, and generated adapters.
 
 These run against a copy of the real `.claude/` and `.codex/` trees, so the shipped
 roster and lens set are what is actually checked.
@@ -31,13 +31,13 @@ class RoleTests(unittest.TestCase):
 
     def run_checker(self) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            [sys.executable, str(CHECK), "--root", str(self.root), "--plane", "roles"],
+            [sys.executable, str(CHECK), "--root", str(self.root), "--lane", "roles"],
             cwd=self.root, check=False, capture_output=True, text=True,
         )
 
     def role_files(self) -> list[Path]:
         return [path for path in sorted((self.root / ".claude/agents").glob("*.md"))
-                if path.name != "README.md"]
+                if path.name not in {"README.md", "MAINTAINING.md"}]
 
     def lens_files(self) -> list[Path]:
         return [path for path in sorted((self.root / ".claude/lenses").glob("*.md"))
@@ -160,6 +160,32 @@ class RoleTests(unittest.TestCase):
 
         self.assertFalse(orphan.exists())
         self.assertEqual(self.run_checker().returncode, 0)
+
+    def test_the_roster_lives_with_the_maintainer_documentation(self):
+        """A role loads README.md to execute; the table of its colleagues is not that."""
+        maintaining = (self.root / ".claude/agents/MAINTAINING.md").read_text(encoding="utf-8")
+        readme = (self.root / ".claude/agents/README.md").read_text(encoding="utf-8")
+
+        for name in ("scout", "researcher", "reviewer", "synthesizer"):
+            self.assertIn(f"]({name}.md)", maintaining)
+        self.assertNotIn("--write-codex", readme)
+        self.assertEqual(self.run_checker().returncode, 0)
+
+    def test_maintaining_is_documentation_and_not_a_role(self):
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertNotIn("MAINTAINING", result.stdout)
+
+    def test_a_declared_lens_is_checked_even_with_no_lens_directory(self):
+        """The one arrangement where a researcher was told to load a file nobody ships."""
+        shutil.rmtree(self.root / ".claude/lenses")
+
+        result = self.run_checker()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("declares lens 'prove', but .claude/lenses/ does not exist",
+                      result.stdout)
 
     def test_author_and_reviewer_remain_separate_roles(self):
         """The one epistemic control the role collapse must not lose."""

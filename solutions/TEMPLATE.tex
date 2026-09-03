@@ -8,14 +8,18 @@
 \begin{document}
 
 % === SOLUTION HEADER (proof provenance) =====================================
-%   ledger-node : <id>                 research/program/ledger.yaml id this discharges
-%   refines     : <label(s)>           statement(s) sharpened
-%   bounded_by  : obs:...              obstruction(s) the statement must respect
-%   checked_by  : none | agent | human | lean  (none = not yet a proof)
+% Parsed by scripts/check.py: `field : value`, the value ending at the first run of
+% two or more spaces, so the gloss to its right is ignored. Two fields are checked.
+%   ledger-node : <id>[, <id>]        research/program/ledger.yaml id(s) this discharges
+%   checked_by  : none                none | agent | human  (none = not yet a proof)
+% The rest is for a human reader and has no second owner:
+%   refines     : <label(s)>          statement(s) sharpened
+%   bounded_by  : obs:...             obstruction(s) the statement must respect
 %   author      : <agent or name>
-%   reviewer    : <distinct agent or human; required for checked_by: agent>
-%   review      : research/reviews/<report>.md  (structured type: proof-review, verdict: pass)
 %   date        : YYYY-MM-DD
+% The reviewer's identity and the review path are NOT repeated here. The ledger's
+% proofs[].review owns the path and the report's own front matter owns the identities;
+% a third copy would have no owner to keep it true.
 % ============================================================================
 
 \section*{Solution: \textit{<short target name>}}
@@ -32,10 +36,9 @@
 
 \begin{proof}
   % Natural-language proof. Self-contained: state literature results with \cite and used
-  % manuscript lemmas with \ref. A Lean proof, when it exists, lives beside this file as
-  % <id>.lean and is recorded by proofs[].mode: lean. Agent certification requires
-  % an independent reviewer and a persisted report under research/reviews/. Numerical
-  % diagnostics may motivate the statement but cannot justify any step of this proof.
+  % manuscript lemmas with \ref. Agent certification requires an independent reviewer and
+  % a persisted report under research/reviews/. Numerical diagnostics may motivate the
+  % statement but cannot justify any step of this proof.
 \end{proof}
 
 \paragraph{Obstructions respected.}

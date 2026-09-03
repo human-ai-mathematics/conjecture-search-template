@@ -1,4 +1,4 @@
-"""Core plane: the claim graph, its manuscript anchors, and its bibliography.
+"""Core lane: the claim graph, its manuscript anchors, and its bibliography.
 
 Run from the repository root with::
 
@@ -211,30 +211,118 @@ class CoreTests(CheckerFixture):
         self.assertIn("unknown top-level field 'workflow'", errors)
         self.assertIn("meta: unknown field 'mystery_meta'", errors)
 
-    def test_declared_file_must_contain_effective_manuscript_label(self):
+    def test_the_ledger_holds_a_summary_and_never_the_statement(self):
+        """modules/ is canonical; a second field called `statement` invited drift."""
+        bad = node("thm:copy")
+        bad["statement"] = "a second copy of the manuscript text"
+        self.add_ledger("main", "program", [bad])
+
+        errors = self.errors()
+
+        self.assertIn("thm:copy.statement: obsolete field", errors)
+        self.assertIn("the statement itself lives in modules/", errors)
+
+    def test_the_manuscript_anchor_is_the_node_id_and_nothing_overrides_it(self):
+        """An override made "the id is the anchor" untrue and had no second reader."""
+        self.add_ledger(
+            "main",
+            "program",
+            [node("obs:synthetic", status="open", kind="obstruction",
+                  label="thm:effective-anchor")],
+        )
+
+        errors = self.errors()
+
+        self.assertIn("obs:synthetic.label: obsolete field", errors)
+        self.assertIn("the node id itself as the manuscript anchor", errors)
+
+    def test_a_declared_file_must_be_the_one_holding_the_anchor(self):
         other = self.root / "modules/other.tex"
         other.write_text("fixture without the anchor\n")
         self.add_ledger(
             "main",
             "program",
-            [
-                node(
-                    "obs:synthetic",
-                    status="open",
-                    kind="obstruction",
-                    file="modules/other.tex",
-                    label="thm:effective-anchor",
-                ),
-            ],
+            [node("obs:synthetic", status="open", kind="obstruction",
+                  file="modules/other.tex")],
         )
 
         errors = self.errors()
 
         self.assertIn(
-            "obs:synthetic.file: 'modules/other.tex' does not contain effective label "
-            "'thm:effective-anchor'",
+            "obs:synthetic.file: 'modules/other.tex' does not contain 'obs:synthetic'; "
+            "it is in modules/test.tex",
             errors,
         )
+
+    def test_a_claim_is_stated_in_modules_and_nowhere_else(self):
+        dossier = self.root / "solutions/elsewhere.tex"
+        dossier.parent.mkdir(parents=True, exist_ok=True)
+        dossier.write_text("\\begin{theorem}\n\\label{thm:elsewhere}\nfixture\n"
+                           "\\end{theorem}\n")
+        self.add_ledger(
+            "main", "program",
+            [node("thm:elsewhere", status="open", kind="theorem",
+                  file="solutions/elsewhere.tex")],
+        )
+
+        errors = self.errors()
+
+        self.assertIn("thm:elsewhere.file:", errors)
+        self.assertIn("a claim is stated in modules/, nowhere else", errors)
+
+    def test_a_structural_label_needs_no_node_but_a_claim_label_does(self):
+        """The honest invariant: theorem environments are nodes, sections are not."""
+        self.module.write_text(
+            "\\section{Orientation}\n\\label{sec:overview}\n"
+            "\\begin{lemma}\n\\label{lem:orphan}\nfixture\n\\end{lemma}\n"
+        )
+        self.add_ledger("main", "program", [])
+
+        errors = self.errors()
+
+        self.assertNotIn("sec:overview", errors)
+        self.assertIn("\\label{lem:orphan} states a \\begin{lemma} that no ledger node "
+                      "answers for", errors)
+
+    def test_a_node_kind_must_agree_with_the_environment_it_labels(self):
+        """A \\begin{conjecture} behind kind: theorem is a real defect, now a caught one."""
+        self.add_ledger(
+            "main", "program",
+            [node("thm:mislabelled", status="open", kind="theorem")],
+        )
+        self.module.write_text(
+            "\\begin{conjecture}\n\\label{thm:mislabelled}\nfixture\n"
+            "\\end{conjecture}\n"
+        )
+
+        errors = self.errors()
+
+        self.assertIn("thm:mislabelled.kind: 'theorem' disagrees with the "
+                      "\\begin{conjecture} it labels", errors)
+
+    def test_one_anchor_lives_in_one_place(self):
+        self.add_ledger("main", "program",
+                        [node("lem:twice", status="open", kind="lemma")])
+        second = self.root / "modules/second.tex"
+        second.write_text("\\begin{lemma}\n\\label{lem:twice}\nfixture\n\\end{lemma}\n")
+
+        errors = self.errors()
+
+        self.assertIn("duplicate manuscript label 'lem:twice'", errors)
+
+    def test_a_label_inside_a_proof_still_belongs_to_its_theorem(self):
+        """The enclosing claim environment is the innermost one, not the innermost env."""
+        self.add_ledger(
+            "main", "program",
+            [node("prop:nested", status="open", kind="proposition")],
+        )
+        self.module.write_text(
+            "\\begin{proposition}\n\\label{prop:nested}\n"
+            "\\begin{proof}\n\\begin{itemize}\\item fixture\\end{itemize}\n"
+            "\\end{proof}\n\\end{proposition}\n"
+        )
+
+        self.assertEqual(self.errors(), "")
 
     def test_implication_truth_is_separate_from_applicability(self):
         nodes = [

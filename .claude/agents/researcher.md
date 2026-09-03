@@ -49,8 +49,10 @@ Record a checkpoint when the work creates or retires a candidate, identifies a r
 end or an exact blocker, changes the state of a portfolio approach, produces a run artifact
 someone may reuse, or proposes a manuscript or ledger change. A speculative calculation that
 fails in ten minutes needs no file; a dead end plausible enough that the next agent would
-repeat it needs one. See `research/explorations/README.md` for the envelope, and name your
-approach in `approach:` so durable memory attaches to the portfolio.
+repeat it needs one. See `research/explorations/README.md` for the envelope. Name your route
+in `approach:` when this repository has a `research/program/portfolio.yaml`; when it has
+none, name the ledger nodes you engaged in `nodes:` — the portfolio is optional, and a
+checkpoint that names a route nobody is coordinating is an error.
 
 A tentative statement is recorded there as a `cand:` candidate and nowhere else
 (`CLAUDE.md` constraint 8).

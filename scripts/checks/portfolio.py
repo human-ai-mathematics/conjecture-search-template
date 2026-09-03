@@ -1,6 +1,6 @@
-"""The portfolio plane: what the search is doing, and the brief that scopes it.
+"""The portfolio lane: what the search is doing, and the brief that scopes it.
 
-The ledger says what is mathematically claimed. This plane says which routes are alive,
+The ledger says what is mathematically claimed. This lane says which routes are alive,
 which are blocked and on what, which are duplicates of each other, and which families
 have been worked out. None of that is mathematical truth, so none of it belongs in the
 ledger — and the portfolio in turn never restates a statement: it points at a `cand:` id
@@ -38,7 +38,8 @@ FAMILY_CLOSED_STATES = {"saturated", "parked"}
 OBSOLETE_FAMILY_FIELDS = {"saturation_checkpoint": "closure_checkpoint"}
 
 APPROACH_FIELDS = {
-    "id", "family", "parent", "state", "blocker", "reopen_if", "related", "checkpoints",
+    "id", "family", "objective", "parent", "state", "blocker", "reopen_if", "related",
+    "checkpoints",
 }
 APPROACH_STATES = {"queued", "active", "blocked", "completed", "duplicate"}
 #: A route that is no longer running left the search in a different shape than it found it.
@@ -47,6 +48,13 @@ APPROACH_EXPLAINED_STATES = {"blocked", "completed", "duplicate"}
 #: Live work. A closed family holds neither: a queued route is planned work, so a family
 #: with one has not actually closed.
 APPROACH_LIVE_STATES = {"active", "queued"}
+
+#: Kinds a search cannot be aimed at. A definition is fixed by decision, not resolved by
+#: work, and an obstruction is a fence the search reads rather than a thing it settles.
+NON_TARGET_KINDS = {"definition", "obstruction"}
+
+#: Once the target is one of these, the search has its answer.
+RESOLVED_STATUSES = {"proved", "refuted"}
 RELATION_FIELDS = {"to", "relation"}
 RELATIONS = {"overlaps", "duplicates", "refines"}
 
@@ -197,6 +205,16 @@ def load(root: Path, errors: list[str]) -> dict | None:
         elif family_id not in families:
             errors.append(f"{where} {approach_id}.family: '{family_id}' is not a family")
 
+        # A family says what mechanism it tries; without this, an individual route said
+        # nothing at all and was legible only by reading its slug. Coordination text, not
+        # a statement: it names an intention, never a claim (constraint 12).
+        objective = approach.get("objective")
+        if not isinstance(objective, str) or not objective.strip():
+            errors.append(
+                f"{where} {approach_id}.objective: one sentence saying what this route "
+                "tries; a route nobody can read is a route nobody can deduplicate"
+            )
+
         parent = approach.get("parent")
         if parent is not None:
             if not isinstance(parent, str) or parent not in approaches:
@@ -306,7 +324,7 @@ def check_brief(root: Path, errors: list[str]) -> dict | None:
     """Validate the problem brief's envelope; ``None`` when there is none.
 
     Shape only. The target's resolution into the claim graph happens in :func:`resolve`
-    with every other cross-plane reference, so that an unavailable ledger produces one
+    with every other cross-lane reference, so that an unavailable ledger produces one
     honest dependency error instead of several silent omissions.
     """
     path = root / BRIEF_PATH
@@ -353,18 +371,28 @@ def _checkpoint_agreement(index: dict[str, dict], reference: str, expected: set[
 
 
 def resolve(portfolio: dict | None, brief: dict | None, node_ids: set[str],
-            memory: dict, errors: list[str]) -> None:
-    """Check every reference out of this plane: into the ledger, candidates, and memory.
+            memory: dict, errors: list[str], nodes: dict[str, dict] | None = None) -> None:
+    """Check every reference out of this lane: into the ledger, candidates, and memory.
 
     Kept separate from :func:`load` because the candidate set and the checkpoint index are
-    derived from the checkpoint plane, which in turn needs this plane's approach ids.
+    derived from the checkpoint lane, which in turn needs this lane's approach ids.
     """
     if portfolio is None and brief is None:
         return
     context = str(PORTFOLIO_PATH)
     brief_context = str(BRIEF_PATH)
+    nodes = nodes or {}
     target = portfolio["target"] if portfolio is not None else None
     brief_target = brief["target"] if brief is not None else None
+
+    # Several coordinated routes *are* a sustained search, and a sustained search opens
+    # with a brief. The reverse is not required: a brief with one live route needs no
+    # portfolio (CLAUDE.md, "The gates").
+    if portfolio is not None and brief is None:
+        errors.append(
+            f"{brief_context}: a portfolio coordinates several routes, which is a "
+            "sustained search; write the brief that says what would finish it"
+        )
 
     # The brief and the portfolio must agree with each other whether or not the claim
     # graph loaded: that comparison needs no ledger.
@@ -374,14 +402,14 @@ def resolve(portfolio: dict | None, brief: dict | None, node_ids: set[str],
             f"'{brief_target}'"
         )
 
-    # An unavailable claim graph is a dependency failure of this plane, not an absence of
+    # An unavailable claim graph is a dependency failure of this lane, not an absence of
     # errors in it. Scoping restricts what is reported; it never turns an unresolved
     # reference into a successful validation.
     if not node_ids:
         if target is not None or brief_target is not None:
             errors.append(
                 f"{context}: the claim graph is unavailable or holds no nodes, so the "
-                "target and blocker references cannot be resolved; fix the core plane first"
+                "target and blocker references cannot be resolved; fix the core lane first"
             )
     else:
         if isinstance(target, str) and target not in node_ids:
@@ -389,17 +417,46 @@ def resolve(portfolio: dict | None, brief: dict | None, node_ids: set[str],
         if isinstance(brief_target, str) and brief_target not in node_ids:
             errors.append(f"{brief_context}.target: '{brief_target}' is not a ledger node id")
 
+    target_node = nodes.get(target) if isinstance(target, str) else None
+    if target_node is not None:
+        if target_node.get("kind") in NON_TARGET_KINDS:
+            errors.append(
+                f"{context}.target: '{target}' is a {target_node.get('kind')}; a search "
+                "resolves a claim, and a definition or a fence is not one to resolve"
+            )
+        if portfolio is not None and target_node.get("status") in RESOLVED_STATUSES:
+            still_live = sorted(
+                approach_id for approach_id, approach in portfolio["approaches"].items()
+                if approach.get("_state") in APPROACH_LIVE_STATES
+            )
+            if still_live:
+                errors.append(
+                    f"{context}: target '{target}' is "
+                    f"{target_node.get('status')}, but {', '.join(still_live)} "
+                    "remain active or queued; close the routes the answer settled"
+                )
+
     if portfolio is None:
         return
 
     candidate_ids = {entry["id"] for entry in memory.get("candidates", [])}
+    promoted = memory.get("promoted", {})
     index = {record["relative"]: record for record in memory.get("records", [])}
 
     for approach_id, approach in sorted(portfolio["approaches"].items()):
         where = f"{context}.approaches"
         blocker = approach.get("blocker")
         if node_ids and isinstance(blocker, str) and blocker.strip():
-            if blocker not in node_ids and blocker not in candidate_ids:
+            if blocker in promoted:
+                # The third half of an atomic promotion. The candidate is gone, the node
+                # exists, and a route still pointing at the old id reads as blocked on
+                # something nobody can look up.
+                errors.append(
+                    f"{where} {approach_id}.blocker: '{blocker}' was promoted to "
+                    f"'{promoted[blocker]['node']}' in {promoted[blocker]['source']}; "
+                    "block the route on the node instead"
+                )
+            elif blocker not in node_ids and blocker not in candidate_ids:
                 errors.append(
                     f"{where} {approach_id}.blocker: '{blocker}' is neither a ledger node "
                     "nor a live candidate; state the missing lemma precisely before "

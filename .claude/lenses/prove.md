@@ -13,9 +13,10 @@ contract; everything below is what `prove` adds.
 1. Read the node, its manuscript statement, its `depends_on` closure, and every `bounded_by`
    and `heuristic_barriers` node in full. Hard fences must be respected; advisory barriers
    must be addressed or explicitly set aside.
-2. Copy `solutions/TEMPLATE.tex`. Fill the audit header completely: ledger node, `refines`
-   label, `bounded_by`, `checked_by: none`, author identity, date. Leave the reviewer field
-   empty — you are not it.
+2. Copy `solutions/TEMPLATE.tex`. Fill the audit header: `ledger-node` naming what this
+   discharges, `refines`, `bounded_by`, `checked_by: none`, author identity, date. The
+   header carries no reviewer and no review path — the ledger's `proofs[].review` owns the
+   path and the report's front matter owns the identities. You are not the reviewer.
 3. State the refined theorem, then prove it. `\ref`/`\cite` freely; `??` standalone is
    expected.
 4. Compile: `cd solutions && latexmk -pdf -outdir=../build <id>.tex`.

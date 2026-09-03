@@ -1,4 +1,4 @@
-"""Checkpoints plane: durable memory, candidates, approaches, and supersession."""
+"""Checkpoints lane: durable memory, candidates, approaches, and supersession."""
 from __future__ import annotations
 
 import sys
@@ -196,6 +196,62 @@ class CheckpointTests(CheckerFixture):
 
         self.assertIn(f"'{review}' is not an audit", errors)
         self.assertEqual(report["checkpoints"]["superseded_audits"], {stale: [fresh]})
+
+    def test_promotion_ends_a_candidate_in_one_act(self):
+        """Adding the node while leaving the candidate live left one statement two homes."""
+        self.add_ledger("program", "program",
+                        [node("lem:stability", status="open", kind="lemma")])
+        self.add_checkpoint(
+            "proposal", date="2026-08-20", outcome="candidate",
+            candidates=[{"id": "cand:stability", "statement": "A precise statement."}],
+        )
+        self.add_checkpoint(
+            "promotion", date="2026-08-21", outcome="proposed", nodes=("lem:stability",),
+            promotes=[{"candidate": "cand:stability", "node": "lem:stability"}],
+        )
+
+        report = self.check()
+
+        self.assertEqual(failures(report, ("checkpoints",)), [])
+        self.assertEqual([entry["id"] for entry in report["candidates"]], [])
+        self.assertEqual(report["checkpoints"]["promoted"]["cand:stability"]["node"],
+                         "lem:stability")
+
+    def test_a_promotion_names_a_node_that_actually_exists(self):
+        self.add_ledger("program", "program",
+                        [node("lem:real", status="open", kind="lemma")])
+        self.add_checkpoint(
+            "proposal", date="2026-08-20", outcome="candidate",
+            candidates=[{"id": "cand:stability", "statement": "A precise statement."}],
+        )
+        self.add_checkpoint(
+            "promotion", date="2026-08-21", outcome="proposed", nodes=("lem:real",),
+            promotes=[{"candidate": "cand:stability", "node": "lem:ghost"}],
+        )
+
+        errors = self.errors()
+
+        self.assertIn("promotes: 'lem:ghost' is not a ledger node id", errors)
+
+    def test_a_promoted_candidate_is_not_retired_a_second_time(self):
+        self.add_ledger("program", "program",
+                        [node("lem:stability", status="open", kind="lemma")])
+        self.add_checkpoint(
+            "proposal", date="2026-08-20", outcome="candidate",
+            candidates=[{"id": "cand:stability", "statement": "A precise statement."}],
+        )
+        self.add_checkpoint(
+            "promotion", date="2026-08-21", outcome="proposed", nodes=("lem:stability",),
+            promotes=[{"candidate": "cand:stability", "node": "lem:stability"}],
+        )
+        self.add_checkpoint(
+            "retirement", date="2026-08-22", outcome="dead-end", nodes=("lem:stability",),
+            retires=("cand:stability",),
+        )
+
+        errors = self.errors()
+
+        self.assertIn("was promoted to 'lem:stability'", errors)
 
 
 if __name__ == "__main__":

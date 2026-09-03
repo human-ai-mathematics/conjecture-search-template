@@ -22,6 +22,11 @@ route coordinates itself; a portfolio that describes a search nobody is running 
 overhead. Create the brief when a sustained search starts, and the portfolio when several
 routes, agents, or sessions are in flight at once.
 
+The two are not independent in both directions. **A portfolio requires a brief**: several
+coordinated routes *are* a sustained search, and a search with no statement of what would
+finish it is a search nobody can call off. The converse is not required — a brief with one
+live route needs no portfolio.
+
 ## `brief.md`
 
 ```yaml
@@ -31,8 +36,9 @@ target: q:main-conjecture
 ---
 ```
 
-`target` must resolve to a ledger node, and must agree with `portfolio.yaml`'s `target`
-when both exist. The body is prose; the sections the template ships are what an agent
+`target` must resolve to a ledger node of a claim-bearing kind — a `definition` is fixed by
+decision and an `obstruction` is a fence the search reads, so neither is something a search
+resolves — and must agree with `portfolio.yaml`'s `target` when both exist. The body is prose; the sections the template ships are what an agent
 needs before it can attack the problem honestly — the exact negation, what counts as a
 complete proof and a complete refutation, edge cases, known equivalent-strength traps,
 the initial families, the blocked/reopen criteria, and a budget policy that permits an
@@ -57,6 +63,7 @@ families:
 approaches:
   - id: ap:transport-gluing
     family: fam:transport
+    objective: Glue local transport maps across the overlap into one global map.
     parent: ap:transport-local
     state: blocked
     blocker: cand:transport-compatibility
@@ -104,6 +111,7 @@ attempt counts, and neither can elapsed time.
 |---|---|
 | `id` | `ap:<slug>`, unique. |
 | `family` | The family this route belongs to. Required, and must resolve. |
+| `objective` | One sentence: what *this* route tries. Required. |
 | `parent` | The approach this one grew out of, in the same family. Optional, acyclic. |
 | `state` | `queued`, `active`, `blocked`, `completed`, or `duplicate`. |
 | `blocker` | The exact `cand:` id or ledger node id the route is stuck on. Required iff `blocked`. |
@@ -111,14 +119,39 @@ attempt counts, and neither can elapsed time.
 | `related` | `{to, relation}` entries; `relation` is `overlaps`, `duplicates`, or `refines`. |
 | `checkpoints` | Repo-relative `research/explorations/` records produced by this route. Required for `blocked`, `completed` and `duplicate`. |
 
+A family says what *mechanism* it tries; `objective` says what this one route tries within
+it. Without it a queued route was an id, a family and nothing else, legible only by reading
+its slug — and two agents cannot notice they are duplicating a route neither can read. It
+is coordination text: it names an intention, never a claim, and a route that needs to state
+mathematics is a route whose missing lemma belongs in a checkpoint as a `cand:`.
+
 `parent` defines the tree, so siblings and descendants are derived rather than stored. A
 descendant that leaves its parent's family is not a child: it is a new route with a
 `refines` relation.
 
-A blocker must resolve. If a route is important enough to be formally blocked, its
-missing lemma is important enough to be stated precisely — as a candidate in the
-checkpoint that found it, or as a ledger node. The portfolio does not copy that
-statement.
+The five states, precisely:
+
+| state | means |
+|---|---|
+| `queued` | planned live work nobody has started |
+| `active` | being worked now |
+| `blocked` | stopped on a named `cand:` or node, with the condition that would reopen it |
+| `completed` | **this route's objective is finished** — the mechanism was carried out and there is nothing left to try along it. It says nothing about the target's status: a route can complete and settle nothing. |
+| `duplicate` | the same idea as another route, which it names through a `duplicates` relation |
+
+When the target's own status becomes `proved` or `refuted`, no route may remain `active` or
+`queued`. The search has its answer; closing the routes it settled is one `synthesizer` edit,
+and leaving them open is how a portfolio starts describing a search nobody is running.
+
+A blocker must resolve to a ledger node or a **live** candidate. If a route is important
+enough to be formally blocked, its missing lemma is important enough to be stated precisely
+— as a candidate in the checkpoint that found it, or as a ledger node. The portfolio does
+not copy that statement.
+
+When a candidate is promoted to a node, the routes blocked on it move with it: a `blocker`
+naming a promoted candidate is an error that names the node to point at instead. Promotion
+is one act — manuscript statement, ledger node, `promotes:` in the checkpoint, blockers
+repointed — and this is the part of it the checker can see.
 
 An approach in state `duplicate` must say what it duplicates, and two approaches joined
 by a `duplicates` relation may not both be `active`. Whether two routes are *really* the
@@ -154,6 +187,6 @@ the ledger.
 ## Verify
 
 ```bash
-python3 scripts/check.py --plane portfolio
+python3 scripts/check.py --lane portfolio
 python3 scripts/check.py portfolio          # the live search
 ```

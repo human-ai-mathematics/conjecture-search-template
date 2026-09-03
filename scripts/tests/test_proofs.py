@@ -1,4 +1,4 @@
-"""Proofs plane: dossiers, certification modes, and persisted review provenance."""
+"""Proofs lane: dossiers, certification modes, and persisted review provenance."""
 from __future__ import annotations
 
 import sys
@@ -236,7 +236,6 @@ class ProofsTests(CheckerFixture):
                 "conj:refuted",
                 status="refuted",
                 kind="conjecture",
-                depends_on=["obs:proved-counterexample"],
                 refuted_by=["obs:proved-counterexample"],
             ),
             node("conj:missing-refuter", status="refuted", kind="conjecture"),
@@ -244,14 +243,7 @@ class ProofsTests(CheckerFixture):
                 "conj:open-refuter",
                 status="refuted",
                 kind="conjecture",
-                depends_on=["q:open-counterexample"],
                 refuted_by=["q:open-counterexample"],
-            ),
-            node(
-                "conj:unlinked-refuter",
-                status="refuted",
-                kind="conjecture",
-                refuted_by=["obs:proved-counterexample"],
             ),
         ]
         self.add_ledger("main", "program", nodes)
@@ -261,14 +253,24 @@ class ProofsTests(CheckerFixture):
         self.assertNotIn("conj:refuted.refuted_by", errors)
         self.assertIn("conj:missing-refuter: refuted node requires refuted_by", errors)
         self.assertIn("conj:open-refuter.refuted_by: 'q:open-counterexample' is not proved", errors)
-        self.assertIn(
-            "conj:unlinked-refuter.refuted_by: 'obs:proved-counterexample' must also appear",
-            errors,
-        )
 
-    def test_human_and_lean_certification_contracts(self):
+    def test_a_refuter_is_not_a_proof_dependency_of_what_it_refutes(self):
+        """A refuted node has no proof, so depends_on has nothing to record."""
+        nodes = [
+            node("obs:proved-counterexample", kind="obstruction"),
+            node(
+                "conj:refuted",
+                status="refuted",
+                kind="conjecture",
+                refuted_by=["obs:proved-counterexample"],
+            ),
+        ]
+        self.add_ledger("main", "program", nodes)
+
+        self.assertEqual(self.errors(), "")
+
+    def test_human_certification_names_who_accepted_it(self):
         human_solution = self.add_solution("human-proof", node_ids=("thm:human",))
-        lean_solution = self.add_solution("lean-proof", node_ids=("thm:lean",))
         self.add_ledger(
             "main",
             "program",
@@ -281,17 +283,51 @@ class ProofsTests(CheckerFixture):
                         "accepted_by": "",
                     }],
                 ),
-                node("thm:lean", proofs=[{"artifact": lean_solution, "mode": "lean"}]),
             ],
         )
 
         errors = self.errors()
-        self.assertIn("thm:human.proofs[0].accepted_by: mode human requires a non-empty identity", errors)
-        self.assertIn("thm:lean.proofs[0]: mode lean requires adjacent 'lean-proof.lean'", errors)
+        self.assertIn(
+            "thm:human.proofs[0].accepted_by: mode human requires a non-empty identity",
+            errors,
+        )
 
-        (self.root / lean_solution).with_suffix(".lean").write_text("-- fixture\n")
+    def test_a_dossier_header_must_say_what_it_proves_and_how_far_it_is_checked(self):
+        """The header is parsed, not grepped: the word and the id may not sit apart."""
+        relative = "solutions/loose-header.tex"
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            "% a dossier that mentions ledger-node nowhere in particular\n"
+            + "% padding\n" * 20
+            + "% thm:loose appears far below, in prose\n"
+        )
+        self.add_ledger(
+            "main", "program",
+            [node("thm:loose", proofs=[{
+                "artifact": relative, "mode": "human", "accepted_by": "fixture human",
+            }])],
+        )
+
         errors = self.errors()
-        self.assertNotIn("thm:lean.proofs[0]: mode lean", errors)
+
+        self.assertIn("dossier header has no 'ledger-node' field", errors)
+        self.assertIn("dossier header has no 'checked_by' field", errors)
+
+    def test_machine_certification_is_retired_until_the_kernel_actually_runs(self):
+        """An empty .lean file satisfied the strongest-sounding mode in the ladder."""
+        lean_solution = self.add_solution("lean-proof", node_ids=("thm:lean",))
+        (self.root / lean_solution).with_suffix(".lean").write_text("-- fixture\n")
+        self.add_ledger(
+            "main",
+            "program",
+            [node("thm:lean", proofs=[{"artifact": lean_solution, "mode": "lean"}])],
+        )
+
+        errors = self.errors()
+
+        self.assertIn("thm:lean.proofs[0].mode: 'lean' is retired", errors)
+        self.assertIn("never ran the kernel", errors)
 
     def test_solution_path_is_confined_to_tex_dossiers(self):
         self.module.write_text("% ledger-node: thm:outside\n\\label{thm:outside}\n")
@@ -359,7 +395,9 @@ class ProofsTests(CheckerFixture):
 
         errors = self.errors()
 
-        self.assertIn("dossier header does not enumerate", errors)
+        self.assertIn("dossier header declares ledger-node "
+                      "'thm:missing-from-header-extra', not 'thm:missing-from-header'",
+                      errors)
 
     def test_multiple_independent_proofs_may_coexist(self):
         first = self.add_solution("first-proof", node_ids=("thm:two-proofs",))

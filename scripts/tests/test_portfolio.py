@@ -1,4 +1,4 @@
-"""Portfolio plane: the search state, and everything it is not allowed to become.
+"""Portfolio lane: the search state, and everything it is not allowed to become.
 
 The rules under test are all structural. Whether two routes are really the same idea,
 and whether a family is really exhausted, are synthesizer judgments the checker refuses
@@ -370,10 +370,10 @@ class PortfolioTests(CheckerFixture):
                             "checkpoints": []}],
         })
 
-        errors = self.errors(planes=("portfolio",))
+        errors = self.errors(lanes=("portfolio",))
 
         self.assertIn("the claim graph is unavailable or holds no nodes", errors)
-        # The blocker check depends on the same missing plane, so it must not fire
+        # The blocker check depends on the same missing lane, so it must not fire
         # a second, misleading error about a node that simply could not be loaded.
         self.assertNotIn("neither a ledger node nor a live candidate", errors)
 
@@ -400,6 +400,94 @@ class PortfolioTests(CheckerFixture):
         })
 
         self.assertEqual(self.errors(), "")
+
+    def test_a_blocker_moves_with_the_candidate_it_names(self):
+        """Promotion is atomic: the route follows the statement to its node."""
+        self.add_ledger("program", "program", [
+            node("q:target", status="open", kind="question"),
+            node("lem:stability", status="open", kind="lemma"),
+        ])
+        self.add_checkpoint(
+            "proposal", date="2026-08-20", outcome="candidate",
+            candidates=[{"id": "cand:stability", "statement": "A precise statement."}],
+        )
+        self.add_checkpoint(
+            "promotion", date="2026-08-21", outcome="proposed", nodes=("lem:stability",),
+            promotes=[{"candidate": "cand:stability", "node": "lem:stability"}],
+        )
+        self.add_portfolio({
+            "target": "q:target",
+            "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
+            "approaches": [{
+                "id": "ap:stuck", "family": "fam:one", "state": "blocked",
+                "blocker": "cand:stability", "reopen_if": "The lemma is proved.",
+                "checkpoints": ["research/explorations/2026-08-20-proposal.md"],
+            }],
+        })
+
+        errors = self.errors()
+
+        self.assertIn("ap:stuck.blocker: 'cand:stability' was promoted to "
+                      "'lem:stability'", errors)
+        self.assertIn("block the route on the node instead", errors)
+
+    def test_a_portfolio_without_a_brief_is_a_search_nobody_scoped(self):
+        """Several coordinated routes are a sustained search, and one opens with a brief."""
+        target_ledger(self)
+        self.add_portfolio({
+            "target": "q:target",
+            "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
+            "approaches": [{"id": "ap:one", "family": "fam:one", "state": "active"}],
+        }, brief=False)
+
+        errors = self.errors()
+
+        self.assertIn("brief.md: a portfolio coordinates several routes", errors)
+
+    def test_every_route_says_what_it_tries(self):
+        target_ledger(self)
+        self.add_portfolio({
+            "target": "q:target",
+            "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
+            "approaches": [{"id": "ap:mute", "family": "fam:one", "state": "queued",
+                            "objective": "   "}],
+        })
+
+        errors = self.errors()
+
+        self.assertIn("ap:mute.objective: one sentence saying what this route tries",
+                      errors)
+
+    def test_a_search_is_not_aimed_at_a_definition_or_a_fence(self):
+        self.add_ledger("program", "program", [
+            node("def:convention", status="defined", kind="definition"),
+        ])
+        self.add_portfolio({
+            "target": "def:convention",
+            "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
+        })
+
+        errors = self.errors()
+
+        self.assertIn("target: 'def:convention' is a definition", errors)
+
+    def test_a_resolved_target_leaves_no_route_running(self):
+        """The answer arrived; the routes it settled are not still being worked."""
+        self.add_ledger("program", "program", [
+            node("obs:witness", kind="obstruction"),
+            node("conj:target", status="refuted", kind="conjecture",
+                 refuted_by=["obs:witness"]),
+        ])
+        self.add_portfolio({
+            "target": "conj:target",
+            "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
+            "approaches": [{"id": "ap:still-going", "family": "fam:one", "state": "active"}],
+        })
+
+        errors = self.errors()
+
+        self.assertIn("target 'conj:target' is refuted, but ap:still-going remain active "
+                      "or queued", errors)
 
 
 if __name__ == "__main__":

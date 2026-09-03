@@ -7,6 +7,7 @@ exploration may cite one, but a run enters no claim node (CLAUDE.md constraint 2
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import platform
 import subprocess
@@ -41,6 +42,21 @@ def runs_dir() -> Path:
     return directory
 
 
+def confine_to_runs(out: str | Path) -> Path:
+    """Resolve one requested artifact path, refusing anything outside ``research/runs/``."""
+    directory = runs_dir().resolve()
+    resolved = Path(out).expanduser()
+    resolved = (directory / resolved).resolve() if not resolved.is_absolute() \
+        else resolved.resolve()
+    try:
+        resolved.relative_to(directory)
+    except ValueError:
+        raise ValueError(
+            f"--out must stay under research/runs/, got '{out}'"
+        ) from None
+    return resolved
+
+
 def _git(*args: str) -> str | None:
     try:
         done = subprocess.run(["git", *args], cwd=Path(__file__).resolve().parent,
@@ -57,14 +73,31 @@ def _package_version(name: str) -> str | None:
         return None
 
 
+def source_state() -> dict[str, Any]:
+    """Which source tree produced this artifact: the commit, plus any uncommitted diff.
+
+    ``git_commit`` alone could not reproduce a run whose target implementation was still
+    uncommitted, which is the normal case while a diagnostic is being written. Recording
+    ``git_dirty`` and a hash of the diff closes that gap without gating anything: a dirty
+    run is still a run, and its numbers are worth exactly what any numbers are worth
+    (CLAUDE.md constraint 2). This is provenance, not eligibility — the retired
+    ``evidence_eligible`` field decided whether output counted, and nothing here does.
+
+    Every field is present even outside a git checkout, where the values are null.
+    """
+    commit = _git("rev-parse", "HEAD")
+    if commit is None:
+        return {"git_commit": None, "git_dirty": None, "git_diff_sha256": None}
+    diff = _git("diff", "HEAD")
+    dirty = bool(_git("status", "--porcelain"))
+    digest = (hashlib.sha256(diff.encode("utf-8")).hexdigest()
+              if dirty and diff else None)
+    return {"git_commit": commit, "git_dirty": dirty, "git_diff_sha256": digest}
+
+
 def provenance(*, target: str, profile: str, stochastic: bool,
                config: dict[str, Any]) -> dict[str, Any]:
-    """The artifact header: inputs, then environment, kept apart from derived results.
-
-    ``git_commit`` traces which checkout produced the artifact. It is informational —
-    reproducibility rests on the recorded seed, config, and library versions, and nothing
-    gates on the state of the worktree.
-    """
+    """The artifact header: inputs, then environment, kept apart from derived results."""
     return {
         "schema_version": ARTIFACT_SCHEMA_VERSION,
         "date": date.today().isoformat(),
@@ -72,7 +105,7 @@ def provenance(*, target: str, profile: str, stochastic: bool,
         "profile": profile,
         "stochastic": bool(stochastic),
         "config": config,
-        "git_commit": _git("rev-parse", "HEAD"),
+        **source_state(),
         "environment": {
             "python": sys.version.split()[0],
             "platform": platform.platform(),
