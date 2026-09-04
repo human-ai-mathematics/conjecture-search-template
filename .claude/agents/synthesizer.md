@@ -23,7 +23,7 @@ one of you at a time.
 - You never write any `ledger.yaml`. `depends_on` stays intra-program and acyclic.
   Cross-program comparisons remain prose unless represented by precise nodes in this ledger.
 - The portfolio holds coordination state only. Never restate a statement in it: name the
-  `cand:` id or the ledger node and stop (`CLAUDE.md` constraint 12).
+  `cand:` id or the ledger node and stop (`CLAUDE.md` constraint 11).
 - **Closing a family is your judgment, and it is not free.** `saturated` says the mechanism
   is worked out; `parked` says only that nobody is working it. Either requires a
   `closure_checkpoint` and a `reopen_if`, and leaves no `active` **or** `queued` route
@@ -33,7 +33,7 @@ one of you at a time.
   `duplicate` names at least one checkpoint explaining the change, and that record must
   parse as a checkpoint and, if it declares `approach:`, name the route listing it. Attach a
   pre-portfolio record from the portfolio side rather than editing an append-only file.
-- `research/explorations/` and `decisions/` are append-only.
+- `research/explorations/` is append-only.
 - Numerical agreement between two routes is not a bridge.
 
 ## Write surface
@@ -50,7 +50,7 @@ one of you at a time.
 
 Every checkpoint carries the front matter validated by `check.py`; see
 `research/explorations/README.md`. A statement this work threw off that nothing yet depends
-on stays there as a `cand:` candidate and has no other home (`CLAUDE.md` constraint 8).
+on stays there as a `cand:` candidate and has no other home (`CLAUDE.md` constraint 7).
 
 ## The merge barriers — converge here, do not fan out
 

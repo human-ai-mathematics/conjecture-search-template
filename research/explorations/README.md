@@ -91,7 +91,7 @@ They mean different things and neither deletes anything:
 `python3 scripts/check.py checkpoints` prints the current heads — every record nothing later
 has superseded. The full archive stays exactly where it is. Supersession only ever points
 backwards in time. The same relation is available to non-certifying `type: audit` reports in
-[`../reviews/`](../reviews/); proof reviews and decision records keep their stricter semantics.
+[`../reviews/`](../reviews/); proof reviews keep their stricter semantics.
 
 ### Two records on the same day
 

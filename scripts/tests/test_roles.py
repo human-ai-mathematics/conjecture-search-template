@@ -130,6 +130,13 @@ class RoleTests(unittest.TestCase):
     def test_installing_a_capability_pack_leaves_the_roles_lane_green(self):
         """A pack install is one command: the roster already links it by path, so no
         documentation edit is owed before the checker will pass."""
+        # The fixture copies this repository's own .claude/ and .codex/, so a fork that
+        # has already installed the pack would arrive here with it present. Uninstall it
+        # in the fixture first: the test is about the install, not about which packs the
+        # host repository happens to run.
+        for installed in (self.root / ".claude/agents/numerics.md",
+                          self.root / ".codex/agents/numerics.toml"):
+            installed.unlink(missing_ok=True)
         self.assertFalse((self.root / ".claude/agents/numerics.md").exists())
 
         install = subprocess.run(
@@ -279,6 +286,30 @@ class RoleTests(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("packs/numerics/numerics.md: frontmatter disagrees", result.stdout)
+
+    def test_an_installed_pack_cannot_drift_from_its_source(self):
+        """One optional role must not acquire two contradictory canonical bodies."""
+        installed = self.root / ".claude/agents/numerics.md"
+        if not installed.exists():
+            installed.write_text(
+                (self.root / "packs/numerics/numerics.md").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            self.assertEqual(self.write_agents().returncode, 0)
+        self.replace_in_role(
+            ".claude/agents/numerics.md", "Numerical output", "Stale numerical output"
+        )
+
+        result = self.run_checker()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("installed capability pack disagrees", result.stdout)
+        repaired = self.write_agents()
+        self.assertEqual(repaired.returncode, 0, repaired.stdout + repaired.stderr)
+        self.assertEqual(
+            installed.read_text(encoding="utf-8"),
+            (self.root / "packs/numerics/numerics.md").read_text(encoding="utf-8"),
+        )
 
     def test_stale_codex_adapter_is_rejected(self):
         adapter = self.root / ".codex/agents/scout.toml"

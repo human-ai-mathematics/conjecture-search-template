@@ -12,7 +12,7 @@ contract; everything below is what `refute` adds.
 
 1. Write the exact logical negation, quantifier order included, **before** choosing an
    instance. A single witness refutes a universal claim; failure of a uniform constant may
-   require a family whose relevant quantity diverges (`CLAUDE.md` constraint 11).
+   require a family whose relevant quantity diverges (`CLAUDE.md` constraint 10).
 2. Read the relevant obstruction nodes: an existing fence may already contain your attack in
    sharper form.
 3. Construct the worst instance your failure lens admits. Prefer an **exact** witness (closed
@@ -45,7 +45,7 @@ dossier. Until then a witness is a *candidate*, whatever its arithmetic says
 
 1. **Record it as a candidate.** The witness, or the divergent family, goes into the
    `candidates:` front matter of your checkpoint under a `cand:` id, with the exact
-   closed form. It has no manuscript anchor, no status and no node yet (constraint 8).
+   closed form. It has no manuscript anchor, no status and no node yet (constraint 7).
 2. **Have it promoted to a refuter node.** The statement the witness proves — "there
    exists an instance with ...", or "the constant diverges along ..." — is a claim in its
    own right. Propose it to the orchestrator as a manuscript statement plus a ledger node
@@ -59,7 +59,7 @@ dossier. Until then a witness is a *candidate*, whatever its arithmetic says
 4. **Get it certified.** A `reviewer` on the `certify` lens checks that dossier like any
    other, and additionally that the refuter really negates the target's exact quantified
    statement — a single witness for a universal claim, a certified divergent family for a
-   dimension-free or uniform constant (constraint 11).
+   dimension-free or uniform constant (constraint 10).
 5. **Then the target's status changes.** The orchestrator sets the target to
    `status: refuted` with the now-proved refuter in `refuted_by`. The refuter does *not*
    go in `depends_on`: that field records facts a proof used, and a refuted node has no

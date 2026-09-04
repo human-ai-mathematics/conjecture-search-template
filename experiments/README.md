@@ -46,6 +46,10 @@ stochasticity, exact configuration, commit, interpreter and library versions), t
 target-owned records, then one `run-summary`. Inputs never share a mapping with derived results.
 Artifacts are append-only and must use the current schema version.
 
+An artifact converted from an older schema additionally carries `migrated_from.path` under
+`research/legacy-runs/` and the source file's SHA-256. The checker verifies both; the legacy source
+is immutable provenance rather than an active artifact.
+
 A record is one of two things, and the runner rejects anything in between:
 
 - an **observation** — `kind`, `instance`, `claim`, `evidence`, `outcome`, and a `detail`

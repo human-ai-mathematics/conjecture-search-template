@@ -55,10 +55,11 @@ Human certification requires `proofs[].accepted_by`. A proved implication remain
 
 ## The dossier header
 
-Exactly one field is parsed and checked: `ledger-node`, which must name the node whose
-`proofs[]` record points here. A value ends at the first run of two or more spaces, so the
-gloss to its right is ignored. The rest of the header — `refines`, `bounded_by`, author,
-date — is for a human reader.
+The parser reads fields only inside the complete block opened by `% === SOLUTION HEADER ...`
+and closed by its `% ===...` divider; both delimiters are mandatory. Exactly one field is
+checked semantically: `ledger-node`, which must name the node whose `proofs[]` record points
+here. A value ends at the first run of two or more spaces, so the gloss to its right is ignored.
+The rest of the header — `refines`, `bounded_by`, author, date — is for a human reader.
 
 The header carries no certification and no reviewer identity. `checked_by`, `reviewer` and
 `review` are rejected by name: the ledger's `proofs[]` record owns the mode and the review

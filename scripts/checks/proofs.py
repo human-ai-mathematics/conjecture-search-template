@@ -25,6 +25,8 @@ PROOF_FIELDS = {"artifact", "mode", "review", "accepted_by"}
 #: review front matter, never to this human-readable summary.
 HEADER_LIMIT = 2500
 HEADER_GLOSS_RE = re.compile(r"\s{2,}")
+HEADER_START_RE = re.compile(r"^%\s*===\s+SOLUTION HEADER\b.*$")
+HEADER_END_RE = re.compile(r"^%\s*=+\s*$")
 DOSSIER_HEADER_FIELDS = {"ledger-node", "refines", "bounded_by", "author", "date"}
 
 REVIEW_TYPES = {"proof-review", "audit"}
@@ -104,16 +106,25 @@ def read_archive(root: Path, errors: list[str]) -> dict[str, dict]:
 
 
 def parse_dossier_header(text: str) -> dict[str, str]:
-    """Read the ``%   field : value`` lines of a dossier's audit header.
+    """Read the ``%   field : value`` lines of a delimited solution header.
 
-    Only the leading ``HEADER_LIMIT`` characters are considered, and only comment lines
-    of that exact shape. The value ends at the first run of two or more spaces, which is
-    what separates it from the inline gloss the template writes beside it. Returns the
-    fields it found; an absent field is simply missing, which the caller reports in its
-    own words.
+    Only a complete ``SOLUTION HEADER`` block in the leading ``HEADER_LIMIT`` characters
+    is considered. Restricting the grammar to that block keeps a narrative comment such
+    as ``% prop:...`` from becoming metadata. The value ends at the first run of two or
+    more spaces, which separates it from the inline gloss written by the template.
     """
+    lines = text[:HEADER_LIMIT].splitlines()
+    start = next((index for index, line in enumerate(lines)
+                  if HEADER_START_RE.fullmatch(line.strip())), None)
+    if start is None:
+        return {}
+    end = next((index for index, line in enumerate(lines[start + 1:], start + 1)
+                if HEADER_END_RE.fullmatch(line.strip())), None)
+    if end is None:
+        return {}
+
     fields: dict[str, str] = {}
-    for line in text[:HEADER_LIMIT].splitlines():
+    for line in lines[start + 1:end]:
         stripped = line.strip()
         if not stripped.startswith("%") or ":" not in stripped:
             continue

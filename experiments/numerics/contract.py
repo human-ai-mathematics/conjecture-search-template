@@ -120,7 +120,12 @@ class RunResult:
             # A record either is an observation or is auxiliary data a target chose to
             # keep. Half of an observation is the shape that lets an unlabelled number
             # look like evidence, so it is rejected.
-            claimed = {name for name in OBSERVATION_FIELDS[1:] if name in record}
+            #
+            # All four fields count, `instance` included. Excluding it here would let a
+            # target write an artifact that `scripts/checks/numerics.py` then rejects,
+            # which is the one failure this check exists to prevent: the two vocabularies
+            # are duplicated on purpose and must agree on what half an observation is.
+            claimed = {name for name in OBSERVATION_FIELDS if name in record}
             if claimed:
                 check_observation(record, f"record {index} ('{record['kind']}')")
 

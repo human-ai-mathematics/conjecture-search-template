@@ -32,7 +32,7 @@ be a different agent.
   use it to choose between routes and to generate conjectures, and never to discharge one.
 - A proved implication is `proved` even when its antecedent is open. Antecedent into
   `assumes`, conclusion into `implies`, and only facts used in the proof into `depends_on`
-  (`CLAUDE.md` constraint 9).
+  (`CLAUDE.md` constraint 8).
 - Check every claim you propose against its `bounded_by` fences before proposing it
   (`CLAUDE.md` constraint 5). Routes die on fences more often than on effort.
 - `research/explorations/` is append-only. Never rewrite one; add a new dated file.
@@ -56,7 +56,7 @@ none, name the ledger nodes you engaged in `nodes:` — the portfolio is optiona
 checkpoint that names a route nobody is coordinating is an error.
 
 A tentative statement is recorded there as a `cand:` candidate and nowhere else
-(`CLAUDE.md` constraint 8).
+(`CLAUDE.md` constraint 7).
 
 ## Assignment lenses
 

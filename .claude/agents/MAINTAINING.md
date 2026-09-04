@@ -8,10 +8,12 @@ extended, tuned, and kept in sync across the two clients.
 
 ## How a role is defined
 
-Each role file in this directory is an ordinary Claude Code subagent definition, in
+Each core role file in this directory is an ordinary Claude Code subagent definition, in
 [Claude Code's published schema](https://code.claude.com/docs/en/sub-agents): front
 matter carrying `name`, `description`, `tools`, `model`, `effort` and `color`, then the
-body that is the role's contract. Nothing in the frontmatter is invented here, and
+body that is the role's contract. Installed capability packs are generated copies of their
+sources under `packs/`; edit the pack source rather than its installed copy. Nothing in the
+frontmatter is invented here, and
 `scripts/check.py` derives the roster from the files on disk rather than from a list.
 
 Two of those fields — `model` and `effort` — are **generated**, from
@@ -20,7 +22,8 @@ is never rewritten; the frontmatter block is stamped from the table.
 
 Claude Code reads the Markdown files directly. Codex does not: project-scoped Codex
 agents are standalone TOML files. `python3 scripts/new.py agents` regenerates
-both — the frontmatter here and `../../.codex/agents/*.toml` from these canonical bodies
+both — installed pack copies, the frontmatter here, and `../../.codex/agents/*.toml` from
+the canonical bodies
 — and `python3 scripts/check.py --lane roles` rejects either one when it drifts. Do not
 hand-edit a generated TOML file, and do not hand-edit `model` or `effort`.
 

@@ -80,8 +80,8 @@ cd experiments && uv run python -m numerics run <target>      # → research/run
   requires).
 - Any proposed new adversarial instance, with why the shared battery does not already cover it.
 - Explicitly: no status change is implied by this run.
-- For a harness or repository-organization change, include a draft decision record for the
-  orchestrator; a target-specific mathematical diagnostic remains a checkpoint.
+- For a harness or repository-organization change, include the rationale, compatibility impact,
+  and validation for the orchestrator; a target-specific mathematical diagnostic remains a checkpoint.
 - Finish with the shared handoff envelope. Return to the requesting role with the exact artifact,
   threshold, and interpretation in `next_prompt`; use `next_role: researcher` only for an exact
   analytic candidate ready to be restated independently.

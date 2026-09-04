@@ -41,7 +41,6 @@ by the `synthesizer` (constraint 11).
 | candidate statements not yet ledger nodes | `candidates:` front matter in [`explorations/`](explorations/) |
 | independent reviews | [`reviews/`](reviews/) |
 | numerical artifacts | [`runs/`](runs/) |
-| harness decisions | [`../decisions/`](../decisions/) |
 
 The ledger separates proof dependencies (`depends_on`), implication antecedents/conclusions
 (`assumes`/`implies`), and hard/advisory barriers (`bounded_by`/`heuristic_barriers`). The

@@ -102,6 +102,6 @@ Each checkpoint opens with the front matter specified in
 produced, and which `research/runs/` artifacts it cites. Name the route in `approach:`
 when this repository has a portfolio; when it has none, name the ledger nodes you engaged
 in `nodes:`. A tentative statement is recorded there as a `cand:` candidate and nowhere
-else (`CLAUDE.md` constraint 8); promoting one to a ledger node is the orchestrator's act,
+else (`CLAUDE.md` constraint 7); promoting one to a ledger node is the orchestrator's act,
 and the same checkpoint that records the promotion retires the candidate through
 `promotes:`.

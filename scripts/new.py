@@ -162,8 +162,21 @@ def generate_agents(root: Path) -> list[str]:
     profiles = roles.load_profiles(root, errors)
     if profiles is None:
         return errors
-    role_definitions = roles.load_roles(root, profiles, errors)
     packs = roles.load_packs(root, profiles, errors)
+    if errors:
+        return errors
+    # A capability pack remains canonical after installation. Refresh its active
+    # Claude definition before loading the roster, then derive the Codex adapter from
+    # that same body below. This prevents a template update from leaving two valid but
+    # contradictory copies of one role.
+    for name, pack in packs.items():
+        installed = root / ".claude/agents" / f"{name}.md"
+        if installed.is_file():
+            installed.write_text(
+                roles.render_claude_frontmatter(pack) + pack.body,
+                encoding="utf-8",
+            )
+    role_definitions = roles.load_roles(root, profiles, errors)
     if errors:
         return errors
     errors.extend(roles.write_agent_files(root, role_definitions, packs))

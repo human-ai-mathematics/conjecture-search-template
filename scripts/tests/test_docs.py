@@ -52,8 +52,10 @@ class DocsTests(CheckerFixture):
 
     def test_append_only_archives_are_exempt(self):
         """A later tree change must not force an immutable record to be rewritten."""
-        self.write("decisions/2026-01-01-a.md", "[gone](old/path.md)\n")
         self.write("research/reviews/2026-01-01-b.md", "[gone](old/path.md)\n")
+        # Checkpoints are append-only under the same constraint, so a checkpoint that
+        # names a path a later reorganization moved is reporting history, not a defect.
+        self.write("research/explorations/2026-01-01-c.md", "[gone](old/path.md)\n")
 
         self.assertEqual(self.links(), [])
 

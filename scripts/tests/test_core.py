@@ -322,6 +322,42 @@ class CoreTests(CheckerFixture):
 
         self.assertEqual(self.errors(), "")
 
+    def test_a_numbered_equation_inside_a_claim_owns_its_own_label(self):
+        """An equation tag is structural however deeply a claim encloses it.
+
+        ledger-schema.md promises that "a \\label on a \\section, an equation, or a
+        remark is structural". Without this the promise held only at top level: a
+        numbered equation inside a theorem was read as a second claim, so every
+        display in the manuscript demanded a ledger node of its own.
+        """
+        self.add_ledger(
+            "main", "program",
+            [node("thm:carrier", status="open", kind="theorem")],
+        )
+        self.module.write_text(
+            "\\begin{theorem}\n\\label{thm:carrier}\n"
+            "\\begin{equation}\\label{eq:inner}x=x\\end{equation}\n"
+            "\\begin{align}\\label{eq:inner-align}y&=y\\end{align}\n"
+            "\\end{theorem}\n"
+        )
+
+        self.assertEqual(self.errors(), "")
+
+    def test_a_figure_or_table_inside_a_claim_owns_its_own_label(self):
+        """Same rule for the other numbered structural environments."""
+        self.add_ledger(
+            "main", "program",
+            [node("lem:holder", status="open", kind="lemma")],
+        )
+        self.module.write_text(
+            "\\begin{lemma}\n\\label{lem:holder}\n"
+            "\\begin{figure}\\label{fig:inner}\\end{figure}\n"
+            "\\begin{table}\\label{tab:inner}\\end{table}\n"
+            "\\end{lemma}\n"
+        )
+
+        self.assertEqual(self.errors(), "")
+
     def test_an_anchor_records_the_line_it_sits_on(self):
         """Derived, stored nowhere, and load-bearing for no validation.
 

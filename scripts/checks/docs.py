@@ -7,9 +7,11 @@ and the one role that would have found them is proposal-only and, since the pack
 installed by default. A structural invariant beats a role nobody ran.
 
 Two directories are exempt, and the exemption is the point rather than an oversight.
-``decisions/`` and ``research/reviews/`` are append-only: once a record exists, a later tree
-change may make one of its contemporary links historical. Rewriting the record would destroy
-the provenance the archive exists to preserve.
+``research/explorations/`` and ``research/reviews/`` are append-only
+(constraint 6): once a record exists, a later tree change may make one of its contemporary
+links historical. Rewriting the record would destroy the provenance the archive exists to
+preserve — and a checkpoint that names a file a later reorganization moved is reporting
+history correctly, not carrying a defect.
 
 ``templates/`` is exempt for a different reason: a scaffold's links are written for where the
 file is going, not where it sits.
@@ -24,7 +26,7 @@ from pathlib import Path
 LINK_RE = re.compile(r"\[[^\]\n]*\]\(([^)\s]+)\)")
 
 #: Append-only archives, plus the scaffolds whose links point at their destination.
-EXEMPT = ("decisions", "research/reviews", "templates", "build")
+EXEMPT = ("research/reviews", "research/explorations", "templates", "build")
 
 SKIP_PREFIXES = ("http://", "https://", "mailto:", "#", "//", "data:")
 

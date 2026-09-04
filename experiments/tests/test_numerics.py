@@ -199,3 +199,14 @@ def test_cli_requires_a_known_target(tmp_path, monkeypatch):
     monkeypatch.setattr(artifact, "run", fake_run)
     assert main(["run", "example", "--profile", "full", "--seed", "9"]) == 0
     assert called == {"target": "example", "seed": 9, "profile": "full", "out": None}
+
+
+def test_a_bare_instance_is_half_an_observation():
+    """The write-time check and the archive check must agree on all four fields.
+
+    Excluding `instance` here let a target write an artifact that the numerics lane
+    then rejected, which is the one failure this check exists to prevent.
+    """
+    result = RunResult([{"kind": "measurement", "instance": "case-1", "value": 1.0}])
+    with pytest.raises(ValueError, match="'claim' must be a non-empty string"):
+        result.validate()

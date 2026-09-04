@@ -8,6 +8,9 @@ This repository contains a LaTeX manuscript together with a harness for **sustai
 search**: proving or refuting one hard statement, over many sessions and several agents, while
 keeping track of what is claimed, what the search is doing, and why.
 
+Template releases and migration-relevant changes are tracked in [`CHANGELOG.md`](CHANGELOG.md)
+and use matching semantic-version Git tags.
+
 ## The shape of the repository
 
 Three domains. Everything else is a detail of one of them:
@@ -19,7 +22,7 @@ Three domains. Everything else is a detail of one of them:
 |---|---|
 | mathematical state | statements in [`modules/`](modules/); logical state and graph edges in [`research/program/ledger.yaml`](research/program/ledger.yaml); proofs in [`solutions/`](solutions/) |
 | search state | `research/program/brief.md` — what would finish it; `research/program/portfolio.yaml` — families, routes, blockers. Both are gated: absent until the work opens them ([scaffolds](templates/README.md), [worked](example/research/program/brief.md)) |
-| durable evidence | checkpoints and candidates in [`research/explorations/`](research/explorations/); reviews in [`research/reviews/`](research/reviews/); run artifacts in [`research/runs/`](research/runs/); harness decisions in [`decisions/`](decisions/) |
+| durable evidence | checkpoints and candidates in [`research/explorations/`](research/explorations/); reviews in [`research/reviews/`](research/reviews/); run artifacts in [`research/runs/`](research/runs/) |
 
 Said as one rule:
 

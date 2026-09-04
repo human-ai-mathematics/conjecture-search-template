@@ -95,13 +95,14 @@ which owns the five steps. Two rules are this file's: an author never certifies 
 proof, and refuting takes the same channel rather than a shortcut — the details are
 constraints 9 and 10.
 
-**Harness or repository contribution.** Record the rationale and validation in a new
-`decisions/YYYY-MM-DD-slug.md`. Do not invent a mathematical attempt; harness work does not
-by itself change mathematical status.
+**Harness or repository contribution.** Keep the live contract, documentation, checker, and
+tests synchronized. Add a concise entry under `Unreleased` in [`CHANGELOG.md`](CHANGELOG.md)
+when the change affects template users. Do not invent a mathematical attempt; harness work does
+not by itself change mathematical status.
 
 ## Hard constraints
 
-These are the universal constraints. They are numbered, and append-only records cite the
+These are the universal constraints. They are numbered, and durable research records cite the
 numbers, so **do not renumber them** — a constraint that stops applying becomes `**Reserved.**`
 and keeps its slot. Constraints specific to this repository's mathematics go in the next
 section, numbered `P1, P2, …`, so that a fork can drop them without disturbing this list.
@@ -122,7 +123,7 @@ section, numbered `P1, P2, …`, so that a fork can drop them without disturbing
 5. **Respect established fences.** `bounded_by` may name only a proved obstruction. A statement
    violating one is wrong by construction. Put plausible but unproved method barriers in
    `heuristic_barriers`; they guide work but do not logically fence a claim.
-6. **`research/explorations/` and `decisions/` are append-only.** Add dated files; never
+6. **`research/explorations/` is append-only.** Add dated files; never
    rewrite or delete their history. A later record may declare an earlier one superseded —
    that changes which record to read first, and nothing else. This governs records of *this
    program's* search. The worked example under `example/` is a fixture, not history: it
@@ -212,9 +213,6 @@ python3 scripts/check.py --root example   # the worked example, kept green as a 
 `check.py` never writes. Creation and generation belong to `python3 scripts/new.py`: its
 scaffolds never overwrite hand-authored files, while `new.py agents` deliberately replaces
 generated role frontmatter and adapters. It never touches the ledger (constraint 1).
-
-Numbers in a dated decision record are local to that record. Cite one by dated filename and
-number together; a bare “invariant 44” is not a stable reference across independent decisions.
 
 `check` and `ready` answer different questions. A freshly cloned template passes `check` and
 fails `ready`, and both are correct: activation is structural, so an unopened optional gate is

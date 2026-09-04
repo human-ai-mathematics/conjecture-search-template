@@ -616,6 +616,22 @@ def _validate_frontmatter(roles: dict[str, Role], packs: dict[str, Role],
             )
 
 
+def _validate_installed_packs(roles: dict[str, Role], packs: dict[str, Role],
+                              errors: list[str]) -> None:
+    """An installed capability pack remains a generated copy of its pack source."""
+    for name in sorted(set(roles) & set(packs)):
+        installed = roles[name]
+        source = packs[name]
+        installed_content = (installed.description, installed.tools, installed.body)
+        source_content = (source.description, source.tools, source.body)
+        if installed_content != source_content:
+            errors.append(
+                f"{installed.relative}: installed capability pack disagrees with "
+                f"{source.relative}; edit the pack source and run "
+                "'python3 scripts/new.py agents'"
+            )
+
+
 def _validate_codex_adapters(root: Path, roles: dict[str, Role], errors: list[str]) -> None:
     """Validate the generated Codex adapters — if this repository ships any.
 
@@ -674,5 +690,6 @@ def check(root: Path, errors: list[str]) -> dict[str, Role]:
     _validate_roster(root, roles, errors)
     _validate_lenses(root, roles, errors)
     _validate_frontmatter(roles, packs, profiles.active, errors)
+    _validate_installed_packs(roles, packs, errors)
     _validate_codex_adapters(root, roles, errors)
     return roles

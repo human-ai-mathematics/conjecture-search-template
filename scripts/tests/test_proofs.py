@@ -316,7 +316,10 @@ class ProofsTests(CheckerFixture):
     def test_a_dossier_rejects_fields_outside_the_header_vocabulary(self):
         relative = self.add_solution("unknown-header", node_ids=("thm:header",))
         path = self.root / relative
-        path.write_text(path.read_text() + "%   checked_by  : none\n")
+        path.write_text(path.read_text().replace(
+            "% =========================\n",
+            "%   checked_by  : none\n% =========================\n",
+        ))
         self.add_ledger(
             "main", "program",
             [node("thm:header", proofs=[{
@@ -327,6 +330,37 @@ class ProofsTests(CheckerFixture):
         errors = self.errors()
 
         self.assertIn("dossier header has unknown field 'checked_by'", errors)
+
+    def test_field_shaped_narrative_comments_outside_the_header_are_ignored(self):
+        relative = self.add_solution("narrative-colons", node_ids=("thm:narrative",))
+        path = self.root / relative
+        path.write_text(
+            "% prop:outside before the delimited metadata\n"
+            + path.read_text()
+            + "% q:outside after the delimited metadata\n"
+            + "% checked_by: prose outside the header is not metadata\n"
+        )
+        self.add_ledger(
+            "main", "program",
+            [node("thm:narrative", proofs=[{
+                "artifact": relative, "mode": "human", "accepted_by": "fixture human",
+            }])],
+        )
+
+        self.assertEqual(self.errors(), "")
+
+    def test_a_dossier_header_requires_both_delimiters(self):
+        relative = self.add_solution("open-header", node_ids=("thm:open-header",))
+        path = self.root / relative
+        path.write_text(path.read_text().replace("% =========================\n", ""))
+        self.add_ledger(
+            "main", "program",
+            [node("thm:open-header", proofs=[{
+                "artifact": relative, "mode": "human", "accepted_by": "fixture human",
+            }])],
+        )
+
+        self.assertIn("dossier header has no 'ledger-node' field", self.errors())
 
     def test_an_unimplemented_machine_certification_mode_is_invalid(self):
         lean_solution = self.add_solution("lean-proof", node_ids=("thm:lean",))

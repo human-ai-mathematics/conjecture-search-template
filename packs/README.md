@@ -19,7 +19,9 @@ runtime contract in [`../.claude/agents/README.md`](../.claude/agents/README.md)
 validation, and a tier every profile in
 [`../.claude/agents/profiles.yaml`](../.claude/agents/profiles.yaml) already assigns it.
 That is why installing one is a single command: the pack file on disk here is stamped
-with the active profile's model and effort before it is ever copied. Uninstalling is deleting the file from `.claude/agents/`; then
+with the active profile's model and effort before it is ever copied. This file remains canonical
+after installation; `python3 scripts/new.py agents` refreshes the installed copy and the checker
+rejects drift between them. Uninstalling is deleting the file from `.claude/agents/`; then
 `python3 scripts/new.py agents` drops the orphaned adapter.
 
 Nothing here is loaded, generated from, or validated until it is installed. The roster in

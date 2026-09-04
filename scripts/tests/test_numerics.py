@@ -7,6 +7,7 @@ reproduce or retract the numbers is still there and still parses.
 from __future__ import annotations
 
 import ast
+import hashlib
 import sys
 import unittest
 from pathlib import Path
@@ -111,6 +112,41 @@ class NumericsTests(CheckerFixture):
                      ])
 
         self.assertIn("schema_version must be 1, got '2'", self.errors())
+
+    def test_a_migrated_artifact_verifies_its_preserved_source(self):
+        source = self.root / "research/legacy-runs/original.jsonl"
+        source.parent.mkdir(parents=True)
+        source.write_bytes(b'{"legacy": true}\n')
+        digest = hashlib.sha256(source.read_bytes()).hexdigest()
+        self.add_run(
+            "2026-08-26T000000Z-fixture.jsonl",
+            header={"migrated_from": {
+                "path": "research/legacy-runs/original.jsonl",
+                "sha256": digest,
+            }},
+        )
+
+        self.assertEqual(self.errors(), "")
+
+        source.write_bytes(b'{"legacy": false}\n')
+        self.assertIn("migrated source", self.errors())
+        self.assertIn("expected", self.errors())
+
+    def test_a_migrated_source_must_stay_in_the_legacy_archive(self):
+        outside = self.root / "research/original.jsonl"
+        outside.write_bytes(b"legacy\n")
+        self.add_run(
+            "2026-08-26T000000Z-fixture.jsonl",
+            header={"migrated_from": {
+                "path": "research/original.jsonl",
+                "sha256": hashlib.sha256(outside.read_bytes()).hexdigest(),
+            }},
+        )
+
+        self.assertIn(
+            "migrated_from.path must stay under research/legacy-runs/",
+            self.errors(),
+        )
 
     def test_half_an_observation_is_not_evidence(self):
         self.add_run("2026-08-26T000000Z-fixture.jsonl",

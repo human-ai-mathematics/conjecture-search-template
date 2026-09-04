@@ -8,12 +8,15 @@ package has its own test suite, invoked by ``scripts/check.sh``.
 """
 from __future__ import annotations
 
+import hashlib
 import json
+import re
 from pathlib import Path
 
 from .common import repo_relative
 
 RUNS = Path("research/runs")
+LEGACY_RUNS = Path("research/legacy-runs")
 
 #: Every field a reader needs before an artifact's numbers mean anything.
 PROVENANCE_FIELDS = ("schema_version", "date", "target", "profile", "config", "environment")
@@ -36,6 +39,47 @@ OUTCOMES = {
     "calibration": ("match", "mismatch"),
 }
 OBSERVATION_FIELDS = ("instance", "claim", "evidence", "outcome")
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _check_migrated_source(root: Path, context: str, header: dict,
+                           errors: list[str]) -> None:
+    """Verify the byte-preserved source named by a migrated artifact."""
+    migrated = header.get("migrated_from")
+    if migrated is None:
+        return
+    if not isinstance(migrated, dict):
+        errors.append(f"{context}: _provenance.migrated_from must be a mapping")
+        return
+
+    source_name = migrated.get("path")
+    expected = migrated.get("sha256")
+    if not isinstance(source_name, str) or not source_name.strip():
+        errors.append(f"{context}: migrated_from.path must be a non-empty string")
+        return
+    if not isinstance(expected, str) or SHA256_RE.fullmatch(expected) is None:
+        errors.append(f"{context}: migrated_from.sha256 must be a lowercase SHA-256")
+        return
+
+    relative = Path(source_name)
+    archive = (root / LEGACY_RUNS).resolve()
+    source = (root / relative).resolve()
+    try:
+        source.relative_to(archive)
+    except ValueError:
+        errors.append(
+            f"{context}: migrated_from.path must stay under {LEGACY_RUNS.as_posix()}/"
+        )
+        return
+    if not source.is_file():
+        errors.append(f"{context}: migrated source '{source_name}' does not exist")
+        return
+    actual = hashlib.sha256(source.read_bytes()).hexdigest()
+    if actual != expected:
+        errors.append(
+            f"{context}: migrated source '{source_name}' has SHA-256 {actual}, "
+            f"expected {expected}"
+        )
 
 
 def _check_observation(context: str, number: int, record: dict, errors: list[str]) -> None:
@@ -124,6 +168,7 @@ def check(root: Path, errors: list[str]) -> list[dict]:
         for field in SOURCE_FIELDS:
             if field not in header:
                 errors.append(f"{context}: _provenance is missing '{field}'")
+        _check_migrated_source(root, context, header, errors)
         for number, record in enumerate(records[1:], 2):
             if "_provenance" in record:
                 errors.append(f"{context}:{number}: only the first record carries provenance")

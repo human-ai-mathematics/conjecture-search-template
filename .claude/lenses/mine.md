@@ -37,4 +37,4 @@ the stronger statement — quote the step that does it — or it does not.
   generalizations** — a used-but-unstated hypothesis is a certification failure, and the
   review that missed it is evidence about the reviewer as well as the proof.
 - Every generalization you propose is a `cand:` candidate in your checkpoint, not a ledger
-  node (`CLAUDE.md` constraint 8).
+  node (`CLAUDE.md` constraint 7).

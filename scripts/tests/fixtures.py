@@ -99,7 +99,9 @@ class CheckerFixture(unittest.TestCase):
                 solution_path.parent.mkdir(parents=True, exist_ok=True)
                 covered = "; ".join(str(item.get("id")) for item in bare_proved)
                 solution_path.write_text(
+                    "% === SOLUTION HEADER ===\n"
                     f"%   ledger-node : {covered}\n"
+                    "% =========================\n"
                     "standalone fixture proofs\n"
                 )
                 for item in bare_proved:
@@ -117,7 +119,9 @@ class CheckerFixture(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         covered = "; ".join(node_ids)
         path.write_text(
+            "% === SOLUTION HEADER ===\n"
             f"%   ledger-node : {covered}\n"
+            "% =========================\n"
             "standalone proof fixture\n"
         )
         return relative

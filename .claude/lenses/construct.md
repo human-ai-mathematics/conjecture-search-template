@@ -20,7 +20,7 @@ transport map, the certificate.
    numbers (`CLAUDE.md` constraint 2).
 3. Say which node or candidate it settles, and in which direction. A family built to refute a
    uniform constant settles nothing until the relevant quantity is shown to diverge
-   (`CLAUDE.md` constraint 11).
+   (`CLAUDE.md` constraint 10).
 4. Give it in a normalization someone else can reuse. An object nobody can re-derive is a
    dead end with extra steps.
 

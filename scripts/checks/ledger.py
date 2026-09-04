@@ -33,6 +33,18 @@ KIND = {
 #: ``remark`` — is structural or expository and carries no node.
 CLAIM_ENVIRONMENTS = frozenset(KIND)
 
+#: Numbered structural environments that own the labels they contain. A ``\label`` inside
+#: one of these names the equation, figure or table itself — never the claim it happens to
+#: sit inside — so it stays structural even when nested in a theorem. Without this, every
+#: numbered equation inside a claim would demand a ledger node of its own, which is the
+#: opposite of what ``ledger-schema.md`` promises.
+SELF_LABELLING_ENVIRONMENTS = frozenset({
+    "equation", "equation*", "align", "align*", "alignat", "alignat*",
+    "flalign", "flalign*", "gather", "gather*", "multline", "multline*",
+    "eqnarray", "eqnarray*", "subequations",
+    "figure", "figure*", "table", "table*", "algorithm", "listing",
+})
+
 ENVIRONMENT_RE = re.compile(r"\\(begin|end)\{([A-Za-z][A-Za-z0-9*]*)\}")
 LABEL_RE = re.compile(r"\\label\{([^}]+)\}")
 
@@ -113,6 +125,10 @@ def _labels_with_environments(text: str) -> list[tuple[str, str | None, int]]:
     theorem. A label with no claim environment above it — a ``\\section`` anchor, an
     equation tag, a ``remark`` — is structural and pairs with ``None``.
 
+    The scan stops at a self-labelling environment. A ``\\label`` inside an ``equation``
+    or a ``figure`` names that object, so it stays structural however deeply the object is
+    nested inside a claim; only a *neutral* wrapper such as ``proof`` is transparent.
+
     The 1-based line of the ``\\label`` comes back with it. ``strip_comments`` preserves
     every offset *and* every newline, so counting them here is exact — and it is the only
     place in the repository that knows where an anchor physically sits, which is what lets
@@ -134,9 +150,13 @@ def _labels_with_environments(text: str) -> list[tuple[str, str | None, int]]:
                 # Close to the matching \begin, tolerating unbalanced prose above it.
                 del stack[stack.index(second):]
         else:
-            enclosing = next(
-                (name for name in reversed(stack) if name in CLAIM_ENVIRONMENTS), None
-            )
+            enclosing = None
+            for name in reversed(stack):
+                if name in SELF_LABELLING_ENVIRONMENTS:
+                    break  # the equation, figure or table owns this label
+                if name in CLAIM_ENVIRONMENTS:
+                    enclosing = name
+                    break
             found.append((first, enclosing, text.count("\n", 0, position) + 1))
     return found
 

@@ -31,7 +31,7 @@ For each node in scope:
 ## The brief's quoted target
 
 `research/program/brief.md` may quote its target's manuscript statement verbatim, as a marked
-copy (`CLAUDE.md` constraint 8). When the brief exists and the target node is in scope, that
+copy (`CLAUDE.md` constraint 7). When the brief exists and the target node is in scope, that
 quotation is a fourth text to compare, on the same terms as the other three.
 
 The manuscript is the source. If the quotation disagrees, the quotation is the defect —

@@ -33,7 +33,7 @@ A refuter is certified as an ordinary proof — it *is* one — plus one questio
 case does not ask: **does this refuter negate the target's exact quantified statement?** A
 single witness discharges a universal claim; a dimension-free or uniform constant generally
 needs a certified family with the relevant divergence, and a witness for one dimension does
-not touch it (`CLAUDE.md` constraint 11). Quote the target, quote the negation, and say
+not touch it (`CLAUDE.md` constraint 10). Quote the target, quote the negation, and say
 which of the two shapes the dossier supplies.
 
 Certify the refuter node. The target's transition to `status: refuted` with `refuted_by` is

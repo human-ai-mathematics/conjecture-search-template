@@ -42,7 +42,10 @@ Concretely, and all of it checked:
   `preamble.tex`; `remark` is deliberately not among them, which is why an obstruction has
   an `obstruction` environment rather than borrowing one.
 - A `\label` on a `\section`, an equation, or a `remark` is structural: it needs no node,
-  and a node may not claim it.
+  and a node may not claim it. This holds however deeply the object is nested: a numbered
+  `equation`, `align`, `figure` or `table` owns the label it contains even inside a claim,
+  so a display inside a theorem stays structural. Only a *neutral* wrapper is transparent —
+  a label in a `proof` or an `itemize` inside a theorem still belongs to the theorem.
 - A claim-environment label with no node is an error. So is the same label twice anywhere
   under `modules/`.
 - `file` is confined to `modules/` and must be the file that actually holds the label.
