@@ -25,7 +25,7 @@ rational computations and neither leans on a numerical run.
 
 The negation is the right one. `conj:example` is universally quantified over finite real
 sequences with no uniformity in any further parameter, so one counterexample discharges it
-and no divergent family is needed (`CLAUDE.md` constraint 11). The dossier states which
+and no divergent family is needed (`CLAUDE.md` constraint 10). The dossier states which
 form it supplies and why the other is not required.
 
 The appeal to `prop:example` is recorded in `depends_on` and is genuine but not load

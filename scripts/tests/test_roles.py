@@ -1,10 +1,11 @@
-"""Roles lane: canonical role definitions, assignment lenses, and generated adapters.
+"""Roles lane: role definitions, lenses, the profile table, and generated artifacts.
 
 These run against a copy of the real `.claude/` and `.codex/` trees, so the shipped
-roster and lens set are what is actually checked.
+roster, lens set and profile table are what is actually checked.
 """
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import sys
@@ -13,10 +14,13 @@ import tomllib
 import unittest
 from pathlib import Path
 
+import yaml
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 REPO = Path(__file__).resolve().parents[2]
 CHECK = REPO / "scripts/check.py"
+NEW = REPO / "scripts/new.py"
 
 
 class RoleTests(unittest.TestCase):
@@ -41,6 +45,43 @@ class RoleTests(unittest.TestCase):
     def role_files(self) -> list[Path]:
         return [path for path in sorted((self.root / ".claude/agents").glob("*.md"))
                 if path.name not in {"README.md", "MAINTAINING.md"}]
+
+    def profiles_path(self) -> Path:
+        return self.root / ".claude/agents/profiles.yaml"
+
+    def read_profiles(self) -> dict:
+        return yaml.safe_load(self.profiles_path().read_text(encoding="utf-8"))
+
+    def write_profiles(self, data: dict) -> None:
+        """Rewrite the profile table structurally.
+
+        The tests mutate the shipped table rather than matching strings in it, so that
+        retuning a tier -- which is the whole point of the file -- does not break the
+        suite. Comments are lost, but only in the temporary copy.
+        """
+        self.profiles_path().write_text(yaml.safe_dump(data, sort_keys=False),
+                                        encoding="utf-8")
+
+    def inheriting_profile(self, data: dict) -> str:
+        """The profile that pins nothing, found by what it does, not by its name."""
+        for profile, assignment in data["profiles"].items():
+            if all(not data["tiers"][tier]["claude"] for tier in assignment.values()):
+                return profile
+        self.fail("the template ships no profile that inherits everything")
+
+    def replace_in_role(self, relative: str, pattern: str, replacement: str) -> None:
+        path = self.root / relative
+        text = path.read_text(encoding="utf-8")
+        replaced, count = re.subn(pattern, replacement, text, count=1,
+                                  flags=re.MULTILINE)
+        self.assertEqual(count, 1, f"{relative}: no match for {pattern}")
+        path.write_text(replaced, encoding="utf-8")
+
+    def write_agents(self) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(NEW), "--root", str(self.root), "agents"],
+            cwd=self.root, check=False, capture_output=True, text=True,
+        )
 
     def lens_files(self) -> list[Path]:
         return [path for path in sorted((self.root / ".claude/lenses").glob("*.md"))
@@ -118,13 +159,18 @@ class RoleTests(unittest.TestCase):
         self.assertIn(f"{len(self.role_files())} agent role(s)", result.stdout)
 
     def test_roster_is_derived_from_the_files_on_disk(self):
-        """Adding a role is one file: no list of names is kept anywhere else."""
+        """No list of role names is kept anywhere but the files and the profile table."""
         source = self.root / ".claude/agents/scout.md"
         added = self.root / ".claude/agents/extra-role.md"
         added.write_text(
             source.read_text(encoding="utf-8").replace("name: scout", "name: extra-role"),
             encoding="utf-8",
         )
+        data = self.read_profiles()
+        data["roles"]["extra-role"] = data["roles"]["scout"]
+        for assignment in data["profiles"].values():
+            assignment["extra-role"] = assignment["scout"]
+        self.write_profiles(data)
 
         result = self.run_checker()
 
@@ -132,17 +178,107 @@ class RoleTests(unittest.TestCase):
         self.assertIn("Codex adapters missing: ['extra-role']", result.stdout)
         self.assertIn("roster does not link role 'extra-role'", result.stdout)
 
-    def test_role_declaring_an_unknown_reasoning_effort_is_rejected(self):
-        role = self.root / ".claude/agents/researcher.md"
-        role.write_text(
-            role.read_text(encoding="utf-8").replace("reasoning: ultra", "reasoning: maximum"),
-            encoding="utf-8",
-        )
+    def test_a_role_absent_from_the_profile_table_is_rejected(self):
+        """Model and effort are not optional, and there is no implicit default tier."""
+        data = self.read_profiles()
+        del data["roles"]["janitor"]
+        self.write_profiles(data)
 
         result = self.run_checker()
 
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("reasoning must be one of", result.stdout)
+        self.assertIn("'janitor' has no entry under 'roles:'", result.stdout)
+
+    def test_each_client_effort_scale_is_validated_separately(self):
+        """Codex has a rung above Claude's ceiling; neither borrows the other's."""
+        data = self.read_profiles()
+        tier = next(name for name, block in data["tiers"].items() if block["claude"])
+
+        # `ultra` is Codex's rung above Claude's ceiling, and stays Codex's.
+        data["tiers"][tier]["claude"]["effort"] = "ultra"
+        self.write_profiles(data)
+
+        result = self.run_checker()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(f"tier '{tier}' / claude: effort must be one of", result.stdout)
+
+        data["tiers"][tier]["claude"]["effort"] = "max"
+        data["tiers"][tier]["codex"]["effort"] = "colossal"
+        self.write_profiles(data)
+
+        result = self.run_checker()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(f"tier '{tier}' / codex: effort must be one of", result.stdout)
+
+    def test_a_tier_inherits_on_both_clients_or_on_neither(self):
+        """A tier name that means one thing on Claude and another on Codex is not a tier."""
+        data = self.read_profiles()
+        tier = next(name for name, block in data["tiers"].items() if not block["claude"])
+        data["tiers"][tier]["claude"] = {"model": "opus", "effort": "max"}
+        self.write_profiles(data)
+
+        result = self.run_checker()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(f"tier '{tier}' inherits on one client and pins on the other",
+                      result.stdout)
+
+    def test_an_unknown_claude_model_alias_is_rejected(self):
+        data = self.read_profiles()
+        tier = next(name for name, block in data["tiers"].items() if block["claude"])
+        data["tiers"][tier]["claude"]["model"] = data["tiers"][tier]["codex"]["model"]
+        self.write_profiles(data)
+
+        result = self.run_checker()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(f"tier '{tier}' / claude: model must be one of", result.stdout)
+
+    def test_hand_edited_role_frontmatter_is_rejected(self):
+        """The frontmatter is generated; the profile table is where a model changes."""
+        self.replace_in_role(".claude/agents/researcher.md",
+                             r"^model: .*$", "model: haiku")
+
+        result = self.run_checker()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("frontmatter disagrees with .claude/agents/profiles.yaml",
+                      result.stdout)
+
+    def test_switching_the_active_profile_restamps_both_clients(self):
+        """One line changes model and effort everywhere, on Claude and on Codex."""
+        data = self.read_profiles()
+        data["active"] = self.inheriting_profile(data)
+        self.write_profiles(data)
+
+        self.assertNotEqual(self.run_checker().returncode, 0)
+        write = self.write_agents()
+        self.assertEqual(write.returncode, 0, write.stdout + write.stderr)
+        self.assertEqual(self.run_checker().returncode, 0)
+
+        for path in self.role_files():
+            with self.subTest(role=path.stem):
+                frontmatter = path.read_text(encoding="utf-8").split("---")[1]
+                self.assertIn("model: inherit", frontmatter)
+                self.assertNotIn("effort:", frontmatter)
+        for adapter in sorted((self.root / ".codex/agents").glob("*.toml")):
+            parsed = tomllib.loads(adapter.read_text(encoding="utf-8"))
+            with self.subTest(adapter=adapter.stem):
+                # Codex inherits by omission; it has no `inherit` literal.
+                self.assertNotIn("model", parsed)
+                self.assertNotIn("model_reasoning_effort", parsed)
+
+    def test_capability_packs_are_stamped_where_they_sit(self):
+        """So that installing one lands a file the roles lane already accepts."""
+        self.replace_in_role("packs/numerics/numerics.md",
+                             r"^effort: .*$", "effort: low")
+
+        result = self.run_checker()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("packs/numerics/numerics.md: frontmatter disagrees", result.stdout)
 
     def test_stale_codex_adapter_is_rejected(self):
         adapter = self.root / ".codex/agents/scout.toml"
@@ -151,22 +287,57 @@ class RoleTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("stale or hand-edited", result.stdout)
 
-    def test_codex_adapter_mirrors_the_role_frontmatter(self):
-        """Model and effort come from each role's own frontmatter, not a table here."""
-        for adapter in sorted((self.root / ".codex/agents").glob("*.toml")):
-            parsed = tomllib.loads(adapter.read_text(encoding="utf-8"))
-            role = (self.root / f".claude/agents/{parsed['name']}.md").read_text(encoding="utf-8")
-            with self.subTest(role=parsed["name"]):
-                self.assertEqual(parsed["model"], "gpt-5.6-sol")
-                declared_effort = "ultra" if "reasoning: ultra" in role else "high"
-                self.assertEqual(parsed["model_reasoning_effort"], declared_effort)
-                declared_read_only = "read_only: true" in role
-                self.assertEqual(
-                    parsed["sandbox_mode"],
-                    "read-only" if declared_read_only else "workspace-write",
-                )
+    def test_both_clients_resolve_the_same_tier(self):
+        """One table, two vocabularies: Claude differentiates by model, Codex by effort.
 
-    def test_read_only_claude_role_cannot_declare_write_tool(self):
+        The expectation is read out of the table rather than pinned here, because
+        retuning a tier is what the table is for and must not break this suite. What is
+        pinned is the invariant: each artifact carries its own client's half of the very
+        same tier, and `read_only` is checked against Claude's tool list while Codex gets
+        a sandbox setting.
+        """
+        data = self.read_profiles()
+        assignment = data["profiles"][data["active"]]
+
+        for path in self.role_files():
+            name = path.stem
+            tier = data["tiers"][assignment[name]]
+            frontmatter = yaml.safe_load(path.read_text(encoding="utf-8").split("---")[1])
+            parsed = tomllib.loads(
+                (self.root / f".codex/agents/{name}.toml").read_text(encoding="utf-8"))
+            with self.subTest(role=name):
+                if tier["claude"]:
+                    self.assertEqual(frontmatter["model"], tier["claude"]["model"])
+                    self.assertEqual(frontmatter["effort"], tier["claude"]["effort"])
+                    self.assertEqual(parsed["model"], tier["codex"]["model"])
+                    self.assertEqual(parsed["model_reasoning_effort"],
+                                     tier["codex"]["effort"])
+                else:
+                    self.assertEqual(frontmatter["model"], "inherit")
+                    self.assertNotIn("effort", frontmatter)
+                    self.assertNotIn("model", parsed)
+                read_only = data["roles"][name]["read_only"]
+                self.assertEqual(parsed["sandbox_mode"],
+                                 "read-only" if read_only else "workspace-write")
+                self.assertEqual(read_only,
+                                 not {"Edit", "Write"} & set(frontmatter["tools"].split(", ")))
+
+    def test_a_profile_may_not_take_a_tier_name(self):
+        """A bare word in the table says which layer it belongs to, or it is ambiguous."""
+        data = self.read_profiles()
+        tier = next(iter(data["tiers"]))
+        profile = next(iter(data["profiles"]))
+        data["profiles"][tier] = data["profiles"].pop(profile)
+        data["active"] = tier
+        self.write_profiles(data)
+
+        result = self.run_checker()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(f"profile name(s) ['{tier}'] also name a tier", result.stdout)
+
+    def test_read_only_role_cannot_declare_write_tool(self):
+        """The profile declaration rejects explicit Claude write tools."""
         role = self.root / ".claude/agents/scout.md"
         text = role.read_text(encoding="utf-8")
         role.write_text(
@@ -177,15 +348,13 @@ class RoleTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("read-only role declares a write tool", result.stdout)
 
-    def test_write_codex_removes_an_adapter_whose_role_is_gone(self):
+    def test_write_agents_removes_an_adapter_whose_role_is_gone(self):
         orphan = self.root / ".codex/agents/retired-role.toml"
         orphan.write_text('name = "retired-role"\n', encoding="utf-8")
 
-        subprocess.run(
-            [sys.executable, str(CHECK), "--root", str(self.root), "--write-codex"],
-            cwd=self.root, check=False, capture_output=True, text=True,
-        )
+        result = self.write_agents()
 
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertFalse(orphan.exists())
         self.assertEqual(self.run_checker().returncode, 0)
 
@@ -196,7 +365,7 @@ class RoleTests(unittest.TestCase):
 
         for name in ("scout", "researcher", "reviewer", "synthesizer"):
             self.assertIn(f"]({name}.md)", maintaining)
-        self.assertNotIn("--write-codex", readme)
+        self.assertNotIn("--write-agents", readme)
         self.assertEqual(self.run_checker().returncode, 0)
 
     def test_maintaining_is_documentation_and_not_a_role(self):

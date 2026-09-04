@@ -32,13 +32,13 @@ class CoreTests(CheckerFixture):
     def test_production_configuration_rejects_a_second_ledger(self):
         """One repository owns one program ledger (CLAUDE.md constraint 1)."""
         self.add_ledger("program", "program", [node("thm:real")])
-        self.add_ledger("legacy", "program", [node("thm:legacy")])
+        self.add_ledger("stray", "program", [node("thm:stray")])
 
         report = self.check(configured_ledger="research/program/ledger.yaml")
         errors = "\n".join(failures(report))
 
         self.assertIn("unexpected second ledger", errors)
-        self.assertIn("research/legacy/ledger.yaml", errors)
+        self.assertIn("research/stray/ledger.yaml", errors)
         self.assertNotIn("research/program/ledger.yaml: unexpected", errors)
 
     def test_missing_configured_ledger_is_reported(self):
@@ -68,7 +68,7 @@ class CoreTests(CheckerFixture):
         self.assertIn("depends_on: 'thm:missing_slug' is not a node in this ledger", errors)
         self.assertIn("depends_on: 'external theorem in prose' is not a node in this ledger", errors)
 
-    def test_unlocks_is_an_obsolete_field_even_when_empty(self):
+    def test_unknown_fields_are_rejected_even_when_empty(self):
         nodes = [
             node("lem:base", unlocks=["thm:uses"]),
             node("q:empty", status="open", kind="question", unlocks=[]),
@@ -78,11 +78,11 @@ class CoreTests(CheckerFixture):
 
         errors = self.errors()
 
-        self.assertIn("lem:base.unlocks: obsolete field", errors)
-        self.assertIn("q:empty.unlocks: obsolete field", errors)
+        self.assertIn("lem:base: unknown field 'unlocks'", errors)
+        self.assertIn("q:empty: unknown field 'unlocks'", errors)
         self.assertNotIn("already declares", errors)
 
-    def test_navigation_and_duplicated_assumption_fields_are_obsolete(self):
+    def test_non_schema_navigation_and_assumption_fields_are_unknown(self):
         self.add_ledger(
             "main",
             "program",
@@ -104,7 +104,7 @@ class CoreTests(CheckerFixture):
         errors = self.errors()
 
         for field in ("assuming", "related", "entry_point", "target_doc", "discharged_by"):
-            self.assertIn(f"thm:conditional.{field}: obsolete field", errors)
+            self.assertIn(f"thm:conditional: unknown field '{field}'", errors)
 
     def test_conjectured_status_is_rejected_but_open_conjecture_is_valid(self):
         self.add_ledger(
@@ -112,7 +112,7 @@ class CoreTests(CheckerFixture):
             "program",
             [
                 node("conj:open", status="open", kind="conjecture"),
-                node("conj:legacy", status="conjectured", kind="conjecture"),
+                node("conj:invalid-status", status="conjectured", kind="conjecture"),
             ],
         )
 
@@ -120,7 +120,7 @@ class CoreTests(CheckerFixture):
 
         self.assertNotIn("conj:open: status", errors)
         self.assertIn(
-            "conj:legacy: status 'conjectured' is obsolete; use status open",
+            "conj:invalid-status: bad status 'conjectured'",
             errors,
         )
 
@@ -180,7 +180,7 @@ class CoreTests(CheckerFixture):
             errors,
         )
 
-    def test_schema_rejects_unknown_retired_and_non_list_fields(self):
+    def test_schema_rejects_unknown_and_non_list_fields(self):
         ledger = self.add_ledger(
             "main",
             "program",
@@ -205,8 +205,8 @@ class CoreTests(CheckerFixture):
         errors = self.errors()
 
         self.assertIn("q:schema.depends_on: must be a list", errors)
-        self.assertIn("q:schema.related: obsolete field", errors)
-        self.assertIn("q:schema.evidence_eligible: obsolete field", errors)
+        self.assertIn("q:schema: unknown field 'related'", errors)
+        self.assertIn("q:schema: unknown field 'evidence_eligible'", errors)
         self.assertIn("q:schema: unknown field 'mystery'", errors)
         self.assertIn("unknown top-level field 'workflow'", errors)
         self.assertIn("meta: unknown field 'mystery_meta'", errors)
@@ -219,8 +219,7 @@ class CoreTests(CheckerFixture):
 
         errors = self.errors()
 
-        self.assertIn("thm:copy.statement: obsolete field", errors)
-        self.assertIn("the statement itself lives in modules/", errors)
+        self.assertIn("thm:copy: unknown field 'statement'", errors)
 
     def test_the_manuscript_anchor_is_the_node_id_and_nothing_overrides_it(self):
         """An override made "the id is the anchor" untrue and had no second reader."""
@@ -233,8 +232,7 @@ class CoreTests(CheckerFixture):
 
         errors = self.errors()
 
-        self.assertIn("obs:synthetic.label: obsolete field", errors)
-        self.assertIn("the node id itself as the manuscript anchor", errors)
+        self.assertIn("obs:synthetic: unknown field 'label'", errors)
 
     def test_a_declared_file_must_be_the_one_holding_the_anchor(self):
         other = self.root / "modules/other.tex"
@@ -324,6 +322,30 @@ class CoreTests(CheckerFixture):
 
         self.assertEqual(self.errors(), "")
 
+    def test_an_anchor_records_the_line_it_sits_on(self):
+        """Derived, stored nowhere, and load-bearing for no validation.
+
+        It exists so a derived view can send a reader to the statement rather than to
+        the file holding it. Comments are blanked before the scan and must not shift the
+        count, which is the case a regex over the raw text would get wrong.
+        """
+        self.module.write_text(
+            "% \\begin{lemma} a commented-out claim\n"
+            "\\section{Orientation}\n"
+            "\\label{sec:orientation}\n"
+            "\\begin{lemma}\n"
+            "\\label{lem:anchored}\n"
+            "fixture\n"
+            "\\end{lemma}\n"
+        )
+
+        labels = ledger.manuscript_labels(self.root)
+
+        self.assertEqual(labels["sec:orientation"]["line"], 3)
+        self.assertEqual(labels["lem:anchored"]["line"], 5)
+        self.assertIsNone(labels["sec:orientation"]["environment"])
+        self.assertEqual(labels["lem:anchored"]["environment"], "lemma")
+
     def test_implication_truth_is_separate_from_applicability(self):
         nodes = [
             node("ass:x", status="open", kind="assumption"),
@@ -387,7 +409,7 @@ class CoreTests(CheckerFixture):
             "main",
             "program",
             [node(
-                "q:retired",
+                "q:extra-fields",
                 status="open",
                 kind="question",
                 evidence="numerical-directional",
@@ -401,7 +423,7 @@ class CoreTests(CheckerFixture):
         errors = self.errors()
 
         for field in ("evidence", "evidence_run", "evidence_target", "numerics", "note"):
-            self.assertIn(f"q:retired.{field}: obsolete field", errors)
+            self.assertIn(f"q:extra-fields: unknown field '{field}'", errors)
 
     def test_bounded_by_requires_ledger_obstruction_node(self):
         self.add_ledger(
@@ -415,7 +437,7 @@ class CoreTests(CheckerFixture):
                 node("q:bad-hard", status="open", kind="question", bounded_by=["obs:warning"]),
                 node("thm:non-obstruction", bounded_by=["thm:bounded"]),
                 node("thm:unknown", bounded_by=["obs:missing"]),
-                node("thm:old-mechanism", mechanism=["direct-excess"]),
+                node("thm:bad-mechanism", mechanism=["direct-excess"]),
             ],
         )
 
@@ -429,7 +451,7 @@ class CoreTests(CheckerFixture):
             errors,
         )
         self.assertIn("thm:unknown.bounded_by: 'obs:missing' is not a declared obstruction", errors)
-        self.assertIn("thm:old-mechanism.mechanism: obsolete field", errors)
+        self.assertIn("thm:bad-mechanism: unknown field 'mechanism'", errors)
 
     def test_status_vocabulary_is_shared_and_minimal(self):
         self.assertEqual(ledger.STATUSES, {
@@ -506,13 +528,8 @@ class CoreTests(CheckerFixture):
         self.assertIn("def:proved: kind definition requires status defined", errors)
         self.assertNotIn("def:defined", errors)
 
-    def test_route_state_is_retired_from_the_ledger(self):
-        """Constraint 12 in the ledger's own direction: coordination is not a claim.
-
-        ``route`` and ``meta.route_policy`` were the pre-portfolio coordination
-        mechanism. They are rejected by name rather than merely dropped, so a ledger
-        inherited from an earlier copy of this template is told where the state moved.
-        """
+    def test_route_state_is_not_part_of_the_ledger_schema(self):
+        """Coordination state belongs to the portfolio, not the claim graph."""
         self.add_ledger(
             "main",
             "program",
@@ -522,10 +539,8 @@ class CoreTests(CheckerFixture):
 
         errors = self.errors()
 
-        self.assertIn("thm:owned.route: obsolete field", errors)
-        self.assertIn("meta.route_policy: obsolete field", errors)
-        self.assertIn("the search portfolio", errors)
-        self.assertNotIn("unknown field 'route_policy'", errors)
+        self.assertIn("thm:owned: unknown field 'route'", errors)
+        self.assertIn("meta: unknown field 'route_policy'", errors)
 
     def test_malformed_field_types_report_without_crashing(self):
         malformed = node("thm:bad")

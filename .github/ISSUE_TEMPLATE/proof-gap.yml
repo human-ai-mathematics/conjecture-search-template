@@ -1,0 +1,69 @@
+# A suspected gap in a certified proof.
+#
+# The `anchor` field is prefilled by the site: every contribution link carries the stable
+# id of whatever was on screen, so a report arrives already pointing at the exact claim.
+name: Proof gap
+description: A step you believe is unjustified in a proof this repository certifies.
+title: "Proof gap in "
+labels: ["proof-gap", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you — a gap found here is worth more than a proof accepted here.
+
+        Please note what happens next, because it is deliberate: this report enters a
+        public inbox. It does not by itself change a status, retract a certification, or
+        alter the ledger. A maintainer reads it, and if it holds, the claim's proof
+        record is revisited through the same review channel that certified it.
+
+  - type: input
+    id: anchor
+    attributes:
+      label: Which claim
+      description: The ledger node id, e.g. `prop:example`. The site fills this in.
+      placeholder: "prop:example"
+    validations:
+      required: true
+
+  - type: input
+    id: dossier
+    attributes:
+      label: Which proof
+      description: >
+        The dossier under `solutions/` you are reading, if the claim has more than one
+        proof record.
+      placeholder: "solutions/prop-example.tex"
+
+  - type: textarea
+    id: step
+    attributes:
+      label: The step
+      description: >
+        Quote or locate the exact step you believe is unjustified. A line number, an
+        equation, or the sentence itself.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it does not follow
+      description: >
+        What is assumed without being established, what case is not covered, or what
+        the counterexample to the step is. Be as precise as you can be — "this feels
+        wrong" is a useful message to send, but it cannot be checked.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: What you think it costs
+      options:
+        - The proof is repairable and I can see roughly how
+        - The proof is repairable but I cannot see how
+        - I believe the result itself is false
+        - I am not sure yet
+    validations:
+      required: true

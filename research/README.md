@@ -1,4 +1,4 @@
-# Research control plane
+# Research coordination
 
 `research/` coordinates this repository's search. The manuscript owns accepted statements, the
 ledger owns logical state and graph edges, the portfolio owns what the search is currently
@@ -20,7 +20,7 @@ create it with `python3 scripts/new.py brief --target <node-id>`.
 
 There is one ledger, at `program/ledger.yaml`. All ledger writes pass through one orchestrator
 (`CLAUDE.md` constraint 1). There is one portfolio, at `program/portfolio.yaml`, written only
-by the `synthesizer` (constraint 12).
+by the `synthesizer` (constraint 11).
 
 ## Sources of truth
 
@@ -54,7 +54,7 @@ portfolio holds none of those: a route is not a claim.
 2. Do the work. Put numerical work through `numerics`.
 3. Record a checkpoint when the result is durable, with its validated front matter. A tentative
    statement stays there as a `cand:` candidate until it is precise, stable, and worth tracking
-   (`CLAUDE.md` constraint 8). Promoting one is a single act: manuscript `\label`, ledger node,
+   (`CLAUDE.md` constraint 7). Promoting one is a single act: manuscript `\label`, ledger node,
    `promotes:` in a checkpoint, and any portfolio blocker repointed at the node.
 4. Return a `portfolio_delta` in the handoff; the `synthesizer` applies it.
 5. Send accepted statement and ledger changes through the orchestrator.

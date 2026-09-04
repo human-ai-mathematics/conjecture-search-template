@@ -121,7 +121,7 @@ def ready(report: dict, root: Path | None) -> bool:
     """Can a sustained search start here, or is this still the shipped template?
 
     A different question from ``check``. Activation is structural, so an absent optional
-    plane is valid and must stay valid — a fresh clone is *correct* and *not ready*.
+    gate is valid and must stay valid — a fresh clone is *correct* and *not ready*.
     This view asks only whether a search has something to aim at: a named program, a
     target with a ledger node, and a brief that has actually been written.
 
@@ -188,7 +188,7 @@ def candidates(report: dict) -> None:
     """List the candidate statements no checkpoint has retired yet.
 
     These are not ledger nodes and carry no status. A stable, reusable candidate earns a
-    node and a manuscript statement by an orchestrator decision (CLAUDE.md constraint 8).
+    node and a manuscript statement by an orchestrator decision (CLAUDE.md constraint 7).
     """
     live = report.get("candidates") or []
     promoted = (report.get("checkpoints") or {}).get("promoted") or {}
@@ -229,16 +229,11 @@ def node(report: dict, reference: str) -> bool:
     matches: list[tuple[dict, str, dict]] = []
     for item in report["ledgers"]:
         for nid, entry in item["nodes"].items():
-            if reference in {nid, f"{item['program']}/{nid}"}:
+            if reference == nid:
                 matches.append((item, nid, entry))
     if not matches:
         print(f"No ledger node matches '{reference}'.", file=sys.stderr)
         return False
-    if len(matches) > 1:
-        choices = ", ".join(f"{item['program']}/{nid}" for item, nid, _entry in matches)
-        print(f"Ambiguous node '{reference}'; use one of: {choices}", file=sys.stderr)
-        return False
-
     item, nid, entry = matches[0]
     print(f"[{item['program']}] {nid}")
     print(yaml.safe_dump(entry, sort_keys=False, allow_unicode=True).rstrip())

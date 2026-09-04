@@ -9,7 +9,7 @@
 # key, and everyone else proposes changes through their handoff.
 #
 # It stores coordination state only. A blocker is named by its `cand:` id or ledger node
-# id and never restated here (CLAUDE.md constraint 12).
+# id and never restated here (CLAUDE.md constraint 11).
 
 target: {{TARGET_NODE}}
 

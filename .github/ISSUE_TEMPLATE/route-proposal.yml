@@ -1,0 +1,66 @@
+# An approach worth trying, or a way past a blocked route.
+name: Approach proposal
+description: A mechanism worth trying, or something that would unblock a stopped route.
+title: "Approach: "
+labels: ["approach", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A route is not a claim, so nothing here needs to be proved to be worth saying.
+        What it needs to be is *specific*: an objective a person could carry out and
+        then report on, rather than a direction.
+
+        If accepted, this becomes a route in the search portfolio, written by the one
+        role that owns that file. It will then be expected to end in a dated record
+        saying what happened — including, and especially, if it failed.
+
+  - type: input
+    id: anchor
+    attributes:
+      label: What this attacks
+      description: >
+        The target's node id, a blocked route's id, or the blocker itself. The site
+        fills this in.
+      placeholder: "conj:example"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: shape
+    attributes:
+      label: What you are proposing
+      options:
+        - A new approach nobody here is trying
+        - A way past a route that is currently blocked
+        - Reopening a family that was declared saturated
+    validations:
+      required: true
+
+  - type: textarea
+    id: objective
+    attributes:
+      label: The objective, in one or two sentences
+      description: >
+        What this route would actually try. Not what it would prove — what it would do.
+    validations:
+      required: true
+
+  - type: textarea
+    id: mechanism
+    attributes:
+      label: Why you expect it to bite
+      description: >
+        The mechanism, and where you think it gets its leverage. If it is an analogy
+        with a solved problem, say which and where the analogy is strained.
+    validations:
+      required: true
+
+  - type: textarea
+    id: known
+    attributes:
+      label: What you expect the obstacle to be
+      description: >
+        Optional. A proposal that names its own hard step is far easier to act on than
+        one that does not, and much harder to mistake for one that has already been
+        tried.

@@ -2,8 +2,7 @@
 type: exploration
 date: "{{DATE}}"
 outcome: directional
-nodes:
-  - {{NODE}}
+{{ENGAGEMENT}}
 ---
 
 # {{TITLE}}

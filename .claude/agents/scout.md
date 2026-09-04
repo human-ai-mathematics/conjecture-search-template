@@ -2,8 +2,9 @@
 name: scout
 description: Read-only orientation on an unfamiliar or ambiguous node, target, route, or open question. It returns what a statement says, what it depends on, which obstructions fence it, which approaches have already attacked it, and where the artifacts live. It never writes and never proposes mathematics.
 tools: Read, Grep, Glob, Bash
-read_only: true
-reasoning: high
+model: opus
+effort: high
+color: cyan
 ---
 
 # Scout — read-only orientation

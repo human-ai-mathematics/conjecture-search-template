@@ -1,9 +1,7 @@
 # The structural checker's one dependency, declared so a fresh clone can install it.
 #
 # scripts/check.py needs PyYAML and nothing else; everything else it uses is in the
-# standard library. Before this file existed the requirement was written down only in the
-# error message you got when it was missing, and the sole manifest in the repository —
-# experiments/pyproject.toml — covered the numerics harness instead.
+# standard library. The numerics harness has its own manifest under experiments/.
 #
 #   uv run python scripts/check.py        # uv reads this file and provisions on the fly
 #   pip install pyyaml                    # or just install it

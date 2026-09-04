@@ -59,6 +59,13 @@ Numerics, literature import, and repository hygiene are capability packs on the 
 present when used, irrelevant when not. The three roles that drive them ship uninstalled in
 [`packs/`](packs/README.md) — `python3 scripts/new.py role <pack>` installs one.
 
+The [published site](docs/PUBLISHING-THE-SITE.md) is neither. A gate owns durable state and
+a pack is a role; the site owns no state and is nobody's job — it is `check.py status` and
+`check.py portfolio` rendered for a reader who will never open the YAML, derived at build
+time and refusing to publish a tree that does not validate. Nothing in `scripts/check.py`
+mentions it, and a repository that never publishes one is complete. What its existence does
+add is constraint 12, which fences the inbox it opens.
+
 An afternoon of speculative work may cross none of these and leave no repository artifact at
 all. That is a correct outcome, not a gap. Something crosses a gate when it must survive the
 session or coordinate someone else.
@@ -74,7 +81,7 @@ you were assigned. Record a checkpoint when the work is durable — the six trig
 validated front matter are in
 [`research/explorations/README.md`](research/explorations/README.md). A statement not yet
 stable enough for the manuscript is a **candidate** and goes in that checkpoint's
-`candidates:` list and nowhere else (constraint 8). Return a `portfolio_delta` in your
+`candidates:` list and nowhere else (constraint 7). Return a `portfolio_delta` in your
 handoff: the state your route is now in, and if blocked, the exact `cand:` id or node id plus
 what would reopen it. The `synthesizer` applies it; you do not edit the portfolio.
 
@@ -86,7 +93,7 @@ statement, not a second home in a side registry.
 **Proof or refutation contribution.** Follow [`solutions/README.md`](solutions/README.md),
 which owns the five steps. Two rules are this file's: an author never certifies their own
 proof, and refuting takes the same channel rather than a shortcut — the details are
-constraints 10 and 11.
+constraints 9 and 10.
 
 **Harness or repository contribution.** Record the rationale and validation in a new
 `decisions/YYYY-MM-DD-slug.md`. Do not invent a mathematical attempt; harness work does not
@@ -115,13 +122,12 @@ section, numbered `P1, P2, …`, so that a fork can drop them without disturbing
 5. **Respect established fences.** `bounded_by` may name only a proved obstruction. A statement
    violating one is wrong by construction. Put plausible but unproved method barriers in
    `heuristic_barriers`; they guide work but do not logically fence a claim.
-6. **Reserved.**
-7. **`research/explorations/` and `decisions/` are append-only.** Add dated files; never
+6. **`research/explorations/` and `decisions/` are append-only.** Add dated files; never
    rewrite or delete their history. A later record may declare an earlier one superseded —
    that changes which record to read first, and nothing else. This governs records of *this
    program's* search. The worked example under `example/` is a fixture, not history: it
    records no search anyone ran, and may be edited or deleted freely.
-8. **A candidate statement is not a ledger node.** A tentative statement lives in
+7. **A candidate statement is not a ledger node.** A tentative statement lives in
    the `candidates:` front matter of the checkpoint that proposed it, under a `cand:<slug>`
    id, and carries no manuscript anchor, no status, and no certification. It is killed by a
    later checkpoint naming it in `retires:`. Once it is precise, stable, and worth reusing or
@@ -130,7 +136,7 @@ section, numbered `P1, P2, …`, so that a fork can drop them without disturbing
    Promotion is **one act**, not a node addition with paperwork to follow: the manuscript
    `\label`, the ledger node, a `promotes:` entry in a checkpoint — which is what ends the
    candidate — and every portfolio blocker repointed at the node. Skipping the third step
-   left the candidate live forever, which is one statement in two homes, which is what this
+   leaves the candidate live forever, which is one statement in two homes, which is what this
    constraint exists to prevent.
    `python3 scripts/check.py candidates` lists the live ones. There is no other place a
    statement may be written down. A verbatim quotation of a manuscript statement, marked as a
@@ -138,19 +144,19 @@ section, numbered `P1, P2, …`, so that a fork can drop them without disturbing
    `reviewer`'s `sync` lens checks that the copy still agrees. A ledger node's `summary:` is
    a gloss, not a home; the candidate's `statement:` is canonical, because nothing else holds
    that text.
-9. **Truth and applicability are separate.** A proved implication remains `proved` when its
+8. **Truth and applicability are separate.** A proved implication remains `proved` when its
    antecedent is open. Put antecedents in `assumes`, conclusions in `implies`, and only claims
    actually used to prove the implication in `depends_on`. Never encode an antecedent as a proof
    dependency merely to make a conditional status propagate.
-10. **Proof provenance is plural.** An internally proved node has one or more `proofs` records.
+9. **Proof provenance is plural.** An internally proved node has one or more `proofs` records.
     Each record names its dossier and independent certification mode, so alternative proofs can
     coexist. A dossier may reuse certified dependency nodes instead of reproving them.
-11. **Quantifiers govern refutation.** A refutation dossier must negate the exact quantified
+10. **Quantifiers govern refutation.** A refutation dossier must negate the exact quantified
     statement. A single witness refutes a universal claim; failure of a dimension-free or
     uniform constant generally requires a certified family with the relevant divergence. The
     refuter is an ordinary proved node: it appears in the target's `refuted_by` and never in
     its `depends_on`, which records facts a proof used and a refuted statement has none.
-12. **The portfolio is search state, not mathematical state.** `research/program/portfolio.yaml`
+11. **The portfolio is search state, not mathematical state.** `research/program/portfolio.yaml`
     records what the search is doing — approach families, route objectives and states, blockers,
     saturation — and has one writer, the `synthesizer`. It never restates a claim: a blocker is
     named by its `cand:` id or ledger node id, and nothing is copied. A route's `objective` says
@@ -158,6 +164,15 @@ section, numbered `P1, P2, …`, so that a fork can drop them without disturbing
     never enter the ledger, and a transient route never becomes a node. Saturation is a
     judgment that costs a synthesis checkpoint and a reopening condition; it is never inferred
     from attempt counts or elapsed time.
+12. **Public contribution is an inbox, not state.** Anything arriving from outside the
+    repository — an issue, a discussion, a comment, a vote, an uploaded argument — enters a
+    public inbox and changes nothing by itself. It becomes a candidate, a route, a ledger
+    node, a proof record or a status only by being triaged into the artifact that already
+    holds that genre, through the role that owns it. Nothing outside the repository is
+    citable state: a `blocker:` may not name an issue, a node may not cite a discussion,
+    and no count of anything — comments, votes, reactions, contributors — moves a status.
+    A proof from outside takes the same channel as any other, and its honest record is
+    `proofs[].mode: human` with `accepted_by`, which is an attestation and not a review.
 
 ## Program constraints
 
@@ -194,12 +209,15 @@ python3 scripts/check.py dossiers     # active dossiers, for the standalone LaTe
 python3 scripts/check.py --root example   # the worked example, kept green as a fixture
 ```
 
-`check.py` never writes. Scaffolding a brief, a portfolio, a checkpoint, a module or a
-dossier from [`templates/`](templates/README.md) is `python3 scripts/new.py`; it never
-overwrites a file, and it never touches the ledger (constraint 1).
+`check.py` never writes. Creation and generation belong to `python3 scripts/new.py`: its
+scaffolds never overwrite hand-authored files, while `new.py agents` deliberately replaces
+generated role frontmatter and adapters. It never touches the ledger (constraint 1).
+
+Numbers in a dated decision record are local to that record. Cite one by dated filename and
+number together; a bare “invariant 44” is not a stable reference across independent decisions.
 
 `check` and `ready` answer different questions. A freshly cloned template passes `check` and
-fails `ready`, and both are correct: activation is structural, so an absent optional plane is
+fails `ready`, and both are correct: activation is structural, so an unopened optional gate is
 valid, while `ready` asks whether a search has something to aim at. Neither weakens the
 other, and neither is `publish-ready`, which asks only about the manuscript's title, author
 and abstract — publication details that block no mathematics.

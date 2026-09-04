@@ -61,49 +61,9 @@ LIST_FIELDS = {
     "depends_on", "assumes", "implies", "refines", "bounded_by",
     "heuristic_barriers", "references", "proofs", "refuted_by",
 }
-OBSOLETE_NODE_FIELDS = {
-    "assuming": "assumes for antecedents of an implication",
-    "discharged_by": "depends_on on the result that performs the discharge",
-    "evidence": "a dated checkpoint plus an immutable research/runs artifact",
-    "evidence_eligible": "a dated checkpoint plus an immutable research/runs artifact",
-    "evidence_run": "a dated checkpoint plus an immutable research/runs artifact",
-    "evidence_target": "the numerics target implementation and a dated checkpoint",
-    "entry_point": "the problem brief or the search portfolio",
-    "target_doc": "the problem brief or the search portfolio",
-    "mechanism": "bounded_by plus independent semantic review",
-    "clearance": "the proof dossier/review discussion of bounded_by",
-    "note": "the manuscript, the problem brief, or a dated checkpoint",
-    "numerics": "the numerics implementation, instance registry, or a dated checkpoint",
-    "solution": "proofs with one artifact/mode record per active proof",
-    "checked_by": "proofs[].mode",
-    "review": "proofs[].review",
-    "accepted_by": "proofs[].accepted_by",
-    "proof_file": "proofs[].artifact",
-    "proof_provenance": "proofs with explicit certification records",
-    "authored_by": "proof-review front matter",
-    "reviewed_by": "proof-review front matter",
-    "related": "one of assumes, implies, refines, or the portfolio's approach relations",
-    "bridges": "a precise same-ledger implication/refinement or prose for an external comparison",
-    "unlocks": "depends_on on the consuming node, or prose for non-logical relationships",
-    "approach": "the search portfolio; an approach is not a mathematical claim",
-    "family": "the search portfolio; an approach family is not a mathematical claim",
-    "route": "the search portfolio; a route is coordination state, not a claim "
-             "(CLAUDE.md constraint 12)",
-    "label": "the node id itself as the manuscript anchor; an override made the "
-             "id-is-the-anchor rule untrue and had no second reader",
-    "statement": "summary for the ledger's one-line gloss; the statement itself lives "
-                 "in modules/ under this node's \\label and nowhere else",
-}
 BIB_ENTRY_RE = re.compile(r"@[A-Za-z]+\s*\{\s*([^,\s]+)\s*,")
 TOP_LEVEL_FIELDS = {"meta", "nodes"}
 META_FIELDS = {"program", "scope"}
-OBSOLETE_META_FIELDS = {
-    "legacy_r2_debt": "a certified proof on every proved node; there are no exceptions",
-    "legacy_proved_without_solution":
-        "a certified proof on every proved node; there are no exceptions",
-    "route_policy": "the search portfolio; coordination ownership is not "
-                    "mathematical state (CLAUDE.md constraint 12)",
-}
 
 
 def strip_comments(text: str) -> str:
@@ -145,13 +105,18 @@ def strip_comments(text: str) -> str:
     return "".join(out)
 
 
-def _labels_with_environments(text: str) -> list[tuple[str, str | None]]:
+def _labels_with_environments(text: str) -> list[tuple[str, str | None, int]]:
     """Pair every ``\\label`` in one file with the claim environment enclosing it.
 
     The enclosing environment is the innermost open *claim* environment, so a label
     inside a ``proof`` or an ``itemize`` nested in a ``theorem`` still belongs to the
     theorem. A label with no claim environment above it — a ``\\section`` anchor, an
     equation tag, a ``remark`` — is structural and pairs with ``None``.
+
+    The 1-based line of the ``\\label`` comes back with it. ``strip_comments`` preserves
+    every offset *and* every newline, so counting them here is exact — and it is the only
+    place in the repository that knows where an anchor physically sits, which is what lets
+    a reader be sent to the statement rather than to the file holding it.
     """
     events = sorted(
         [(match.start(), "env", match.group(1), match.group(2))
@@ -160,8 +125,8 @@ def _labels_with_environments(text: str) -> list[tuple[str, str | None]]:
            for match in LABEL_RE.finditer(text)]
     )
     stack: list[str] = []
-    found: list[tuple[str, str | None]] = []
-    for _position, kind, first, second in events:
+    found: list[tuple[str, str | None, int]] = []
+    for position, kind, first, second in events:
         if kind == "env":
             if first == "begin":
                 stack.append(second)
@@ -172,7 +137,7 @@ def _labels_with_environments(text: str) -> list[tuple[str, str | None]]:
             enclosing = next(
                 (name for name in reversed(stack) if name in CLAIM_ENVIRONMENTS), None
             )
-            found.append((first, enclosing))
+            found.append((first, enclosing, text.count("\n", 0, position) + 1))
     return found
 
 
@@ -183,6 +148,10 @@ def manuscript_labels(root: Path, errors: list[str] | None = None) -> dict[str, 
     every *claim-bearing theorem-environment* label is exactly one ledger node, and a
     structural label is not a node at all. Returned as a mapping so a duplicate is
     detectable — a set silently merged two anchors that disagree.
+
+    Each entry carries ``environment``, ``file`` and the 1-based ``line`` of the
+    ``\\label``. The line is derived, never stored anywhere, and no validation depends
+    on it: it exists so a derived view can point a reader at the statement itself.
     """
     labels: dict[str, dict] = {}
     modules = root / "modules"
@@ -196,14 +165,14 @@ def manuscript_labels(root: Path, errors: list[str] | None = None) -> dict[str, 
             if errors is not None:
                 errors.append(f"{relative}: cannot read manuscript module: {exc}")
             continue
-        for label, environment in _labels_with_environments(strip_comments(text)):
+        for label, environment, line in _labels_with_environments(strip_comments(text)):
             if label in labels and errors is not None:
                 errors.append(
                     f"{relative}: duplicate manuscript label '{label}', already at "
                     f"{labels[label]['file']}; one anchor, one place"
                 )
                 continue
-            labels[label] = {"environment": environment, "file": relative}
+            labels[label] = {"environment": environment, "file": relative, "line": line}
     return labels
 
 
@@ -332,10 +301,7 @@ def _validate_node(program: str, nid: str, node: dict, *, root: Path,
                    labels: dict[str, dict], bib_keys: set[str] | None,
                    nodes: dict[str, dict], obstruction_ids: set[str],
                    errors: list[str]) -> None:
-    for field, replacement in OBSOLETE_NODE_FIELDS.items():
-        if field in node:
-            errors.append(f"[{program}] {nid}.{field}: obsolete field; use {replacement}")
-    for field in sorted(set(node) - NODE_FIELDS - set(OBSOLETE_NODE_FIELDS)):
+    for field in sorted(set(node) - NODE_FIELDS):
         errors.append(f"[{program}] {nid}: unknown field '{field}'")
     for field in sorted(LIST_FIELDS & set(node)):
         if not isinstance(node[field], list):
@@ -349,14 +315,7 @@ def _validate_node(program: str, nid: str, node: dict, *, root: Path,
     provenance = node.get("provenance")
     if not isinstance(kind, str) or kind not in KIND:
         errors.append(f"[{program}] {nid}: bad kind '{kind}'")
-    if isinstance(status, str) and status in {"conjectured", "conditional", "imported"}:
-        replacement = {
-            "conjectured": "status open",
-            "conditional": "status proved plus assumes for a proved implication",
-            "imported": "provenance literature plus the claim's logical status",
-        }[status]
-        errors.append(f"[{program}] {nid}: status '{status}' is obsolete; use {replacement}")
-    elif not isinstance(status, str) or status not in STATUSES:
+    if not isinstance(status, str) or status not in STATUSES:
         errors.append(
             f"[{program}] {nid}: bad status '{status}' (want one of {sorted(STATUSES)})"
         )
@@ -539,7 +498,7 @@ def check(root: Path, research: Path, errors: list[str],
         if not isinstance(program, str) or not program.strip():
             errors.append(f"{path}: meta.program must be a non-empty string")
             program = f"invalid:{path}"
-        for field in sorted(set(meta) - META_FIELDS - set(OBSOLETE_META_FIELDS)):
+        for field in sorted(set(meta) - META_FIELDS):
             errors.append(f"[{program}] meta: unknown field '{field}'")
         if program in program_paths:
             errors.append(
@@ -560,12 +519,7 @@ def check(root: Path, research: Path, errors: list[str],
         })
 
     for ledger in ledgers:
-        program, nodes, meta = ledger["program"], ledger["nodes"], ledger["meta"]
-        for obsolete_field, replacement in OBSOLETE_META_FIELDS.items():
-            if obsolete_field in meta:
-                errors.append(
-                    f"[{program}] meta.{obsolete_field}: obsolete field; use {replacement}"
-                )
+        program, nodes = ledger["program"], ledger["nodes"]
         for nid, node in nodes.items():
             _validate_node(program, nid, node, root=root, labels=labels, bib_keys=bib_keys,
                            nodes=nodes, obstruction_ids=ledger["obs_ids"], errors=errors)
@@ -595,7 +549,5 @@ def check(root: Path, research: Path, errors: list[str],
 
 
 def node_ids(ledgers: list[dict]) -> set[str]:
-    """Every node id, bare and program-qualified, for cross-lane reference checks."""
-    ids = {nid for ledger in ledgers for nid in ledger["nodes"]}
-    ids |= {f"{ledger['program']}/{nid}" for ledger in ledgers for nid in ledger["nodes"]}
-    return ids
+    """Every node id available to cross-lane reference checks."""
+    return {nid for ledger in ledgers for nid in ledger["nodes"]}

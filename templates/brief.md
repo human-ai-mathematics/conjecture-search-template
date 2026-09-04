@@ -30,7 +30,7 @@ Name the ledger node and its manuscript anchor, then quote the manuscript statem
 verbatim below, so an agent gets the exact quantifiers without a second hop. The
 blockquote is a **copy, not a source**: if it and the manuscript disagree, the manuscript
 is right and the copy is a defect, which is what the `reviewer`'s `sync` lens checks
-(`CLAUDE.md` constraint 8). Never sharpen the statement here — sharpen it in `modules/`
+(`CLAUDE.md` constraint 7). Never sharpen the statement here — sharpen it in `modules/`
 and re-copy.
 
 Where a definition is doing real work — a convention, a sign, a scaling — name the
@@ -45,7 +45,7 @@ Where a definition is doing real work — a convention, a sign, a scaling — na
 Write the logical negation, with quantifier order intact, before anyone attacks it. A
 single witness refutes a universal claim; failure of a dimension-free or uniform constant
 generally requires a certified family with the relevant divergence (`CLAUDE.md`
-constraint 11). Say which of the two shapes a refutation of *this* target must have.
+constraint 10). Say which of the two shapes a refutation of *this* target must have.
 
 ## What counts as complete
 

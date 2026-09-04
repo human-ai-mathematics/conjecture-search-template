@@ -5,7 +5,7 @@ certified refutation and a ledger status — with one instance of every artifact
 harness validates, arranged exactly as a real repository arranges them.
 
 It is a **fixture, not history**: nothing here records a search anyone ran, so `CLAUDE.md`
-constraint 7 does not apply to it and you may edit or delete any of it freely.
+constraint 6 does not apply to it and you may edit or delete any of it freely.
 
 Copy from it. Do not build on it.
 
@@ -52,36 +52,18 @@ $\sum_i (a_i - \bar a)^2 \ge \tfrac12 \sum_i a_i^2$. It is false.
 | 2 | the brief fixes the exact negation and what would finish it | [`research/program/brief.md`](research/program/brief.md) |
 | 3 | the portfolio seeds one family and three routes | [`research/program/portfolio.yaml`](research/program/portfolio.yaml) |
 | 4 | a numerical run is spent; it does **not** test the target, and two candidates come out | [`…/2026-09-02-example-exploration.md`](research/explorations/2026-09-02-example-exploration.md) |
-| 5 | a second route is recognized as a duplicate of the first | [`…/2026-09-03-example-dedup.md`](research/explorations/2026-09-03-example-dedup.md) |
-| 6 | the witness candidate is promoted to a node; routes and family close | [`…/2026-09-03-example-refuter.md`](research/explorations/2026-09-03-example-refuter.md) |
-| 7 | the refuter gets an ordinary dossier and an independent review | `solutions/`, `research/reviews/` |
-| 8 | only now does the target become `refuted`, via `refuted_by` | `ledger.yaml` |
+| 5 | the roundoff route stops on the analytic estimate it needs | [`…/2026-09-03-example-roundoff.md`](research/explorations/2026-09-03-example-roundoff.md) |
+| 6 | a second route is recognized as a duplicate of the first | [`…/2026-09-03-example-dedup.md`](research/explorations/2026-09-03-example-dedup.md) |
+| 7 | the witness candidate is promoted to a node; routes and family close | [`…/2026-09-03-example-refuter.md`](research/explorations/2026-09-03-example-refuter.md) |
+| 8 | the refuter gets an ordinary dossier and an independent review | `solutions/`, `research/reviews/` |
+| 9 | only now does the target become `refuted`, via `refuted_by` | `ledger.yaml` |
 
 Steps 4 and 8 are the two the harness exists to keep apart. A run found nothing and
 certified nothing (`CLAUDE.md` constraint 2); a status moved only after a dossier was
-independently reviewed (constraints 10 and 11).
+independently reviewed (constraints 9 and 10).
 
 `q:example` is left `open` and `cand:example-identity-stability` is left live, on purpose:
 a repository does not empty out when its conjecture falls.
-
-## Where it came from
-
-Everything here was at the repository root until
-[`decisions/2026-09-03-harness-consistency-and-readiness.md`](../decisions/2026-09-03-harness-consistency-and-readiness.md)
-moved it, so that a new repository starts with empty live planes instead of being told to
-delete append-only records. Records written before that date still cite the old paths:
-
-| was | is |
-|---|---|
-| `modules/00-overview.tex` | `example/modules/00-overview.tex` |
-| the three nodes of `research/program/ledger.yaml` | `example/research/program/ledger.yaml` |
-| `research/program/brief.md` | `example/research/program/brief.md` |
-| `research/program/portfolio.yaml` | `example/research/program/portfolio.yaml` |
-| `solutions/prop-example.tex` | `example/solutions/prop-example.tex` |
-| `research/reviews/2026-09-01-prop-example-proof-review.md` | `example/research/reviews/…` |
-| `research/explorations/2026-09-02-example-exploration.md` | `example/research/explorations/…` |
-| `research/explorations/2026-09-03-example-dedup.md` | `example/research/explorations/…` |
-| `research/runs/2026-09-02T092336.680787Z-example.jsonl` | `example/research/runs/…` |
 
 ## Three things it does differently, and why
 
@@ -89,7 +71,7 @@ delete append-only records. Records written before that date still cite the old 
   what keeps this fixture cheap. Adding one without a matching `.codex/` would turn it red.
 - **It must stay a top-level sibling** of `research/` and `modules/`. Nested inside either,
   its ledger would trip the one-ledger rule and its checkpoints and run artifact would be
-  swept into the live planes.
+  swept into the live repository state.
 - **Its `.tex` files name `../../main.tex`** as the `subfiles` master, not the `../main.tex`
   that [`../templates/solution.tex`](../templates/solution.tex) teaches, because they sit one
   level deeper. Use `../main.tex` in a real repository.

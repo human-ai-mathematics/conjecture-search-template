@@ -30,7 +30,7 @@ class DocsTests(CheckerFixture):
         return errors
 
     def test_a_link_to_a_gated_file_that_is_absent_is_an_error(self):
-        """The exact defect: a navigation table pointing at an optional plane."""
+        """The exact defect: a navigation table pointing at an unopened optional gate."""
         self.write("README.md", "See [the brief](research/program/brief.md).\n")
 
         self.assertIn("link 'research/program/brief.md' does not resolve", self.links()[0])
@@ -51,10 +51,7 @@ class DocsTests(CheckerFixture):
         self.assertEqual(self.links(), [])
 
     def test_append_only_archives_are_exempt(self):
-        """decisions/ and research/reviews/ deliberately name paths that have moved.
-
-        Rewriting them to satisfy a link checker is the rewriting constraint 7 forbids.
-        """
+        """A later tree change must not force an immutable record to be rewritten."""
         self.write("decisions/2026-01-01-a.md", "[gone](old/path.md)\n")
         self.write("research/reviews/2026-01-01-b.md", "[gone](old/path.md)\n")
 

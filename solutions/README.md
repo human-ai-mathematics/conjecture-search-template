@@ -1,4 +1,4 @@
-# solutions/ — the proof output plane
+# solutions/ — proof dossiers
 
 Where the `researcher` writes **proofs** of the open targets: self-contained,
 standalone-compilable, human-checkable `.tex` files — **separate from the manuscript**
@@ -36,16 +36,11 @@ A proof is only as trustworthy as its check. The level is recorded once, in the 
 | `mode: human` + `accepted_by:` | a human read and accepts the natural-language argument | yes (human-certified) |
 
 A dossier says nothing about how far it has been checked, because it has no way to stay
-right about it. The header used to carry a `checked_by` field that nothing compared to the
-ledger, so a file could read `checked_by: none` under a certified proof record and no
-validator objected. It is retired and rejected by name. **A dossier that no `proofs[]`
-record names is a draft, and that absence is the whole signal.**
+right about it. Certification metadata is not part of its header vocabulary. **A dossier that
+no `proofs[]` record names is a draft, and that absence is the whole signal.**
 
-There is no machine mode. `mode: lean` shipped as a placeholder that checked only whether a
-file with a `.lean` suffix sat beside the dossier — it never ran the kernel, an empty file
-satisfied it, and it could nonetheless support `status: proved`. A mode that certifies
-nothing must not sit at the top of a certification ladder, so it is retired and rejected by
-name. Restore it when `check.py` invokes Lean with pinned tooling.
+There is no machine mode. Add one only when `check.py` actually invokes its kernel with pinned
+tooling; a file-presence check certifies nothing.
 
 Agent certification is deliberately explicit rather than being recorded as human review. It
 requires a repo-local `review:` report whose front matter names distinct author(s) and reviewer.
@@ -86,7 +81,7 @@ one a refutation is a ledger edge, not anything about the file.
 The refuter does not appear in the target's `depends_on`: that field records facts a proof
 used, and a refuted statement has no proof. A single witness discharges a universal claim;
 a dimension-free or uniform constant generally needs a certified family with the relevant
-divergence (constraint 11). The worked instance is
+divergence (constraint 10). The worked instance is
 [`../example/solutions/prop-example-refuter.tex`](../example/solutions/prop-example-refuter.tex).
 
 Numerics never appear on this ladder: they may guide intuition or suggest a counterexample, but

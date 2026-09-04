@@ -67,7 +67,7 @@ class NumericsTests(CheckerFixture):
     def test_only_the_first_record_carries_provenance(self):
         self.add_run("2026-08-26T000000Z-fixture.jsonl",
                      lines=[
-                         '{"_provenance": {"schema_version": 2, "date": "2026-08-26",'
+                         '{"_provenance": {"schema_version": 1, "date": "2026-08-26",'
                          ' "target": "fixture", "profile": "p", "config": {},'
                          ' "environment": {}}}',
                          '{"_provenance": {"target": "smuggled"}}',
@@ -90,7 +90,7 @@ class NumericsTests(CheckerFixture):
 
         self.add_run("2026-08-27T000000Z-fixture.jsonl",
                      lines=[
-                         '{"_provenance": {"schema_version": 3, "date": "2026-08-27",'
+                         '{"_provenance": {"schema_version": 1, "date": "2026-08-27",'
                          ' "target": "fixture", "profile": "p", "stochastic": false,'
                          ' "config": {}, "environment": {}}}',
                          '{"kind": "note"}',
@@ -101,8 +101,7 @@ class NumericsTests(CheckerFixture):
         self.assertIn("_provenance is missing 'git_commit'", errors)
         self.assertIn("_provenance is missing 'git_dirty'", errors)
 
-    def test_an_older_artifact_is_asked_only_for_what_its_version_promised(self):
-        """Artifacts are immutable, so a schema bump cannot retroactively break one."""
+    def test_an_unsupported_artifact_schema_is_rejected(self):
         self.add_run("2026-08-26T000000Z-fixture.jsonl",
                      lines=[
                          '{"_provenance": {"schema_version": 2, "date": "2026-08-26",'
@@ -111,12 +110,12 @@ class NumericsTests(CheckerFixture):
                          '{"kind": "note"}',
                      ])
 
-        self.assertEqual(self.errors(), "")
+        self.assertIn("schema_version must be 1, got '2'", self.errors())
 
     def test_half_an_observation_is_not_evidence(self):
         self.add_run("2026-08-26T000000Z-fixture.jsonl",
                      lines=[
-                         '{"_provenance": {"schema_version": 2, "date": "2026-08-26",'
+                         '{"_provenance": {"schema_version": 1, "date": "2026-08-26",'
                          ' "target": "fixture", "profile": "p", "stochastic": false,'
                          ' "config": {}, "environment": {}}}',
                          '{"kind": "observation", "instance": "n=3", "evidence": "exact"}',
@@ -130,7 +129,7 @@ class NumericsTests(CheckerFixture):
     def test_an_outcome_must_belong_to_its_evidence_class(self):
         self.add_run("2026-08-26T000000Z-fixture.jsonl",
                      lines=[
-                         '{"_provenance": {"schema_version": 2, "date": "2026-08-26",'
+                         '{"_provenance": {"schema_version": 1, "date": "2026-08-26",'
                          ' "target": "fixture", "profile": "p", "stochastic": false,'
                          ' "config": {}, "environment": {}}}',
                          '{"kind": "observation", "instance": "n=3", "claim": "c",'
@@ -147,7 +146,10 @@ class NumericsTests(CheckerFixture):
                   / "experiments/numerics/contract.py").read_text(encoding="utf-8")
         # Read the literals out of the source rather than importing the package, which
         # would drag in numpy and couple the checker's test suite to the harness.
-        wanted = {"EVIDENCE_CLASSES", "OUTCOMES", "OBSERVATION_FIELDS"}
+        wanted = {
+            "ARTIFACT_SCHEMA_VERSION", "EVIDENCE_CLASSES", "OUTCOMES",
+            "OBSERVATION_FIELDS",
+        }
         found = {}
         for statement in ast.parse(source).body:
             if not isinstance(statement, (ast.Assign, ast.AnnAssign)):
@@ -159,6 +161,8 @@ class NumericsTests(CheckerFixture):
                     found[target.id] = ast.literal_eval(statement.value)
 
         self.assertEqual(sorted(found), sorted(wanted))
+        self.assertEqual(found["ARTIFACT_SCHEMA_VERSION"],
+                         numerics_lane.ARTIFACT_SCHEMA_VERSION)
         self.assertEqual(tuple(found["EVIDENCE_CLASSES"]),
                          tuple(numerics_lane.EVIDENCE_CLASSES))
         self.assertEqual(tuple(found["OBSERVATION_FIELDS"]),

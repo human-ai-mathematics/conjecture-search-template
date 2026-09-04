@@ -1,0 +1,75 @@
+# A proposed counterexample.
+#
+# The form asks about quantifiers on purpose. A single witness refutes a universal
+# claim; a dimension-free or uniform constant generally needs a certified family with
+# the relevant divergence, and the difference is where most proposed refutations fail.
+name: Counterexample
+description: An instance or family you believe refutes a claim in this repository.
+title: "Counterexample to "
+labels: ["counterexample", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        What happens to this, so nothing is a surprise:
+
+        A witness is **not yet a refutation** here. It becomes a *candidate statement*
+        in a dated record; the statement it establishes then earns a node of its own
+        with a standalone dossier; that dossier is independently certified; and only
+        then does the target's status move. Numerical output certifies nothing at any
+        point in that chain.
+
+        That is four steps rather than one, and it is the same chain a proof walks. It
+        is not scepticism about your example — it is the only way the repository can
+        say *why* it believes something a year from now.
+
+  - type: input
+    id: anchor
+    attributes:
+      label: Which claim
+      description: The ledger node id you are refuting. The site fills this in.
+      placeholder: "conj:example"
+    validations:
+      required: true
+
+  - type: textarea
+    id: witness
+    attributes:
+      label: The instance, or the family
+      description: >
+        Write it exactly. If it is a family, give the parameter and the construction as
+        a function of it.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: quantifier
+    attributes:
+      label: What the claim quantifies over, and what your example does to it
+      options:
+        - A universal claim, and this is a single witness against it
+        - A uniform or dimension-free constant, and this is a family along which it diverges
+        - Something else — explained below
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: How you checked it
+      description: >
+        Exact arithmetic, an analytic argument, or a numerical evaluation. Say which:
+        a floating-point near-miss and an exact violation are different claims, and the
+        repository will treat them differently.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: obstructions
+    attributes:
+      label: Fences
+      options:
+        - label: >
+            I have read the obstructions listed on the claim's page. A statement that
+            violates a proved obstruction is wrong by construction, and an example that
+            only re-establishes one is already known.

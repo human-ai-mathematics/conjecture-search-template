@@ -4,7 +4,7 @@ The ledger says what is mathematically claimed. This lane says which routes are 
 which are blocked and on what, which are duplicates of each other, and which families
 have been worked out. None of that is mathematical truth, so none of it belongs in the
 ledger — and the portfolio in turn never restates a statement: it points at a `cand:` id
-or a node id and stops (CLAUDE.md constraint 12).
+or a node id and stops (CLAUDE.md constraint 11).
 
 Every check here is structural. Whether two routes are *really* the same idea, and
 whether a family is *really* exhausted, are synthesizer judgments; a validator that
@@ -33,9 +33,6 @@ FAMILY_STATES = {"active", "saturated", "parked"}
 #: mechanism is worked out; ``parked`` claims only that nobody is working it. The field is
 #: named for closure rather than saturation so it reads honestly for both.
 FAMILY_CLOSED_STATES = {"saturated", "parked"}
-#: Retired field names, rejected by name so an inherited portfolio is told where to look.
-OBSOLETE_FAMILY_FIELDS = {"saturation_checkpoint": "closure_checkpoint"}
-
 APPROACH_FIELDS = {
     "id", "family", "objective", "parent", "state", "blocker", "reopen_if", "related",
     "checkpoints",
@@ -153,12 +150,7 @@ def load(root: Path, errors: list[str]) -> dict | None:
 
     for family_id, family in sorted(families.items()):
         where = f"{context}.families"
-        for field, replacement in OBSOLETE_FAMILY_FIELDS.items():
-            if field in family:
-                errors.append(
-                    f"{where} {family_id}.{field}: obsolete field; use {replacement}"
-                )
-        for field in sorted(set(family) - FAMILY_FIELDS - set(OBSOLETE_FAMILY_FIELDS)):
+        for field in sorted(set(family) - FAMILY_FIELDS):
             errors.append(f"{where} {family_id}: unknown field '{field}'")
         mechanism = family.get("mechanism")
         if not isinstance(mechanism, str) or not mechanism.strip():
@@ -206,7 +198,7 @@ def load(root: Path, errors: list[str]) -> dict | None:
 
         # A family says what mechanism it tries; without this, an individual route said
         # nothing at all and was legible only by reading its slug. Coordination text, not
-        # a statement: it names an intention, never a claim (constraint 12).
+        # a statement: it names an intention, never a claim (constraint 11).
         objective = approach.get("objective")
         if not isinstance(objective, str) or not objective.strip():
             errors.append(
@@ -362,7 +354,12 @@ def _checkpoint_agreement(index: dict[str, dict], reference: str, expected: set[
         )
         return
     approach = record.get("approach")
-    if approach is not None and approach not in expected:
+    if approach is None:
+        errors.append(
+            f"{context}: '{reference}' does not declare an approach; portfolio state "
+            "must point to the route-specific checkpoint that explains it"
+        )
+    elif approach not in expected:
         errors.append(
             f"{context}: '{reference}' declares approach '{approach}', which is not "
             f"{subject}"

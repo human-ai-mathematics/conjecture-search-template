@@ -1,4 +1,4 @@
-# Program control plane
+# Program state
 
 This directory owns two things that must not be confused: the **logical state** of the
 program — what is claimed, what each claim depends on, which proof shapes are fenced — and the
@@ -42,7 +42,7 @@ mathematical edit, and the ledger is where that is visible.
 A statement enters the ledger when it is precise, stable, and worth reusing or tracking on the
 frontier. Until then it is a candidate: it lives in the `candidates:` front matter of the
 checkpoint that proposed it, has no `\label`, no status and no certification, and is listed by
-`python3 scripts/check.py candidates` (`CLAUDE.md` constraint 8). Promotion gives it a
+`python3 scripts/check.py candidates` (`CLAUDE.md` constraint 7). Promotion gives it a
 manuscript statement and a node here — nothing is copied from one registry to another, because
 there is no other registry — and it is a single act: the checkpoint recording it through
 `promotes:` is what ends the candidate, and any route blocked on it moves to the node.
@@ -55,14 +55,14 @@ dossier is independently reviewed like any other; and only then does the target 
 `status: refuted`, naming the proved refuter in `refuted_by`. The refuter never enters the
 target's `depends_on` — that field records facts a proof used, and a refuted statement has no
 proof. Quantifiers decide what suffices: one witness for a universal claim, generally a
-certified divergent family for a uniform or dimension-free constant (constraint 11).
+certified divergent family for a uniform or dimension-free constant (constraint 10).
 
-## Two writers, two planes
+## Two writers, two stores
 
 The ledger and manuscript are authoritative for mathematics, and the orchestrator is their sole
 writer. The portfolio is authoritative for coordination, and the `synthesizer` is its sole
 writer. Neither may hold the other's content: no route state in the ledger, no statement in the
-portfolio (`CLAUDE.md` constraint 12).
+portfolio (`CLAUDE.md` constraint 11).
 
 Any further navigation document you add here is a mutable handoff carrying no claim status and
 no duplicate dependency graph. When you add one, give it a concurrency key in

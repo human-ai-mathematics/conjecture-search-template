@@ -80,8 +80,8 @@ def source_state() -> dict[str, Any]:
     uncommitted, which is the normal case while a diagnostic is being written. Recording
     ``git_dirty`` and a hash of the diff closes that gap without gating anything: a dirty
     run is still a run, and its numbers are worth exactly what any numbers are worth
-    (CLAUDE.md constraint 2). This is provenance, not eligibility — the retired
-    ``evidence_eligible`` field decided whether output counted, and nothing here does.
+    (CLAUDE.md constraint 2). This is provenance, not a judgment about whether the
+    output counts as mathematical evidence.
 
     Every field is present even outside a git checkout, where the values are null.
     """

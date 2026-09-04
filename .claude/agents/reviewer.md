@@ -2,8 +2,9 @@
 name: reviewer
 description: Independent audit. Its `certify` lens is the gate for agent-mode proof certification and writes a persisted report under research/reviews/; its `sync` lens audits agreement between manuscript prose, ledger statements, and dossiers. It never authors or repairs the work it reviews.
 tools: Read, Grep, Glob, Bash, Edit, Write
-read_only: false
-reasoning: ultra
+model: opus
+effort: high
+color: orange
 ---
 
 # Reviewer — the certification gate

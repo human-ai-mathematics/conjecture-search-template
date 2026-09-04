@@ -21,8 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def analyze(root: Path | None = None, research: Path | None = None,
-            configured_ledger: str | Path | None = None, *,
-            write_codex: bool = False) -> dict:
+            configured_ledger: str | Path | None = None) -> dict:
     """Validate every lane of one repository tree and return the tagged report."""
     root = Path(root) if root is not None else ROOT
     research = Path(research) if research is not None else root / "research"
@@ -49,7 +48,7 @@ def analyze(root: Path | None = None, research: Path | None = None,
                       nodes=all_nodes)
 
     artifacts = numerics.check(root, errors["numerics"])
-    role_definitions = roles.check(root, errors["roles"], write_codex=write_codex)
+    role_definitions = roles.check(root, errors["roles"])
     links = docs.check(root, errors["docs"])
 
     return {

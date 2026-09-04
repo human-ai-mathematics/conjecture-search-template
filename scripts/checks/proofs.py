@@ -21,35 +21,11 @@ SOLUTIONS = "solutions"
 PROOF_MODES = {"agent", "human"}
 PROOF_FIELDS = {"artifact", "mode", "review", "accepted_by"}
 
-#: Modes that once existed and no longer do, with the reason. Rejected by name so a
-#: ledger carrying one gets an explanation rather than a bare vocabulary error.
-RETIRED_PROOF_MODES = {
-    "lean": "not implemented — the checker only looked for an adjacent .lean file and "
-            "never ran the kernel, so a mode that certifies nothing could support "
-            "status: proved. Restore it when check.py invokes Lean with pinned tooling",
-}
-
-#: The dossier's header, parsed rather than grepped. Exactly one field is validated:
-#: `ledger-node`, the ids the dossier discharges. Nothing else in the header has a single
-#: owner — the ledger's proofs[] record owns the mode and the review path, and the
-#: review's own front matter owns author and reviewer identity.
+#: The dossier header is deliberately small. Certification belongs to the ledger and
+#: review front matter, never to this human-readable summary.
 HEADER_LIMIT = 2500
 HEADER_GLOSS_RE = re.compile(r"\s{2,}")
-
-#: Header fields that once existed and no longer do, with what owns them now. Rejected by
-#: name, so an inherited dossier gets an explanation rather than silence.
-#:
-#: `checked_by` duplicated `proofs[].mode` with nothing to reconcile the two: the checker
-#: validated its vocabulary and never compared it to the ledger, so a dossier could read
-#: `checked_by: none` under a `mode: agent` record with a passing review and nothing went
-#: red. Certification now has one home. A dossier that no proofs[] record names is a
-#: draft, and that absence is what says so.
-RETIRED_HEADER_FIELDS = {
-    "checked_by": "proofs[].mode in research/program/ledger.yaml, which owns "
-                  "certification; a dossier no proofs[] record names is a draft",
-    "reviewer": "the review's own front matter",
-    "review": "proofs[].review in research/program/ledger.yaml",
-}
+DOSSIER_HEADER_FIELDS = {"ledger-node", "refines", "bounded_by", "author", "date"}
 
 REVIEW_TYPES = {"proof-review", "audit"}
 #: An audit certifies nothing, so it carries only what every dated record carries —
@@ -143,7 +119,7 @@ def parse_dossier_header(text: str) -> dict[str, str]:
             continue
         name, _, value = stripped.lstrip("% ").partition(":")
         name = name.strip()
-        if name and name not in fields:
+        if re.fullmatch(r"[a-z][a-z0-9_-]*", name) and name not in fields:
             fields[name] = HEADER_GLOSS_RE.split(value.strip(), maxsplit=1)[0].strip()
     return fields
 
@@ -169,7 +145,10 @@ def _dossier(root: Path, program: str, nid: str, reference: object,
         return None
 
     header = parse_dossier_header(text)
-    declared = header.get("ledger-node", header.get("ledger-nodes"))
+    for field in sorted(set(header) - DOSSIER_HEADER_FIELDS):
+        errors.append(f"{context}: dossier header has unknown field '{field}'")
+
+    declared = header.get("ledger-node")
     if declared is None:
         errors.append(
             f"{context}: dossier header has no 'ledger-node' field naming what it proves"
@@ -179,11 +158,6 @@ def _dossier(root: Path, program: str, nid: str, reference: object,
             f"{context}: dossier header declares ledger-node '{declared}', not '{nid}'"
         )
 
-    for field in sorted(set(header) & set(RETIRED_HEADER_FIELDS)):
-        errors.append(
-            f"{context}: dossier header field '{field}' is retired — use "
-            f"{RETIRED_HEADER_FIELDS[field]}"
-        )
     return artifact
 
 
@@ -218,10 +192,6 @@ def _certification(root: Path, program: str, nid: str, node: dict, nodes: dict[s
                     errors.append(f"{context}.artifact: duplicate active proof '{artifact_ref}'")
                 seen_artifacts.add(artifact_ref)
             mode = proof.get("mode")
-            if isinstance(mode, str) and mode in RETIRED_PROOF_MODES:
-                errors.append(f"{context}.mode: '{mode}' is retired — "
-                              f"{RETIRED_PROOF_MODES[mode]}")
-                continue
             if mode not in PROOF_MODES:
                 errors.append(f"{context}.mode: want one of {sorted(PROOF_MODES)}, got '{mode}'")
                 continue
@@ -250,7 +220,7 @@ def _certification(root: Path, program: str, nid: str, node: dict, nodes: dict[s
         # Deliberately no depends_on requirement. `depends_on` is the acyclic graph of
         # facts a proof uses, and a refuted node has no proof; recording its refuter
         # there described a proof that does not exist. `refuted_by` naming a proved
-        # refuter is the whole of the provenance (CLAUDE.md constraint 11).
+        # refuter is the whole of the provenance (CLAUDE.md constraint 10).
         for ref in refuters:
             if isinstance(ref, str) and ref in nodes:
                 if nodes[ref].get("status") != "proved":

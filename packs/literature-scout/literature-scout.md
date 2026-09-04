@@ -2,8 +2,9 @@
 name: literature-scout
 description: Searches the external literature for results bearing on an open node — proofs, obstructions, prior art, or techniques — verifies them at the source, and proposes correctly classified literature-provenance nodes with BibTeX entries.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, Edit, Write
-read_only: false
-reasoning: high
+model: opus
+effort: high
+color: yellow
 ---
 
 # Literature scout — external results, honestly classified
@@ -39,7 +40,7 @@ Every checkpoint carries the front matter validated by `check.py`; see
 repository has a portfolio; when it has none, name the ledger nodes in `nodes:`.
 A statement this work threw off that nothing yet depends on stays there as a `cand:`
 candidate — it does not become a ledger node and it has no other home (`CLAUDE.md`
-constraint 8).
+constraint 7).
 
 ## Method
 

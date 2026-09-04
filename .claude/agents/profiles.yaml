@@ -1,0 +1,87 @@
+# Model and effort for every role, on both clients, in one place.
+#
+# The role files and the Codex adapters are *generated* from this table:
+# `python3 scripts/new.py agents` stamps it into
+# `.claude/agents/*.md` frontmatter and `.codex/agents/*.toml`, and
+# `--lane roles` rejects either artifact when it disagrees with this file.
+# Nothing else in the repository names a model or an effort.
+#
+# Two knobs, and no third:
+#   * redefine a tier   -- every role at that tier moves, on both clients at once;
+#   * add a tier        -- then assign it to one role in a profile.
+# A variant is a named tier, not a scattered per-role override, so that a
+# checkpoint can cite the configuration it was produced under.
+
+active: survey
+
+# A tier is one resource level, specified per client, because the two clients
+# reach it differently: Claude differentiates by model, Codex by effort on a
+# single model. An empty client block means "inherit from the parent session";
+# a tier inherits on both clients or on neither, so that a tier name cannot mean
+# two different things depending on who is running.
+tiers:
+  heavy:
+    claude: {model: fable, effort: high}
+    codex: {model: gpt-5.6-sol, effort: ultra}
+  standard:
+    claude: {model: opus, effort: high}
+    codex: {model: gpt-5.6-sol, effort: high}
+  light:
+    claude: {model: opus, effort: high}
+    codex: {model: gpt-5.6-sol, effort: medium}
+  inherit:
+    claude: {}
+    codex: {}
+
+# Client-neutral role facts. `read_only` becomes an enforced `sandbox_mode` on
+# Codex. On Claude it is a checked declaration: Edit and Write are rejected, while
+# Bash remains available under the role's explicit read-only command contract.
+# `color` is cosmetic and Claude-only -- it makes parallel roles legible in a transcript.
+roles:
+  scout: {read_only: true, color: cyan}
+  researcher: {read_only: false, color: blue}
+  reviewer: {read_only: false, color: orange}
+  synthesizer: {read_only: false, color: purple}
+  numerics: {read_only: false, color: green}
+  literature-scout: {read_only: false, color: yellow}
+  janitor: {read_only: true, color: pink}
+
+# A profile is a role -> tier assignment and nothing else. Every profile assigns
+# every role, including the capability packs that are not installed yet, so that
+# installing one is still a single command. A profile names the occasion; a tier
+# names a resource level. The two vocabularies are kept disjoint -- the checker
+# rejects a profile that takes a tier's name -- so that a bare word in this file
+# always says which layer it belongs to.
+profiles:
+  # The default: the sustained attack. Orientation is cheap and parallel;
+  # attacking, certifying and converging are not.
+  campaign:
+    scout: standard
+    researcher: heavy
+    reviewer: heavy
+    synthesizer: heavy
+    numerics: standard
+    literature-scout: standard
+    janitor: standard
+
+  # A cheaper sweep: every role one rung down.
+  survey:
+    scout: light
+    researcher: standard
+    reviewer: standard
+    synthesizer: standard
+    numerics: light
+    literature-scout: light
+    janitor: light
+
+  # Pin nothing: every role follows the model and effort the operator set for the
+  # session. Run this against `campaign` to find out whether pinning is earning
+  # anything.
+  session:
+    scout: inherit
+    researcher: inherit
+    reviewer: inherit
+    synthesizer: inherit
+    numerics: inherit
+    literature-scout: inherit
+    janitor: inherit

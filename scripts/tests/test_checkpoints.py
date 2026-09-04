@@ -218,12 +218,7 @@ class CheckpointTests(CheckerFixture):
                          "lem:stability")
 
     def test_a_same_day_promotion_after_its_proposal_is_accepted(self):
-        """The event clock used to be the position of a path in a lexical listing.
-
-        Here the promotion's filename sorts *before* the proposal's, and both are dated
-        the same day. Nothing about that says the promotion happened first, so the
-        checker no longer says it did.
-        """
+        """Filename order supplies no chronology for two untimed same-day records."""
         self.add_ledger("program", "program",
                         [node("lem:stability", status="open", kind="lemma")])
         self.add_checkpoint(
@@ -261,8 +256,7 @@ class CheckpointTests(CheckerFixture):
         self.assertIn("'cand:stability' is promoted before", errors)
 
     def test_a_same_day_supersession_cycle_is_rejected(self):
-        """Strict ordering used to make the relation acyclic for free. Same-day records
-        have no such order, so acyclicity is now verified rather than assumed."""
+        """Same-day records have no strict order, so acyclicity is checked directly."""
         self.add_ledger("program", "program", [node("lem:x", status="open", kind="lemma")])
         first = self.add_checkpoint("first", date="2026-08-20", nodes=("lem:x",))
         second = self.add_checkpoint("second", date="2026-08-20", nodes=("lem:x",),

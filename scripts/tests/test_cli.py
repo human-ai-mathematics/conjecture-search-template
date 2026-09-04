@@ -30,7 +30,7 @@ class CommandLineTests(CheckerFixture):
         self.assertIn("bad status '[]'", result.stdout)
         self.assertNotIn("Traceback", result.stderr)
 
-    def test_errors_are_tagged_with_the_plane_that_raised_them(self):
+    def test_errors_are_tagged_with_the_lane_that_raised_them(self):
         malformed = node("thm:bad")
         malformed["status"] = []
         self.add_ledger("program", "program", [malformed])
@@ -44,7 +44,7 @@ class CommandLineTests(CheckerFixture):
         self.assertIn("FAIL [core]", core_only.stdout)
         self.assertNotIn("FAIL [checkpoints]", core_only.stdout)
 
-    def test_a_plane_with_no_files_reports_nothing(self):
+    def test_a_lane_with_no_files_reports_nothing(self):
         """Activation is structural: an absent lane has no rules to obey."""
         self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
 
@@ -136,19 +136,27 @@ class CommandLineTests(CheckerFixture):
         self.assertIn("read instead: research/reviews/2026-08-26-current-audit.md",
                       result.stdout)
 
-    def test_the_deprecated_plane_alias_still_selects_a_lane(self):
-        """Old habits and old docs keep working, with one note on stderr."""
-        malformed = node("thm:bad")
-        malformed["status"] = []
-        self.add_ledger("program", "program", [malformed])
-        self.add_checkpoint("dangling", nodes=("q:ghost",))
+    def test_unknown_flags_are_rejected_without_migration_aliases(self):
+        self.add_ledger("program", "program", [])
+        before = (self.root / "research/program/ledger.yaml").read_bytes()
 
-        result = self.cli("--plane", "core")
+        for flag in ("--plane", "--write-agents", "--write-codex"):
+            with self.subTest(flag=flag):
+                result = self.cli(flag)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("unrecognized arguments", result.stderr)
+                self.assertNotIn("deprecated", result.stderr)
+                self.assertEqual(
+                    (self.root / "research/program/ledger.yaml").read_bytes(), before
+                )
+
+    def test_node_view_accepts_only_a_bare_node_id(self):
+        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+
+        result = self.cli("node", "program/q:open")
 
         self.assertEqual(result.returncode, 1)
-        self.assertIn("--plane is deprecated; use --lane", result.stderr)
-        self.assertIn("FAIL [core]", result.stdout)
-        self.assertNotIn("FAIL [checkpoints]", result.stdout)
+        self.assertIn("No ledger node matches 'program/q:open'", result.stderr)
 
     def test_a_scoped_run_summarises_only_the_lanes_it_was_asked_for(self):
         """A green scoped run must not report an error count it also exits 0 on."""
@@ -191,11 +199,7 @@ class CommandLineTests(CheckerFixture):
         self.assertIn("ready:", instantiated.stdout)
 
     def test_readiness_asks_nothing_about_the_manuscript_front_matter(self):
-        """A title, an author and an abstract block no mathematics.
-
-        They used to sit in the same checklist as the target and the brief, which made
-        `ready` answer a question nobody starting a search was asking.
-        """
+        """Publication metadata is independent of mathematical search readiness."""
         self.add_ledger("program", "real-program",
                         [node("q:target", status="open", kind="question")])
         self.add_brief("q:target", body="The negation, spelled out.\n")
@@ -214,11 +218,7 @@ class CommandLineTests(CheckerFixture):
         self.assertIn("name the repository", publish.stdout)
 
     def test_the_worked_example_is_an_instantiated_repository(self):
-        """example/ answers 'what does a finished one look like?', so it must be one.
-
-        It used to ship an instructional brief and a placeholder target, which meant the
-        fixture demonstrated the schemas and not a search.
-        """
+        """example/ answers 'what does a finished one look like?', so it must be one."""
         result = subprocess.run(
             [sys.executable, str(CHECK), "--root", str(REPO / "example"), "ready"],
             check=False, capture_output=True, text=True,

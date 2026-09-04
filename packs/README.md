@@ -16,8 +16,11 @@ python3 scripts/check.py --lane roles    # confirms the install
 
 An installed pack is an ordinary role in every respect — same frontmatter contract, same
 runtime contract in [`../.claude/agents/README.md`](../.claude/agents/README.md), same
-validation. Uninstalling is deleting the file from `.claude/agents/`; then
-`python3 scripts/check.py --write-codex` drops the orphaned adapter.
+validation, and a tier every profile in
+[`../.claude/agents/profiles.yaml`](../.claude/agents/profiles.yaml) already assigns it.
+That is why installing one is a single command: the pack file on disk here is stamped
+with the active profile's model and effort before it is ever copied. Uninstalling is deleting the file from `.claude/agents/`; then
+`python3 scripts/new.py agents` drops the orphaned adapter.
 
 Nothing here is loaded, generated from, or validated until it is installed. The roster in
 [`../.claude/agents/MAINTAINING.md`](../.claude/agents/MAINTAINING.md) links these files

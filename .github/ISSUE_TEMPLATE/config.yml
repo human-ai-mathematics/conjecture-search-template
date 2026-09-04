@@ -1,0 +1,18 @@
+# Issues are for things that are actionable. Conversation goes to Discussions.
+#
+# `blank_issues_enabled: true` on purpose: the five forms cover what the site's buttons
+# open, and a contributor with something that fits none of them should not have to
+# pretend it does.
+blank_issues_enabled: true
+contact_links:
+  - name: Ask a question, or think out loud
+    url: https://github.com/numina-functional-inequalities/template-exploration/discussions
+    about: >
+      Interpretation, background, why a route was abandoned, whether an idea is worth
+      trying. Nothing has to be finished to be worth saying here.
+
+  - name: Read the search first
+    url: https://numina-functional-inequalities.github.io/template-exploration/
+    about: >
+      The target, what is established and at what certification level, what remains
+      open, which mechanisms have been tried, and why each route stopped.

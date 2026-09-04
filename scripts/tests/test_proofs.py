@@ -224,7 +224,7 @@ class ProofsTests(CheckerFixture):
             "thm:numerics-only: internally proved node requires a certified proof", errors
         )
         self.assertIn(
-            "thm:narrative-only.proof_provenance: obsolete field",
+            "thm:narrative-only: unknown field 'proof_provenance'",
             errors,
         )
 
@@ -313,27 +313,22 @@ class ProofsTests(CheckerFixture):
 
         self.assertIn("dossier header has no 'ledger-node' field", errors)
 
-    def test_a_dossier_carrying_checked_by_is_rejected_by_name(self):
-        """Certification has one home. The header duplicated it with nothing to reconcile
-        the two, so a dossier could read `checked_by: none` under a certified proof
-        record and nothing went red."""
-        relative = self.add_solution("retired-header", node_ids=("thm:retired",))
+    def test_a_dossier_rejects_fields_outside_the_header_vocabulary(self):
+        relative = self.add_solution("unknown-header", node_ids=("thm:header",))
         path = self.root / relative
         path.write_text(path.read_text() + "%   checked_by  : none\n")
         self.add_ledger(
             "main", "program",
-            [node("thm:retired", proofs=[{
+            [node("thm:header", proofs=[{
                 "artifact": relative, "mode": "human", "accepted_by": "fixture human",
             }])],
         )
 
         errors = self.errors()
 
-        self.assertIn("dossier header field 'checked_by' is retired", errors)
-        self.assertIn("proofs[].mode", errors)
+        self.assertIn("dossier header has unknown field 'checked_by'", errors)
 
-    def test_machine_certification_is_retired_until_the_kernel_actually_runs(self):
-        """An empty .lean file satisfied the strongest-sounding mode in the ladder."""
+    def test_an_unimplemented_machine_certification_mode_is_invalid(self):
         lean_solution = self.add_solution("lean-proof", node_ids=("thm:lean",))
         (self.root / lean_solution).with_suffix(".lean").write_text("-- fixture\n")
         self.add_ledger(
@@ -344,8 +339,7 @@ class ProofsTests(CheckerFixture):
 
         errors = self.errors()
 
-        self.assertIn("thm:lean.proofs[0].mode: 'lean' is retired", errors)
-        self.assertIn("never ran the kernel", errors)
+        self.assertIn("thm:lean.proofs[0].mode: want one of ['agent', 'human'], got 'lean'", errors)
 
     def test_solution_path_is_confined_to_tex_dossiers(self):
         self.module.write_text("% ledger-node: thm:outside\n\\label{thm:outside}\n")
@@ -365,8 +359,8 @@ class ProofsTests(CheckerFixture):
         errors = self.errors()
         self.assertIn("thm:outside.proofs[].artifact: must stay under solutions/", errors)
 
-    def test_legacy_proof_exception_fields_are_forbidden(self):
-        for field in ("legacy_r2_debt", "legacy_proved_without_solution"):
+    def test_unknown_proof_exception_fields_are_forbidden(self):
+        for field in ("proof_exception", "proved_without_record"):
             with self.subTest(field=field):
                 self.add_ledger(
                     "main",
@@ -377,9 +371,9 @@ class ProofsTests(CheckerFixture):
 
                 errors = self.errors()
 
-                self.assertIn(f"meta.{field}: obsolete field; use a certified proof", errors)
+                self.assertIn(f"meta: unknown field '{field}'", errors)
 
-    def test_legacy_proof_fields_are_rejected(self):
+    def test_unknown_proof_fields_are_rejected(self):
         self.add_ledger(
             "main",
             "program",
@@ -391,11 +385,8 @@ class ProofsTests(CheckerFixture):
 
         errors = self.errors()
 
-        self.assertIn("thm:proof-file.proof_file: obsolete field; use proofs[].artifact", errors)
-        self.assertIn(
-            "thm:narrative.proof_provenance: obsolete field; use proofs with explicit certification records",
-            errors,
-        )
+        self.assertIn("thm:proof-file: unknown field 'proof_file'", errors)
+        self.assertIn("thm:narrative: unknown field 'proof_provenance'", errors)
 
     def test_solution_header_must_enumerate_shared_dossier_node(self):
         solution = self.add_solution(

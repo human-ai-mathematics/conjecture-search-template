@@ -2,7 +2,7 @@
 
 Durable search memory. One Markdown file per **durable search event**, not per attempt:
 `YYYY-MM-DD-slug.md`, or `YYYY-MM-DD-<role>-<scope>-<run-id>.md` for agent work. Append-only
-(`CLAUDE.md` constraint 7): never rewrite or delete one.
+(`CLAUDE.md` constraint 6): never rewrite or delete one.
 
 The directory keeps its historical name; the records in it are *checkpoints*.
 
@@ -73,14 +73,12 @@ Work that both failed and threw off a candidate is `candidate`: the outcome name
 `approach` is what connects durable memory to the search portfolio at
 `../program/portfolio.yaml` (gated; [scaffold](../../templates/portfolio.yaml)): the checkpoint says why a route's
 state changed, the portfolio says what that state now is. The portfolio's `checkpoints:` list
-points back, which is how a record written before the portfolio existed can still be attached
-to a route without editing it.
+points back to that route-specific record.
 
 The link is checked. A `blocked`, `completed` or `duplicate` route must name at least one
 checkpoint; every path it names must resolve to a record here that actually parses as a
-checkpoint; and a record declaring `approach:` must name the route that lists it. Declaring
-`approach:` is never required — the portfolio may attach a record from its side — but
-declaring the wrong one is an error.
+checkpoint and declares the route that lists it. A node-only checkpoint remains valid durable
+memory, but it cannot explain a portfolio state change.
 
 ### `retires` versus `supersedes`
 
@@ -97,12 +95,7 @@ backwards in time. The same relation is available to non-certifying `type: audit
 
 ### Two records on the same day
 
-A filename is not a clock. Records used to be ordered by sorting their paths, so two
-checkpoints dated the same day were ranked by the first letter of their slugs — which could
-reject a perfectly good promotion for being alphabetically early, or wave through a genuinely
-backwards one.
-
-The checker now claims an order only where it has one:
+A filename is not a clock, so the checker claims an order only where it has one:
 
 - **different days** — ordered, and checked as before;
 - **same day, both timestamped** — ordered by the timestamp, and checked;
@@ -111,14 +104,15 @@ The checker now claims an order only where it has one:
   verified to be acyclic directly.
 
 Write a plain `date:` unless two records genuinely need separating; then give both a UTC
-timestamp. `python3 scripts/new.py checkpoint <slug>` stamps one for you. Nothing on disk
+timestamp. `python3 scripts/new.py checkpoint <slug> --node <node-id>` stamps one for you;
+use `--approach ap:<slug>` instead when the checkpoint is route-specific. Nothing on disk
 ever needs renaming — this file's name keeps its `YYYY-MM-DD-` prefix either way, and
-`CLAUDE.md` constraint 7 stands untouched.
+`CLAUDE.md` constraint 6 stands untouched.
 
 ## Candidate statements
 
 A candidate is a tentative statement someone thought worth writing down and nothing more
-(`CLAUDE.md` constraint 8). It has no manuscript anchor, no ledger node, and no status,
+(`CLAUDE.md` constraint 7). It has no manuscript anchor, no ledger node, and no status,
 because it is not yet stable enough for the program graph:
 
 ```yaml
@@ -169,7 +163,7 @@ Steps 3 and 4 are checked: a promoted candidate leaves `check.py candidates`, a 
 entry naming a node that does not exist is an error, and a `blocker:` still naming the
 promoted candidate is an error that tells you which node to use. Without step 3 the
 candidate stayed live forever and one statement had two homes, which is exactly what
-`CLAUDE.md` constraint 8 exists to prevent.
+`CLAUDE.md` constraint 7 exists to prevent.
 
 The node id need not resemble the candidate id — `cand:x` normally becomes `lem:x` or
 `thm:x` — which is why the promotion is recorded as a pair rather than inferred.

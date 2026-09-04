@@ -1,6 +1,7 @@
 ---
 type: exploration
 date: "2026-09-03T11:40:00Z"
+approach: ap:example-finite-battery
 outcome: proposed
 nodes:
   - conj:example
@@ -17,9 +18,8 @@ fixture in `example/`, not history.
 Two envelope details worth copying. It carries a UTC timestamp rather than a plain date:
 nothing here needs one — the record it depends on is dated the day before — but it is the
 form to use when two records written on the same day have to be ordered, because a filename
-is not a clock ([`research/explorations/README.md`](../../../research/explorations/README.md)). And it declares no `approach:`, because it
-changes the state of *two* routes; the portfolio attaches it to both from its own side,
-which is the direction that scales.
+is not a clock ([`research/explorations/README.md`](../../../research/explorations/README.md)). Its `approach:` identifies the route whose
+result produced the promoted witness; other route changes have their own checkpoints.
 
 ## What was tried
 
@@ -60,13 +60,14 @@ and every portfolio blocker repointed. `python3 scripts/check.py candidates` sho
 
 Two route changes, proposed here and applied by the `synthesizer`:
 
-- `ap:example-finite-battery` is **completed**. Its objective — find an instance violating
-  the constant — is finished. "Completed" says that and nothing more; the target's status
-  is a separate fact recorded in a separate file.
+- `ap:example-finite-battery` is **completed**. It established that the available run was
+  only an identity check and, by inspecting its domain, produced the witness candidate.
+  "Completed" says its route objective is finished and nothing more; the target's status is
+  a separate fact recorded in a separate file.
 - `ap:example-roundoff-bound` is **blocked** on `cand:example-identity-stability`, which
   nobody has proved. It reopens if that candidate is proved or if any explicit floating-point
   error bound turns up. The blocker is named by its id and its statement is not copied here
-  (`CLAUDE.md` constraint 12).
+  (`CLAUDE.md` constraint 11).
 
 And one family change: `fam:example-numerical` is **saturated**, with the reopening
 condition recorded in [`../program/portfolio.yaml`](../program/portfolio.yaml). Saturation

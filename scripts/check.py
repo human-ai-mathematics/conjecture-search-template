@@ -13,7 +13,8 @@ One entry point, seven validation lanes:
 * ``portfolio`` — the problem brief and the live search portfolio;
 * ``numerics`` — the provenance headers of the immutable artifacts in
   ``research/runs/``;
-* ``roles`` — the agent roster and its generated Codex adapters;
+* ``roles`` — the agent roster, the model/effort profile table, and the artifacts
+  generated from it for both clients;
 * ``docs`` — repository-relative Markdown links, so a navigation table cannot point at a
   file that is not there.
 
@@ -25,7 +26,7 @@ absent contributes nothing, so an early repository pays for nothing it is not us
     python3 scripts/check.py                       # every lane
     python3 scripts/check.py --lane core           # repeatable
     python3 scripts/check.py --root example        # validate another tree
-    python3 scripts/check.py --write-codex         # regenerate Codex adapters
+    python3 scripts/new.py agents                  # restamp roles from profiles.yaml
     python3 scripts/check.py ready                 # can a search start here?
     python3 scripts/check.py publish-ready         # is the manuscript fit to show?
     python3 scripts/check.py status                # the live frontier
@@ -60,30 +61,19 @@ VIEWS = ("ready", "publish-ready", "status", "node", "candidates", "portfolio",
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Validate and inspect this repository's research planes",
+        description="Validate and inspect this repository's research state",
     )
     parser.add_argument("command", nargs="?", choices=("check", *VIEWS), default="check",
                         help="'check' (default) validates; the rest are derived views")
-    parser.add_argument("node_id", nargs="?", help="node id, optionally qualified as program/id")
+    parser.add_argument("node_id", nargs="?", help="ledger node id")
     parser.add_argument("--lane", action="append", choices=LANES, dest="lanes",
                         help="restrict reporting to one lane; repeatable")
-    parser.add_argument("--plane", action="append", choices=LANES, dest="deprecated_lanes",
-                        help=argparse.SUPPRESS)
-    parser.add_argument("--write-codex", action="store_true",
-                        help="regenerate project-scoped Codex adapters from the roles")
     parser.add_argument("--root", type=Path, default=None,
                         help="repository root to validate (default: this checker's own)")
     args = parser.parse_args(argv)
     if args.command != "node" and args.node_id:
         parser.error(f"{args.command} does not accept a node id")
-    if args.write_codex and args.command != "check":
-        parser.error("--write-codex is only valid for a check run")
-    if args.deprecated_lanes:
-        print("note: --plane is deprecated; use --lane", file=sys.stderr)
-        args.lanes = (args.lanes or []) + args.deprecated_lanes
-
-    report = analyze(root=args.root, configured_ledger=LEDGER_PATH,
-                     write_codex=args.write_codex)
+    report = analyze(root=args.root, configured_ledger=LEDGER_PATH)
     lanes = tuple(dict.fromkeys(args.lanes)) if args.lanes else LANES
     errors = failures(report, lanes)
     for error in errors:

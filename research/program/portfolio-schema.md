@@ -16,7 +16,7 @@ Nothing in this file is a mathematical claim. A route has no truth value, an app
 family is not a theorem, and "saturated" is a judgment about effort rather than a fact
 about mathematics. That is why none of it may enter the ledger, and why the portfolio
 never restates a statement: it names a `cand:` id or a ledger node id and stops
-(`CLAUDE.md` constraint 12).
+(`CLAUDE.md` constraint 11).
 
 ## Activation
 
@@ -98,8 +98,7 @@ approaches:
 
 `saturated` claims the mechanism is worked out. `parked` claims only that nobody is
 working it — a budget or prioritization decision. The field is named for closure rather
-than saturation so that it reads honestly for both; `saturation_checkpoint` is retired and
-rejected by name.
+than saturation so that it reads honestly for both.
 
 A closed family holds no `active` **or** `queued` approach: a queued route is planned live
 work, so either the family is not closed, or the route is not queued. Say which.
@@ -169,11 +168,8 @@ same idea is a judgment; that they are not both being worked at once is checkabl
 2. Every `checkpoints:` entry and every `closure_checkpoint` resolves through the parsed
    checkpoint index, not merely to a file that exists. `research/explorations/README.md`
    is a file in the right directory and is not a checkpoint.
-3. If a referenced record declares `approach:`, it must name the approach that lists it —
-   and, for a `closure_checkpoint`, an approach in the closing family.
-4. A record with no `approach:` may still be attached from this side. That is how a
-   checkpoint written before the portfolio existed is placed on a route without editing an
-   append-only file (`CLAUDE.md` constraint 7).
+3. Every referenced record declares `approach:` and names the approach that lists it —
+   or, for a `closure_checkpoint`, an approach in the closing family.
 
 The reverse is deliberately **not** required: a checkpoint naming `approach: ap:x` need not
 already appear in `ap:x`'s `checkpoints:`. A researcher writes the checkpoint and only the

@@ -1,8 +1,8 @@
 # Ledger schema
 
 This is the field contract for [`ledger.yaml`](ledger.yaml).
-[`../../scripts/check.py`](../../scripts/check.py) is the executable validator (plane
-`core` here, plane `proofs` for the certification records below);
+[`../../scripts/check.py`](../../scripts/check.py) is the executable validator (lane
+`core` here, lane `proofs` for the certification records below);
 [`../../CLAUDE.md`](../../CLAUDE.md) owns contribution policy.
 
 ## Document
@@ -17,9 +17,7 @@ nodes:
 
 The repository has exactly one ledger (`CLAUDE.md` constraint 1), and `meta` carries nothing but
 the program's identity and scope. Which agent or route owns a node is coordination state and
-lives in `portfolio.yaml` (gated; see [`portfolio-schema.md`](portfolio-schema.md)); `route` and
-`meta.route_policy` are retired here and
-are rejected by name.
+lives in `portfolio.yaml` (gated; see [`portfolio-schema.md`](portfolio-schema.md)).
 
 ## Required node fields
 
@@ -53,7 +51,7 @@ Concretely, and all of it checked:
 
 ### `summary` is a gloss, not a home
 
-The statement lives in `modules/` and nowhere else (`CLAUDE.md` constraint 8). `summary`
+The statement lives in `modules/` and nowhere else (`CLAUDE.md` constraint 7). `summary`
 exists so `check.py status` and `check.py node` are readable without opening LaTeX, and the
 `reviewer`'s `sync` lens treats any disagreement as a defect in the summary. The field was
 called `statement`, which invited exactly the drift it was supposed to survive; that name is
@@ -88,7 +86,7 @@ be proved while $A$ remains open: store $A$ in `assumes`, $B$ in `implies`, and 
 A refuted node names its refuters in `refuted_by` and stops there. It does **not** repeat them
 in `depends_on`: that field is the graph of facts a proof used, and a refuted statement has no
 proof. Each refuter must itself be `proved`, which is the whole of the provenance
-(`CLAUDE.md` constraint 11). The refuter is an ordinary node with an ordinary dossier — the
+(`CLAUDE.md` constraint 10). The refuter is an ordinary node with an ordinary dossier — the
 worked instance is `example/solutions/prop-example-refuter.tex`.
 
 ## Proof records
@@ -110,10 +108,8 @@ searched, and exactly one field is checked: `ledger-node` must name this node. C
 lives here and only here — `checked_by` in a dossier header is rejected by name. `mode: agent`
 requires a passing proof review by a distinct agent; `mode: human` requires `accepted_by`.
 
-There are exactly two modes. `mode: lean` was retired and is rejected by name: it checked only
-that a file with a `.lean` suffix sat beside the dossier, never ran the kernel, and could
-nonetheless support `status: proved`. Restore it when `check.py` invokes Lean with pinned
-tooling, and not before.
+There are exactly two modes. A future machine-checked mode belongs here only once the checker
+actually invokes its kernel with pinned tooling.
 
 A dossier may be modular: it may cite already certified `depends_on` nodes rather than duplicate
 their proofs. Multiple records allow genuinely alternative proofs to coexist.
@@ -127,8 +123,7 @@ changes a status. Candidate statements stay in checkpoint front matter until the
 stable, and worth tracking as manuscript/ledger nodes.
 
 An approach family, a route state, a blocker, and a saturation judgment are search state, not
-claims: they belong in the portfolio and are rejected here as obsolete fields
-(`CLAUDE.md` constraint 12).
+claims: they belong in the portfolio and are not ledger fields (`CLAUDE.md` constraint 11).
 
 The checker establishes structural consistency only. Independent review establishes agreement of
 the manuscript, ledger, dossier, quantifiers, and mathematics.

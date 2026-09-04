@@ -1,6 +1,7 @@
 ---
 type: exploration
 date: "2026-09-02"
+approach: ap:example-finite-battery
 nodes:
   - conj:example
   - prop:example
@@ -22,15 +23,16 @@ candidates:
 
 Worked example of a dated exploration, kept so the template ships one of each artifact
 genre. It records no search anyone ran: it is a fixture in `example/`, not history, and
-copying from it is the point (`CLAUDE.md` constraint 7).
+copying from it is the point (`CLAUDE.md` constraint 6).
 
 This is the first record of the example's search. The target is `conj:example`; the brief
 is [`../program/brief.md`](../program/brief.md).
 
 ## What was tried
 
-`ap:example-finite-battery`, the first route: run the target over a battery of adversarial
-instances and see whether any of them violates the constant $\tfrac{1}{2}$.
+`ap:example-finite-battery`, the first route: run the available identity battery, decide
+whether it bears on `conj:example`, and inspect its enumerated domain for candidate
+witnesses to the conjecture.
 
 ## How
 
@@ -65,7 +67,7 @@ near-equality reported by a run cannot be told apart from a violation. That is
 
 Neither has a manuscript statement, nothing depends on either, and nobody has proved
 either. A candidate is a statement worth not losing, which is all it ever is (`CLAUDE.md`
-constraint 8). `cand:example-constant-witness` is about to earn a `\label`, a node and a
+constraint 7). `cand:example-constant-witness` is about to earn a `\label`, a node and a
 dossier — see [`2026-09-03-example-refuter.md`](2026-09-03-example-refuter.md), which
 promotes it. `cand:example-identity-stability` is still live, and this file stays exactly
 as it is either way.

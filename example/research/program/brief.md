@@ -28,7 +28,7 @@ key), and it owns none of the mathematics. Three things, three homes:
 
 The blockquote below is a **copy, not a source**: if it and the manuscript disagree, the
 manuscript is right and the copy is a defect, which is what the `reviewer`'s `sync` lens
-checks (`CLAUDE.md` constraint 8). Never sharpen the statement here — sharpen it in
+checks (`CLAUDE.md` constraint 7). Never sharpen the statement here — sharpen it in
 `modules/` and re-copy.
 
 > **Target** `conj:example`, stated at `\label{conj:example}` in
@@ -55,7 +55,7 @@ The quantifier order decides the shape of the refutation, and here it is the eas
 the target is universally quantified over $n$ and over vectors, so **one instance
 suffices**. There is no dimension-free constant to break along a family — the constant
 $\tfrac{1}{2}$ is already fixed in the statement, so a single vector violating it settles
-the matter (`CLAUDE.md` constraint 11).
+the matter (`CLAUDE.md` constraint 10).
 
 Contrast the harder shape, which this fixture deliberately does not need: had the target
 read "there is a constant $c > 0$, independent of $n$, such that …", refuting it would
@@ -81,7 +81,7 @@ sides by exact arithmetic, and reach `status: refuted` through the ordinary chan
 witness is a candidate, the statement it establishes becomes a proved refuter node with its
 own manuscript statement and dossier, that dossier is independently reviewed, and only then
 does `conj:example` gain `refuted_by`. A run artifact is never a step in that chain
-(constraints 2 and 11).
+(constraints 2 and 10).
 
 ## Edge cases and audit tests
 
@@ -110,14 +110,15 @@ Add to this list every time a review catches something.
 - **Reading it as Cauchy–Schwarz.** $\sum (a_i - \bar a)^2 = \sum a_i^2 - n\bar a^2$ is
   `prop:example` and is proved; it says nothing about the constant, and a route that ends
   by re-deriving it has arrived back at a settled node.
-- **Widening the battery.** Enumerating a larger box is the same route under a new name.
-  See `ap:example-exhaustive-search`, which is marked `duplicate` for exactly this.
+- **Widening the identity battery.** Enumerating a larger box still tests `prop:example`,
+  not the target. See `ap:example-exhaustive-search`, which is marked `duplicate` of the
+  same irrelevant proxy route.
 
 ## Initial families and their reopening criteria
 
-One family was seeded: `fam:example-numerical` — look at the target numerically before
-committing to an analytic route, on the reasoning that a false uniform constant usually
-shows itself in seconds and a true one does not.
+One family was seeded: `fam:example-numerical` — use the available numerical diagnostics
+before committing to an analytic route, while first checking that they evaluate the target
+rather than a nearby settled identity.
 
 It is now `saturated`: the search ended, and the family is closed with a reopening
 condition rather than deleted. The live version of that state is

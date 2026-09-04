@@ -8,7 +8,7 @@
 # concurrency key, and everyone else proposes changes through their handoff.
 #
 # It stores coordination state only. A blocker is named by its `cand:` id or ledger node
-# id and never restated here (CLAUDE.md constraint 12).
+# id and never restated here (CLAUDE.md constraint 11).
 #
 # This is the worked example's portfolio, and it is finished: conj:example is refuted, so
 # no route is left `active` or `queued` and the one family is closed with a reopening
@@ -20,9 +20,9 @@ target: conj:example
 families:
   - id: fam:example-numerical
     mechanism: >-
-      Look at the target numerically before committing to an analytic route, on the
-      reasoning that a false uniform constant usually shows itself in seconds and a true
-      one does not.
+      Use the available numerical diagnostics to probe the target before committing to an
+      analytic route, first checking that each diagnostic actually evaluates the target
+      rather than a nearby identity.
     state: saturated
     closure_checkpoint: research/explorations/2026-09-03-example-refuter.md
     reopen_if: >-
@@ -33,8 +33,8 @@ approaches:
   - id: ap:example-finite-battery
     family: fam:example-numerical
     objective: >-
-      Run conj:example over a battery of adversarial instances and see whether any of
-      them violates the constant 1/2.
+      Run the available identity battery, decide whether it bears on conj:example, and
+      inspect its enumerated domain for candidate witnesses to the conjecture.
     state: completed
     checkpoints:
       - research/explorations/2026-09-02-example-exploration.md
@@ -52,13 +52,13 @@ approaches:
       cand:example-identity-stability is proved, or someone supplies any explicit error
       bound for the identity evaluated in floating point.
     checkpoints:
-      - research/explorations/2026-09-03-example-refuter.md
+      - research/explorations/2026-09-03-example-roundoff.md
 
   - id: ap:example-exhaustive-search
     family: fam:example-numerical
     objective: >-
-      Enumerate every instance up to a size bound rather than sampling, hoping the
-      exhaustiveness buys what the battery could not.
+      Widen the integer-vector enumeration already performed for the identity, hoping a
+      larger version of the same proxy will bear on conj:example.
     state: duplicate
     related:
       - to: ap:example-finite-battery

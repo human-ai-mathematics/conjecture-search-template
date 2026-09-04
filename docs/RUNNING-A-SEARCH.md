@@ -101,7 +101,7 @@ when it is plausible or expensive enough that another agent would repeat it. Rec
 everything is how a log stops being read; recording nothing is how a week gets spent twice.
 
 A statement not yet stable enough for the manuscript is a **candidate**: it goes in that
-checkpoint's `candidates:` list under a `cand:` id and nowhere else (constraint 8).
+checkpoint's `candidates:` list under a `cand:` id and nowhere else (constraint 7).
 
 > Finished example: [`example/research/explorations/`](../example/research/explorations/).
 
@@ -116,7 +116,7 @@ python3 scripts/new.py portfolio --target conj:main
 
 It records what the search is *doing*, never what is claimed: approach families, route
 objectives and states, blockers, saturation. A blocker is named by its `cand:` id or node id
-and never restated (constraint 12). One writer, the `synthesizer`; everyone else proposes
+and never restated (constraint 11). One writer, the `synthesizer`; everyone else proposes
 through `portfolio_delta`.
 
 Saturation is a judgment, not a count. It costs a synthesis checkpoint and a reopening
@@ -145,7 +145,7 @@ ordinary dossier; that dossier is certified like any other; and only then does t
 become `refuted`, naming the proved refuter in `refuted_by` — never in `depends_on`, which
 records facts a proof used, and a refuted statement has no proof.
 
-A run artifact is never a step in that chain (constraints 2 and 11). Numerical output
+A run artifact is never a step in that chain (constraints 2 and 10). Numerical output
 certifies nothing; an exact witness it emits is a candidate until checked independently.
 
 > Finished example: [`…/2026-09-03-example-refuter.md`](../example/research/explorations/2026-09-03-example-refuter.md)
@@ -167,6 +167,15 @@ python3 scripts/check.py checkpoints   # current heads of durable memory
 
 A green check establishes structure only. It says nothing about whether a proof is correct
 (constraint 4) — that is what the review is for.
+
+## Showing it to someone
+
+`python3 scripts/site.py --serve` renders everything above as a website: the target, the
+claim graph, the search map, the blockers, and the dated records explaining why each route
+stopped. It is a derived view that refuses to publish a tree which does not validate, and
+it is optional. [`PUBLISHING-THE-SITE.md`](PUBLISHING-THE-SITE.md) covers the deployment
+and the public contribution inbox, which changes nothing by itself
+([`../CLAUDE.md`](../CLAUDE.md) constraint 12).
 
 This harness is tuned for sustained conjecture search and nothing else; what it is *not* for
 is in [`../CLAUDE.md`](../CLAUDE.md) under **Scope**, and that list is worth reading before

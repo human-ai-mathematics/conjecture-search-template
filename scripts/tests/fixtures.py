@@ -156,7 +156,7 @@ class CheckerFixture(unittest.TestCase):
             path.write_text("".join(f"{line}\n" for line in lines))
             return relative
         provenance = {
-            "schema_version": 3,
+            "schema_version": 1,
             "date": "2026-08-26",
             "target": target,
             "profile": "standard",

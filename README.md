@@ -35,7 +35,7 @@ drift from its recorded status without something going red:
 
 A statement that has not earned a node yet is a *candidate*, and it lives in the front matter
 of the checkpoint that proposed it — never in a registry of its own ([`CLAUDE.md`](CLAUDE.md)
-constraint 8).
+constraint 7).
 
 Gates activate structurally, not by a mode flag: a repository with no portfolio has no
 portfolio rules, and the checker validates only what exists. The gates are listed in
@@ -46,7 +46,11 @@ same contract. Agent roles and their write permissions are in
 
 A worked instance of every artifact genre — nodes, a dossier, a review, checkpoints, a
 portfolio, a run artifact, a proof and a refutation — is in [`example/`](example/README.md). It
-is a fixture to copy from, not this repository's history, and the live planes ship empty.
+is a fixture to copy from, not this repository's history, and the live search starts empty.
+
+None of the three domains is the website. [`site/`](site/README.md) renders them and owns
+nothing: it is a derived view, gated by nothing, validated by no lane, and skippable
+entirely ([`CLAUDE.md`](CLAUDE.md)).
 
 ## Verify
 
@@ -66,12 +70,12 @@ python3 scripts/check.py node <id>        # one node: deps, consumers, fences
 python3 scripts/check.py candidates       # statements proposed but not yet nodes
 python3 scripts/check.py dossiers         # active dossiers, for the standalone LaTeX build
 python3 scripts/check.py --root example   # the worked example, kept green as a fixture
-python3 scripts/check.py --write-codex    # regenerate the Codex role adapters
+python3 scripts/new.py agents             # restamp roles from agents/profiles.yaml
 ```
 
-`check.py` only reads. Writing is [`scripts/new.py`](templates/README.md), which scaffolds a
-brief, portfolio, checkpoint, module or dossier from [`templates/`](templates/README.md),
-never overwrites a file, and never touches the ledger.
+`check.py` only reads. Writing is [`scripts/new.py`](templates/README.md): its scaffolds never
+overwrite hand-authored files, while `new.py agents` deliberately replaces generated role
+frontmatter and adapters. It never touches the ledger.
 
 Only PyYAML is needed, declared in [`pyproject.toml`](pyproject.toml):
 
@@ -85,6 +89,24 @@ A *lane* is a partition of the checker, not one of the three domains above and n
 A green check establishes structure only. It says nothing about whether a proof is correct
 (`CLAUDE.md` constraint 4). It also says nothing about whether the repository has been
 instantiated — a fresh clone is correctly green and correctly *not ready*.
+
+## Publish
+
+The repository's state also renders as a website: the target, what is established and at
+what certification level, what is open, which mechanisms were tried, and why each route
+stopped — for a reader who will never open `ledger.yaml`.
+
+```bash
+python3 scripts/site.py --serve           # build it and read it at :8000
+python3 scripts/site.py --root example     # the worked example, fully populated
+```
+
+It is a **derived view, never a second source**: everything on it is computed at build
+time from the same report `check.py` prints, it refuses to publish a tree that does not
+validate, and its output lives under gitignored `build/`. The frontend is
+[`site/`](site/README.md); the pipeline, the GitHub Pages deployment and the public
+contribution inbox are [`docs/PUBLISHING-THE-SITE.md`](docs/PUBLISHING-THE-SITE.md).
+The site is optional and a repository that never publishes one is complete.
 
 ## Build
 
@@ -103,10 +125,10 @@ other modules are expected in standalone builds.
 
 <!-- Delete everything below this line once the checklist is done. -->
 
-Five steps, none of which deletes a record. The live planes ship empty and the worked example
-lives in [`example/`](example/README.md), so instantiating is scaffolding and filling in —
-never removing history. Nothing needs renaming: `research/program/` is the control directory
-in every repository built from this template.
+Six steps, none of which deletes a record. The live search and evidence areas ship empty and
+the worked example lives in [`example/`](example/README.md), so instantiating is scaffolding
+and filling in — never removing history. Nothing needs renaming: `research/program/` is the
+control directory in every repository built from this template.
 
 [`docs/RUNNING-A-SEARCH.md`](docs/RUNNING-A-SEARCH.md) covers this and everything after it.
 `python3 scripts/check.py ready` is the checklist in executable form: run it now, and it will
@@ -140,7 +162,7 @@ list whatever is still outstanding.
    search sharp. Do not start a sustained search without one — and a *scaffolded* brief is
    not a written one, which is why `ready` fails until its instructions are gone.
 
-3. **Add program constraints, if any.** [`CLAUDE.md`](CLAUDE.md) ships twelve universal hard
+3. **Add program constraints, if any.** [`CLAUDE.md`](CLAUDE.md) ships thirteen universal hard
    constraints. Anything specific to this repository's mathematics goes in the *Program
    constraints* section as `P1, P2, …` — kept separate so a fork can drop them without
    leaving a `Reserved` hole. Merge barriers belong here, and the `synthesizer` role should
@@ -158,7 +180,14 @@ list whatever is still outstanding.
    role; [`.claude/agents/MAINTAINING.md`](.claude/agents/MAINTAINING.md) is the guide. If
    nothing here will run under Codex, delete `.codex/` — the roles lane will not complain.
 
-5. **Name the repository and the manuscript.** Replace `{{REPO_TITLE}}` above and the
+5. **Repoint the contribution links, if you publish a site.**
+   `.github/ISSUE_TEMPLATE/config.yml` names this template repository by URL; everything
+   else on the site derives its slug from the `origin` remote.
+   [`docs/PUBLISHING-THE-SITE.md`](docs/PUBLISHING-THE-SITE.md) covers this and the
+   one-time GitHub Pages setting. Skip the step entirely if you are not publishing —
+   nothing else depends on it.
+
+6. **Name the repository and the manuscript.** Replace `{{REPO_TITLE}}` above and the
    placeholders in [`main.tex`](main.tex) (title, subtitle, author, abstract), then delete
    this section. `python3 scripts/check.py publish-ready` is the checklist for exactly this
    step — and it is deliberately *not* part of `ready`, because none of it blocks an attack

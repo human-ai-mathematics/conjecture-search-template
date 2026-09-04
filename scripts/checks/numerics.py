@@ -17,14 +17,12 @@ RUNS = Path("research/runs")
 
 #: Every field a reader needs before an artifact's numbers mean anything.
 PROVENANCE_FIELDS = ("schema_version", "date", "target", "profile", "config", "environment")
+ARTIFACT_SCHEMA_VERSION = 1
 
 #: Fields whose *presence* is required but whose value may be null — an artifact produced
 #: outside a git checkout records nulls honestly rather than omitting the question.
 PRESENT_FIELDS = ("stochastic",)
 
-#: Source-tree provenance arrived with schema 3. Artifacts are immutable, so an older one
-#: is asked only for what its own version promised.
-SOURCE_FIELDS_FROM_VERSION = 3
 SOURCE_FIELDS = ("git_commit", "git_dirty", "git_diff_sha256")
 
 #: The observation vocabulary, duplicated from ``experiments/numerics/contract.py`` on
@@ -45,7 +43,7 @@ def _check_observation(context: str, number: int, record: dict, errors: list[str
 
     This is the shape that lets an unlabelled number look like evidence. The harness
     rejects it at write time; this rejects it for every artifact already on disk,
-    including ones written by an older harness.
+    including every immutable artifact already in the repository.
     """
     present = [field for field in OBSERVATION_FIELDS if field in record]
     if not present:
@@ -118,13 +116,14 @@ def check(root: Path, errors: list[str]) -> list[dict]:
             if field not in header:
                 errors.append(f"{context}: _provenance is missing '{field}'")
         version = header.get("schema_version")
-        if isinstance(version, int) and version >= SOURCE_FIELDS_FROM_VERSION:
-            for field in SOURCE_FIELDS:
-                if field not in header:
-                    errors.append(
-                        f"{context}: _provenance is missing '{field}'; schema "
-                        f"{version} records which source tree produced the run"
-                    )
+        if version != ARTIFACT_SCHEMA_VERSION:
+            errors.append(
+                f"{context}: _provenance.schema_version must be "
+                f"{ARTIFACT_SCHEMA_VERSION}, got '{version}'"
+            )
+        for field in SOURCE_FIELDS:
+            if field not in header:
+                errors.append(f"{context}: _provenance is missing '{field}'")
         for number, record in enumerate(records[1:], 2):
             if "_provenance" in record:
                 errors.append(f"{context}:{number}: only the first record carries provenance")

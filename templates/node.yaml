@@ -13,7 +13,7 @@
   # provenance: internal|literature (literature also needs import_class + references).
   - id: {{NODE}}
     kind: {{KIND}}
-    status: open
+    status: {{STATUS}}
     provenance: internal
     file: modules/{{FILE}}
     summary: "One line, a gloss for the derived views. The statement itself lives in modules/ under \\label{{{NODE}}} and nowhere else."

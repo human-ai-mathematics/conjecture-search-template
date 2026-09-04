@@ -5,7 +5,7 @@ event — not every attempt. Its envelope records what the work *engaged*: which
 nodes, which portfolio approach, which run artifacts, which candidate statements it
 proposed or retired, and which earlier checkpoint it supersedes as the current summary.
 
-Supersession is presentation, not deletion (CLAUDE.md constraint 7). ``retires:`` kills a
+Supersession is presentation, not deletion (CLAUDE.md constraint 6). ``retires:`` kills a
 tentative *statement*; ``supersedes:`` says a later *record* should be read instead. The
 same relation is offered to non-certifying audits, which have the same staleness problem.
 """
@@ -31,14 +31,14 @@ EXPLORATION_REQUIRED = {"type", "date", "outcome"}
 EXPLORATION_OUTCOMES = {"dead-end", "directional", "candidate", "proposed"}
 
 # A candidate is a statement someone thought worth writing down and nothing more
-# (CLAUDE.md constraint 8). Its id is namespaced so it can never be mistaken for a
+# (CLAUDE.md constraint 7). Its id is namespaced so it can never be mistaken for a
 # ledger node id, and an approach id is namespaced so it can never be mistaken for either.
 CANDIDATE_ID_RE = re.compile(r"^cand:[a-z0-9][a-z0-9-]*$")
 CANDIDATE_FIELDS = {"id", "statement"}
 
 #: Promotion is one act, not three. Adding the manuscript statement and the node while
 #: leaving the candidate live left two homes for one statement, which is exactly what
-#: constraint 8 forbids; recording the promotion here retires the candidate, points the
+#: constraint 7 forbids; recording the promotion here retires the candidate, points the
 #: portfolio at the node, and leaves the audit trail in the append-only log.
 PROMOTION_FIELDS = {"candidate", "node"}
 
@@ -156,13 +156,8 @@ def check_supersession(root: Path, records: list[dict], directory: str, genre: s
     A record may only supersede an earlier record of its own genre — a later summary
     replaces an earlier one, never the reverse.
 
-    Acyclicity used to be argued from a strict total order, and that order was
-    manufactured by sorting paths: two records dated the same day were ranked by their
-    slugs. That is not chronology, and every same-day supersession in this repository
-    passed or failed on which letter its title happened to start with. So the order is
-    now only consulted where it is real — different days, or two timestamps — and where
-    it is not, the relation is verified acyclic directly, which is the property the
-    ordering was standing in for all along.
+    The order is consulted only where it is real — different days, or two timestamps.
+    Unordered same-day relations are checked directly for cycles.
 
     The result maps superseded path to the records that replaced it, so a reader is told
     what to read *instead* rather than only that something is stale. Membership tests
@@ -207,8 +202,8 @@ def check_supersession(root: Path, records: list[dict], directory: str, genre: s
 def _cycles(edges: dict[str, list[str]]) -> list[list[str]]:
     """Every cycle reachable in a supersession graph, each reported once.
 
-    Same-day records carry no usable order, so the guard that a strict ranking used to
-    provide for free is done explicitly here. Iterative depth-first search with an
+    Same-day records carry no usable order, so acyclicity is checked explicitly here.
+    Iterative depth-first search with an
     explicit stack: the graph is tiny, but a recursive walk over an append-only archive
     that only ever grows is a limit waiting to be hit.
     """
@@ -247,7 +242,7 @@ def check(root: Path, node_ids: set[str], approach_ids: set[str] | None,
 
     A candidate leaves the live list two ways: a later checkpoint retires it, or a later
     checkpoint promotes it to a ledger node. The log itself is never rewritten
-    (CLAUDE.md constraint 7), so "live" is derived here rather than recorded anywhere.
+    (CLAUDE.md constraint 6), so "live" is derived here rather than recorded anywhere.
     """
     directory = root / EXPLORATIONS
     records: list[dict] = []
@@ -258,9 +253,8 @@ def check(root: Path, node_ids: set[str], approach_ids: set[str] | None,
     retired: dict[str, tuple[tuple[str, str], str]] = {}
     promoted: dict[str, dict] = {}
 
-    # Read everything first, then walk it in time order. The old loop used the position
-    # of a path in a lexical listing as its event clock, which made a candidate's
-    # lifecycle depend on the first letter of a slug whenever two records shared a date.
+    # Read everything first, then walk it in the partial chronological order supplied by
+    # dates and timestamps. A filename slug is never treated as an event clock.
     for path in sorted(directory.rglob("*.md")):
         if path.name == "README.md":
             continue
@@ -302,7 +296,7 @@ def check(root: Path, node_ids: set[str], approach_ids: set[str] | None,
             if candidate_id in node_ids:
                 errors.append(
                     f"{context}.candidates: '{candidate_id}' is already a ledger node; a "
-                    "candidate is not a node (CLAUDE.md constraint 8)"
+                    "candidate is not a node (CLAUDE.md constraint 7)"
                 )
             elif candidate_id in declared:
                 errors.append(

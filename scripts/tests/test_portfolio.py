@@ -2,7 +2,7 @@
 
 The rules under test are all structural. Whether two routes are really the same idea,
 and whether a family is really exhausted, are synthesizer judgments the checker refuses
-to guess at (CLAUDE.md constraint 12).
+to guess at (CLAUDE.md constraint 11).
 """
 from __future__ import annotations
 
@@ -55,16 +55,17 @@ class PortfolioTests(CheckerFixture):
 
     def test_a_blocked_route_names_its_blocker_and_its_reopening_condition(self):
         target_ledger(self)
-        why = self.add_checkpoint("blocked", nodes=("q:target",))
+        vague = self.add_checkpoint("vague", nodes=("q:target",), approach="ap:vague")
+        fenced = self.add_checkpoint("fenced", nodes=("q:target",), approach="ap:fenced")
         self.add_portfolio({
             "target": "q:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [
                 {"id": "ap:vague", "family": "fam:one", "state": "blocked",
-                 "checkpoints": [why]},
+                 "checkpoints": [vague]},
                 {"id": "ap:fenced", "family": "fam:one", "state": "blocked",
                  "blocker": "obs:fence", "reopen_if": "a new mechanism appears",
-                 "checkpoints": [why]},
+                 "checkpoints": [fenced]},
                 {"id": "ap:premature", "family": "fam:one", "state": "queued",
                  "blocker": "obs:fence"},
             ],
@@ -80,27 +81,31 @@ class PortfolioTests(CheckerFixture):
     def test_a_blocker_must_resolve_to_a_node_or_a_live_candidate(self):
         """A route worth formally blocking has a lemma worth stating precisely."""
         target_ledger(self)
-        why = self.add_checkpoint("propose", outcome="candidate",
-                                  candidates=({"id": "cand:gap", "statement": "S"},))
+        candidate = self.add_checkpoint(
+            "propose", outcome="candidate", approach="ap:on-candidate",
+            candidates=({"id": "cand:gap", "statement": "S"},),
+        )
+        on_node = self.add_checkpoint("on-node", nodes=("q:target",), approach="ap:on-node")
+        on_prose = self.add_checkpoint("on-prose", nodes=("q:target",), approach="ap:on-prose")
         self.add_portfolio({
             "target": "q:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [
                 {"id": "ap:on-candidate", "family": "fam:one", "state": "blocked",
                  "blocker": "cand:gap", "reopen_if": "it is proved",
-                 "checkpoints": [why]},
+                 "checkpoints": [candidate]},
                 {"id": "ap:on-node", "family": "fam:one", "state": "blocked",
                  "blocker": "obs:fence", "reopen_if": "the fence moves",
-                 "checkpoints": [why]},
+                 "checkpoints": [on_node]},
                 {"id": "ap:on-prose", "family": "fam:one", "state": "blocked",
-                 "blocker": "the compatibility condition seems hard",
-                 "reopen_if": "someone has an idea", "checkpoints": [why]},
+                 "blocker": "the missing estimate seems hard",
+                 "reopen_if": "someone has an idea", "checkpoints": [on_prose]},
             ],
         })
 
         errors = self.errors()
 
-        self.assertIn("ap:on-prose.blocker: 'the compatibility condition seems hard' is "
+        self.assertIn("ap:on-prose.blocker: 'the missing estimate seems hard' is "
                       "neither a ledger node nor a live candidate", errors)
         self.assertNotIn("ap:on-candidate", errors)
         self.assertNotIn("ap:on-node", errors)
@@ -124,7 +129,8 @@ class PortfolioTests(CheckerFixture):
 
     def test_a_closed_family_owes_a_synthesis_and_a_reopening_condition(self):
         target_ledger(self)
-        checkpoint = self.add_checkpoint("synthesis", nodes=("q:target",))
+        checkpoint = self.add_checkpoint("synthesis", nodes=("q:target",),
+                                         approach="ap:complete")
         self.add_portfolio({
             "target": "q:target",
             "families": [
@@ -133,6 +139,10 @@ class PortfolioTests(CheckerFixture):
                  "closure_checkpoint": checkpoint, "reopen_if": "a new mechanism"},
                 {"id": "fam:overreaching", "mechanism": "M", "state": "active",
                  "reopen_if": "meaningless while active"},
+            ],
+            "approaches": [
+                {"id": "ap:complete", "family": "fam:complete", "state": "completed",
+                 "checkpoints": [checkpoint]},
             ],
         })
 
@@ -250,7 +260,7 @@ class PortfolioTests(CheckerFixture):
         self.assertIn("ap:one: unknown field 'status'", errors)
 
     def test_the_ledger_rejects_search_state(self):
-        """The reverse direction of constraint 12: no route lives in the claim graph."""
+        """The claim graph accepts only its current mathematical-state fields."""
         self.add_ledger("program", "program", [
             node("q:target", status="open", kind="question",
                  approach="ap:one", family="fam:one"),
@@ -258,13 +268,13 @@ class PortfolioTests(CheckerFixture):
 
         errors = self.errors()
 
-        self.assertIn("q:target.approach: obsolete field; use the search portfolio", errors)
-        self.assertIn("q:target.family: obsolete field; use the search portfolio", errors)
+        self.assertIn("q:target: unknown field 'approach'", errors)
+        self.assertIn("q:target: unknown field 'family'", errors)
 
     def test_a_state_change_owes_a_checkpoint_that_explains_it(self):
         """Checkpoints = why the portfolio changed. A route does not stop for no reason."""
         target_ledger(self)
-        why = self.add_checkpoint("why", nodes=("q:target",))
+        why = self.add_checkpoint("why", nodes=("q:target",), approach="ap:explained")
         self.add_portfolio({
             "target": "q:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
@@ -306,23 +316,21 @@ class PortfolioTests(CheckerFixture):
     def test_a_checkpoint_naming_an_approach_must_name_the_one_that_lists_it(self):
         target_ledger(self)
         theirs = self.add_checkpoint("theirs", nodes=("q:target",), approach="ap:theirs")
-        legacy = self.add_checkpoint("legacy", date="2026-08-27", nodes=("q:target",))
+        unanchored = self.add_checkpoint("unanchored", date="2026-08-27", nodes=("q:target",))
         self.add_portfolio({
             "target": "q:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [
                 {"id": "ap:theirs", "family": "fam:one", "state": "queued"},
                 {"id": "ap:mine", "family": "fam:one", "state": "completed",
-                 "checkpoints": [theirs, legacy]},
+                 "checkpoints": [theirs, unanchored]},
             ],
         })
 
         errors = self.errors()
 
         self.assertIn("declares approach 'ap:theirs', which is not 'ap:mine'", errors)
-        # A record written before the portfolio existed is attached from this side
-        # without editing an append-only file (CLAUDE.md constraint 7).
-        self.assertNotIn(legacy, errors)
+        self.assertIn("does not declare an approach", errors)
 
     def test_a_closure_checkpoint_belongs_to_the_family_it_closes(self):
         target_ledger(self)
@@ -342,8 +350,7 @@ class PortfolioTests(CheckerFixture):
         self.assertIn("declares approach 'ap:elsewhere', which is not an approach in "
                       "'fam:closed'", self.errors())
 
-    def test_saturation_checkpoint_is_retired_in_favour_of_closure_checkpoint(self):
-        """'Parked' is a budget decision, so the field is named for closure, not exhaustion."""
+    def test_a_family_accepts_only_the_current_closure_field(self):
         target_ledger(self)
         checkpoint = self.add_checkpoint("synthesis", nodes=("q:target",))
         self.add_portfolio({
@@ -355,9 +362,7 @@ class PortfolioTests(CheckerFixture):
 
         errors = self.errors()
 
-        self.assertIn("fam:one.saturation_checkpoint: obsolete field; use "
-                      "closure_checkpoint", errors)
-        self.assertNotIn("unknown field 'saturation_checkpoint'", errors)
+        self.assertIn("fam:one: unknown field 'saturation_checkpoint'", errors)
 
     def test_an_unavailable_claim_graph_is_a_portfolio_dependency_error(self):
         """Scoping restricts what is reported; it never turns a missing check into a pass."""

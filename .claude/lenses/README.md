@@ -40,9 +40,10 @@ are all shared and are stated once.
 ## Both clients
 
 `.claude/agents/*.md` is canonical for Claude, and `.codex/agents/*.toml` is generated from it
-for Codex. Lens files are **not** inlined into either: both clients read them from disk at run
-time with the tools the role already declares. So a lens edit needs no regeneration, while a
-role edit still needs `python3 scripts/check.py --write-codex`.
+for Codex. Lens files are **not** inlined into either, and they are not declared on either
+client's `skills` field, which do not mean the same thing: both clients read a lens from disk
+at run time with the tools the role already declares. So a lens edit needs no regeneration, while a
+role edit still needs `python3 scripts/new.py agents`.
 
 ## Adding one
 

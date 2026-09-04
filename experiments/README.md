@@ -44,8 +44,7 @@ Each run creates a new JSONL file under `research/runs/` unless `--out` is given
 are never overwritten. Line 1 is the `_provenance` header (schema version, target, profile,
 stochasticity, exact configuration, commit, interpreter and library versions), then the
 target-owned records, then one `run-summary`. Inputs never share a mapping with derived results.
-Historical artifacts are append-only and are not migrated when
-`numerics.contract.ARTIFACT_SCHEMA_VERSION` changes.
+Artifacts are append-only and must use the current schema version.
 
 A record is one of two things, and the runner rejects anything in between:
 
@@ -123,11 +122,7 @@ target implementation was still uncommitted, which is the normal case while a di
 being written.
 
 This is provenance, not eligibility. Nothing gates on it: a dirty run is a run, and its
-numbers are worth exactly what any numbers are worth (`CLAUDE.md` constraint 2). The retired
-`evidence_eligible` field decided whether output *counted*, and nothing here does.
-
-The three fields arrived with artifact schema 3. Artifacts are immutable, so an older one is
-asked only for what its own version promised.
+numbers are worth exactly what any numbers are worth (`CLAUDE.md` constraint 2).
 
 `numerics run --out` writes only under `research/runs/`. An artifact somewhere else is one no
 reader and no checker will ever see; the library entry point `artifact.run(out=...)` stays

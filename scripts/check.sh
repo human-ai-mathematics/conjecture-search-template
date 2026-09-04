@@ -67,6 +67,18 @@ run "structure"       "${PY[@]}" scripts/check.py
 run "worked example"  "${PY[@]}" scripts/check.py --root example
 run "checker tests"   "${PY[@]}" -m unittest discover -s scripts/tests -p 'test_*.py'
 
+# The site is a derived view and not a validator, so this asks only whether it still
+# builds — the exporter refuses a tree that does not validate, and the two runs above
+# have already said whether this one does. A build here catches the case that matters:
+# a derivation that no longer survives the shape of the current repository.
+run "site"            "${PY[@]}" scripts/site.py --out build/site
+if command -v node >/dev/null 2>&1; then
+  # A syntax error in the frontend is a blank page, and nothing else would notice.
+  run "site frontend" node --check site/site.js
+else
+  skip "site frontend" "node not installed"
+fi
+
 if command -v uv >/dev/null 2>&1; then
   run "numerics"      sh -c 'cd experiments && uv run pytest -q'
 else
@@ -76,9 +88,8 @@ fi
 if [ "$FAST" -eq 0 ]; then
   if command -v latexmk >/dev/null 2>&1; then
     run "document"    latexmk -pdf -outdir=build main.tex
-    # Standalone compilation is part of the proof definition of done (solutions/README.md)
-    # and nothing else exercises it: main.tex subfiles the modules, never the dossiers, so
-    # a dossier with a LaTeX error used to pass every check in the repository.
+    # Standalone compilation is part of the proof definition of done (solutions/README.md).
+    # main.tex subfiles the modules, never the dossiers, so each dossier is built explicitly.
     for tree in . example; do
       while read -r dossier; do
         [ -n "$dossier" ] || continue
@@ -95,6 +106,21 @@ fi
 printf '\n'
 if [ "$STATUS" -ne 0 ]; then
   echo "one or more checks FAILED"
+elif [ "$FAST" -eq 1 ]; then
+  if [ "${#SKIPPED[@]}" -eq 0 ]; then
+    echo "all fast checks passed (structure only — see CLAUDE.md constraint 4)"
+  else
+    echo "all AVAILABLE fast checks passed (structure only — see CLAUDE.md constraint 4)"
+  fi
+  echo "document and dossier builds were omitted by --fast."
+  if [ "${#SKIPPED[@]}" -ne 0 ]; then
+    echo "Other unavailable checks:"
+    for entry in "${SKIPPED[@]}"; do
+      printf '  %s\n' "$entry"
+    done
+    echo "run with --strict to make a missing tool a failure."
+  fi
+  echo "run without --fast for complete verification."
 elif [ "${#SKIPPED[@]}" -eq 0 ]; then
   echo "all checks passed (structure only — see CLAUDE.md constraint 4)"
 else

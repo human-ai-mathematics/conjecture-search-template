@@ -4,7 +4,7 @@
 #
 # The real ledger is research/program/ledger.yaml and ships empty. The rules are
 # the same in both: what the *search* is doing lives in portfolio.yaml and never
-# here (CLAUDE.md constraint 12); statements live in modules/; the field-level
+# here (CLAUDE.md constraint 11); statements live in modules/; the field-level
 # schema is research/program/ledger-schema.md.
 #
 # The nodes below are: an obstruction that fences the search, an open question, a

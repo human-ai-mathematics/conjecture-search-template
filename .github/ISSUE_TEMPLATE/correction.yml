@@ -1,0 +1,48 @@
+# Something on the published site is wrong.
+#
+# Kept separate from a proof gap because it usually is not one: a broken link, a summary
+# that no longer matches its statement, a status that looks stale. Cheap to fix, and
+# corrosive if there is nowhere to report it.
+name: Correction
+description: A link, gloss, status or page on the site that is wrong or out of date.
+title: "Correction: "
+labels: ["correction", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Two of these are worth telling apart, and the site tries to make it possible:
+
+        - **The gloss disagrees with the statement.** The one-line summary on a claim's
+          page is a gloss, and the LaTeX under its `\label` is canonical. If they
+          disagree, the manuscript is right and the gloss is the defect.
+        - **The page is stale.** Every page shows the commit it was built from. If that
+          commit is behind the repository, the site build failed and the fix is a build,
+          not an edit.
+
+  - type: input
+    id: anchor
+    attributes:
+      label: Where
+      description: The node, route or page id. The site fills this in.
+      placeholder: "prop:example"
+
+  - type: input
+    id: built_from
+    attributes:
+      label: The commit shown in the page footer
+      description: >
+        Copy it from the bottom of the page. It is how a stale deployment is told apart
+        from a real error.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What it should say

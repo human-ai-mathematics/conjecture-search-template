@@ -2,23 +2,71 @@
 
 For whoever changes the roles, not for a role executing a task. The contract an agent
 loads at run time is [`README.md`](README.md); this file is how that roster is built,
-extended, and kept in sync with the Codex adapters.
+extended, tuned, and kept in sync across the two clients.
 
 `../../CLAUDE.md` is normative and wins on any conflict.
 
 ## How a role is defined
 
-Each role file in this directory is self-describing. Its front matter carries `name`,
-`description`, `tools`, `read_only`, and `reasoning` (`high` or `ultra`), and
-`scripts/check.py` derives the roster from the files on disk. There is no list of role
-names to keep in sync anywhere else — adding a role is one new file plus one row in the
-table below.
+Each role file in this directory is an ordinary Claude Code subagent definition, in
+[Claude Code's published schema](https://code.claude.com/docs/en/sub-agents): front
+matter carrying `name`, `description`, `tools`, `model`, `effort` and `color`, then the
+body that is the role's contract. Nothing in the frontmatter is invented here, and
+`scripts/check.py` derives the roster from the files on disk rather than from a list.
+
+Two of those fields — `model` and `effort` — are **generated**, from
+[`profiles.yaml`](profiles.yaml). The body below the frontmatter is canonical prose and
+is never rewritten; the frontmatter block is stamped from the table.
 
 Claude Code reads the Markdown files directly. Codex does not: project-scoped Codex
-agents are standalone TOML files. `python3 scripts/check.py --write-codex` generates
-`../../.codex/agents/*.toml` from these canonical Markdown bodies, and
-`python3 scripts/check.py --lane roles` rejects a missing or stale adapter. Do not
-hand-edit a generated TOML file.
+agents are standalone TOML files. `python3 scripts/new.py agents` regenerates
+both — the frontmatter here and `../../.codex/agents/*.toml` from these canonical bodies
+— and `python3 scripts/check.py --lane roles` rejects either one when it drifts. Do not
+hand-edit a generated TOML file, and do not hand-edit `model` or `effort`.
+
+## Model and effort live in one table
+
+[`profiles.yaml`](profiles.yaml) is the only place in the repository that names a model
+or an effort. It holds **tiers** (one resource level, resolved for each client), the
+client-neutral role facts `read_only` and `color`, and **profiles** — a role → tier
+assignment, one of which is `active`.
+
+A tier is per client because the two clients reach a resource level differently: Claude
+differentiates by model, Codex by effort on a single model. The effort scales are
+validated separately, because Codex's has one rung above Claude's ceiling. An empty
+client block means inherit from the parent session, which Claude spells `model: inherit`
+and Codex spells by omitting the key; a tier inherits on both clients or on neither, so
+that a tier name cannot mean two different things depending on who is running.
+
+**A tier names a resource level; a profile names the occasion.** The shipped profiles are
+`campaign` (the sustained attack), `survey` (a cheaper sweep, every role one rung down)
+and `session` (pin nothing and follow the operator's own model and effort). The two
+vocabularies are kept disjoint and the checker enforces it: a profile that takes a tier's
+name makes every assignment line using that word a tautology, and leaves a reader unable
+to tell which layer a bare word belongs to.
+
+Generating both artifacts is what makes a profile mean the same thing on both clients.
+Their native knobs do not agree: Claude resolves frontmatter *above*
+`CLAUDE_CODE_SUBAGENT_MODEL`, while Codex resolves its `[agents]` defaults *above* the
+agent file. Leaning on those would make one switch override the roles and the other be
+overridden by them. It is also why nothing in this repository sets them.
+
+To retune, there are three moves and no fourth:
+
+```bash
+# redefine a tier -- every role at that tier moves, on both clients at once
+# add a tier      -- then assign it to one role in a profile
+# switch active:  -- the whole roster shifts to another profile's assignment
+$EDITOR .claude/agents/profiles.yaml
+python3 scripts/new.py agents
+python3 scripts/check.py --lane roles
+```
+
+A variant is a named tier, never a scattered per-role override, so that a checkpoint can
+cite the configuration it was produced under. Switching `active:` is a diff, which is the
+point: the profile a result was produced under stays in the history. For a throwaway
+probe that should leave no trace, Claude Code's `--agents <json>` flag overrides these
+files for one session without touching them.
 
 ## Four core roles, and specialists
 
@@ -52,9 +100,11 @@ for it, and a validator walking both.
 ## Capability packs
 
 Not installed by default. `python3 scripts/new.py role <pack>` copies one into
-`.claude/agents/` and regenerates its Codex adapter; from that moment it is an ordinary
-role in every respect, validated like the four above. Deleting the file uninstalls it, and
-`python3 scripts/check.py --write-codex` removes the orphaned adapter.
+`.claude/agents/`, restamps it from the active profile, and regenerates its Codex
+adapter; from that moment it is an ordinary role in every respect, validated like the
+four above. Every profile already assigns the packs a tier, which is why installing one
+is still a single command. Deleting the file uninstalls it, and
+`python3 scripts/new.py agents` removes the orphaned adapter.
 
 | pack | install when | writes | cardinality |
 |---|---|---|---|
@@ -71,8 +121,14 @@ nothing.
 
 `.codex/` exists so Codex can read roles it cannot parse from Markdown. A repository
 driven only by Claude Code may delete the whole tree and the roles lane will not complain;
-`--write-codex` regenerates it in full if that changes. What is never allowed is an
+`python3 scripts/new.py agents` regenerates it in full if that changes. What is never allowed is an
 adapter that disagrees with the Markdown it came from.
+
+`read_only` has different enforcement strength on the two clients. Codex receives a real
+`sandbox_mode = "read-only"`. Claude receives no cross-client sandbox equivalent: the checker
+rejects explicit `Edit` and `Write` tools, while `Bash` remains available under the role's
+read-only command contract. The table records the intended boundary without pretending that
+prose and a runtime sandbox are the same control.
 
 ## Transitions
 
@@ -124,12 +180,16 @@ Prefer a new **lens** to a new role. A lens costs one file in
 [`../lenses/`](../lenses/README.md) and no permissions; a role costs a contract, a
 generated adapter, a roster row, and a concurrency key. When a program genuinely wants its
 own — a prober for a particular gate, a refiner for a particular family of statements —
-write it as a new `.md` file here, add a row to the roster above, then:
+write it as a new `.md` file here, give it a `roles:` entry and a tier in every profile
+in [`profiles.yaml`](profiles.yaml), add a row to the roster above, then:
 
 ```bash
-python3 scripts/check.py --write-codex
+python3 scripts/new.py agents
 python3 scripts/check.py --lane roles
 ```
+
+The profile entry is not optional and there is no implicit default tier: a role whose
+model and effort nobody chose is a role nobody costed.
 
 Every role body must contain the literal string `.claude/agents/README.md`, because that
 is the contract it executes under; the checker enforces it.
@@ -137,9 +197,10 @@ is the contract it executes under; the checker enforces it.
 ## Validation
 
 ```bash
-python3 scripts/check.py --lane roles      # after changing a role, lens or adapter
-python3 scripts/check.py --write-codex     # regenerate adapters, deliberately
+python3 scripts/check.py --lane roles       # after changing a role, lens, or profile
+python3 scripts/new.py agents               # restamp both clients, deliberately
 ```
 
-Regenerate the Codex adapters in the same commit as the Markdown change, or the roles lane
-reports a stale adapter.
+Regenerate in the same commit as the change, or the roles lane reports a stale artifact.
+The former `check.py --write-agents` and `--write-codex` flags now stop with the migration
+command rather than writing from the validator.

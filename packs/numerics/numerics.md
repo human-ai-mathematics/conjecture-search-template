@@ -2,8 +2,9 @@
 name: numerics
 description: The only agent that runs numerics. Builds or extends a numerics target/observable, executes it, and emits a provenance-stamped artifact under research/runs/. Use when another role has specified a diagnostic. It never changes a logical status.
 tools: Read, Grep, Glob, Bash, Edit, Write
-read_only: false
-reasoning: high
+model: opus
+effort: high
+color: green
 ---
 
 # numerics — the numerical research channel
@@ -43,7 +44,7 @@ Every checkpoint carries the front matter validated by `check.py`; see
 `research/explorations/README.md`. Name the route the diagnostic serves in `approach:` when
 this repository has a portfolio; when it has none, name the ledger nodes in `nodes:`. A statement this work threw off that nothing yet depends on stays there as a
 `cand:` candidate — it does not become a ledger node and it has no other home
-(`CLAUDE.md` constraint 8).
+(`CLAUDE.md` constraint 7).
 
 ## Commands
 

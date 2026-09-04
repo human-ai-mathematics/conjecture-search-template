@@ -8,16 +8,14 @@ nodes:
 ---
 
 Worked example of the second thing a checkpoint does: explain a *search* change rather than
-a mathematical one. It is also the example's only record carrying `approach:`, because it
-concerns exactly one route; the other two are attached from the portfolio's side, which is
-how a record covering several routes — or one written before the portfolio existed — gets
-placed without editing it.
+a mathematical one. Its `approach:` names exactly the route whose change it explains.
 
 ## What was tried
 
-`ap:example-exhaustive-search` was queued as a fresh route: enumerate the integer vectors
-in a box and check `conj:example` on each. Before spending anything on it, the existing
-routes were read.
+`ap:example-exhaustive-search` was queued as a fresh route: widen the integer-vector
+enumeration already used to check `prop:example`, hoping a larger version of that proxy
+would bear on `conj:example`. Before spending anything on it, the existing routes were
+read.
 
 ## How
 
@@ -28,8 +26,9 @@ route had already run exactly this enumeration — 625 vectors in $[-2,2]^4$ —
 
 ## Outcome
 
-The route is a duplicate, not a refinement: it proposes the same mechanism on the same
-objects, differing only in the box. It is marked `duplicate` against
+The route is a duplicate, not a refinement: it proposes the same identity check on the
+same kind of objects, differing only in the box. Because that check does not evaluate
+`conj:example`, widening it cannot repair the mismatch. It is marked `duplicate` against
 `ap:example-finite-battery` and is not being worked.
 
 Widening the box is not a new route either. `obs:example` fences the whole family:
@@ -45,4 +44,4 @@ reopens, duplicates, or saturates a portfolio approach.
 
 Nothing here is a mathematical claim, and no candidate is proposed. Deduplication is search
 state; the portfolio holds the resulting relation and this file holds the reason
-(`CLAUDE.md` constraint 12).
+(`CLAUDE.md` constraint 11).

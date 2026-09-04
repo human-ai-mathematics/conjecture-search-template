@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scaffold the routine artifacts of a search from templates/.
+"""Create routine search artifacts and regenerate derived agent definitions.
 
 This is the repository's writer. ``scripts/check.py`` reads and never writes, and the two
 stayed separate on purpose: a validator that edits the tree it is judging is a validator
@@ -10,22 +10,24 @@ nobody can trust twice.
     python3 scripts/new.py checkpoint first-attempt --node q:main
     python3 scripts/new.py dossier lem:key
     python3 scripts/new.py module 01-reductions --node lem:key --kind lemma
-    python3 scripts/new.py node lem:key --kind lemma        # prints; writes nothing
+    python3 scripts/new.py node lem:key --kind lemma --file 01-reductions.tex
     python3 scripts/new.py role numerics                    # installs a capability pack
+    python3 scripts/new.py agents                           # regenerate agent files
 
-Nothing here overwrites an existing file: a scaffold refuses and says what is already
-there. And nothing here edits research/program/ledger.yaml — that file has exactly one
-writer (CLAUDE.md constraint 1), so ``node`` prints a block for the orchestrator to paste
-rather than reaching into it.
+Scaffolds never overwrite an existing hand-authored file. The ``agents`` command is the
+deliberate exception for generated material: it restamps role frontmatter and replaces
+Codex adapters from the profile table. Nothing here edits research/program/ledger.yaml —
+that file has exactly one writer (CLAUDE.md constraint 1), so ``node`` prints a block for
+the orchestrator to paste rather than reaching into it.
 
-Standard library only, so it works before the checker's own dependency is installed.
+Scaffolding uses only the standard library. Agent generation uses the checker's declared
+PyYAML dependency because it reads ``.claude/agents/profiles.yaml``.
 """
 from __future__ import annotations
 
 import argparse
 import datetime
 import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -34,6 +36,7 @@ from pathlib import Path
 DEFAULT_ROOT = Path(__file__).resolve().parents[1]
 
 NODE_ID_RE = re.compile(r"^[a-z][a-z0-9]*:[a-z0-9][a-z0-9-]*$")
+APPROACH_ID_RE = re.compile(r"^ap:[a-z0-9][a-z0-9-]*$")
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 KINDS = (
     "theorem", "lemma", "proposition", "corollary", "conjecture", "question",
@@ -54,7 +57,7 @@ def render(root: Path, template: str, substitutions: dict[str, str]) -> str:
 
 
 def write(root: Path, relative: str, body: str, next_step: str) -> int:
-    """Write one new file, or refuse. Never clobbers; append-only planes depend on it."""
+    """Write one new file, or refuse. Never clobbers; append-only records depend on it."""
     path = root / relative
     if path.exists():
         return fail(f"{relative} already exists — edit it, or delete it first")
@@ -96,11 +99,14 @@ def cmd_portfolio(args: argparse.Namespace) -> int:
 def cmd_checkpoint(args: argparse.Namespace) -> int:
     stamp = today(args.timestamp)
     title = args.slug.replace("-", " ").capitalize()
+    engagement = (
+        f"nodes:\n  - {args.node}" if args.node is not None else f"approach: {args.approach}"
+    )
     return write(
         args.root, f"research/explorations/{stamp[:10]}-{args.slug}.md",
         render(args.root, "checkpoint.md", {
             "DATE": stamp,
-            "NODE": args.node or "<ledger node id this engaged>",
+            "ENGAGEMENT": engagement,
             "TITLE": title,
         }),
         "record what was tried and what it costs the next agent, then "
@@ -120,17 +126,17 @@ def cmd_dossier(args: argparse.Namespace) -> int:
 
 
 def cmd_module(args: argparse.Namespace) -> int:
-    node = args.node or "<node id>"
     return write(
         args.root, f"modules/{args.slug}.tex",
         render(args.root, "module.tex", {
             "SLUG": args.slug,
             "TITLE": args.title or args.slug.replace("-", " ").capitalize(),
-            "NODE": node,
+            "NODE": args.node,
             "KIND": args.kind,
         }),
-        f"add it to main.tex with \\subfile{{modules/{args.slug}}}, then give every "
-        "claim label a ledger node ('python3 scripts/new.py node <id> --kind <kind>')",
+        f"add it to main.tex with \\subfile{{modules/{args.slug}}}, then run "
+        f"'python3 scripts/new.py node {args.node} --kind {args.kind} "
+        f"--file {args.slug}.tex' and paste the result into the ledger",
     )
 
 
@@ -139,11 +145,42 @@ def cmd_node(args: argparse.Namespace) -> int:
     print(render(args.root, "node.yaml", {
         "NODE": args.node,
         "KIND": args.kind,
+        "STATUS": "defined" if args.kind == "definition" else "open",
         "FILE": args.file,
     }).split("\n\n", 1)[1].rstrip())
     print()
     print("# ^ paste under 'nodes:' in research/program/ledger.yaml. The orchestrator owns\n"
           "#   that file (CLAUDE.md constraint 1), so this command does not write it.")
+    return 0
+
+
+def generate_agents(root: Path) -> list[str]:
+    """Regenerate both clients from the profile table, then validate the result."""
+    from checks import roles
+
+    errors: list[str] = []
+    profiles = roles.load_profiles(root, errors)
+    if profiles is None:
+        return errors
+    role_definitions = roles.load_roles(root, profiles, errors)
+    packs = roles.load_packs(root, profiles, errors)
+    if errors:
+        return errors
+    errors.extend(roles.write_agent_files(root, role_definitions, packs))
+    if errors:
+        return errors
+    roles.check(root, errors)
+    return errors
+
+
+def cmd_agents(args: argparse.Namespace) -> int:
+    errors = generate_agents(args.root)
+    if errors:
+        for error in errors:
+            print(f"new.py: {error}", file=sys.stderr)
+        return 1
+    print("restamped .claude agent frontmatter and regenerated .codex adapters")
+    print("next: 'python3 scripts/check.py --lane roles' to confirm")
     return 0
 
 
@@ -162,28 +199,24 @@ def cmd_role(args: argparse.Namespace) -> int:
     agents.mkdir(parents=True, exist_ok=True)
     destination.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
     print(f"wrote .claude/agents/{args.pack}.md")
-    # The Codex adapters are generated, so an installed role needs one before the roles
-    # lane will pass. A repository that deleted .codex/ wants no adapters and gets none.
-    # The roster in MAINTAINING.md already links the pack by path, so nothing else is owed.
-    code = 0
-    if (args.root / ".codex/agents").is_dir():
-        checker = Path(__file__).resolve().parent / "check.py"
-        code = subprocess.run(
-            # Scoped to the roles lane: installing a role says nothing about whether the
-            # rest of the repository is green, and it should not report on it.
-            [sys.executable, str(checker), "--root", str(args.root),
-             "--lane", "roles", "--write-codex"],
-            capture_output=True, text=True,
-        ).returncode
-        if code == 0:
-            print(f"wrote .codex/agents/{args.pack}.toml")
+    # Both clients' artifacts are generated, so an installed role is restamped from the
+    # active profile before the roles lane will pass: its frontmatter carries whatever
+    # model and effort .claude/agents/profiles.yaml assigns it, and it gets a Codex
+    # adapter if this repository ships any. The roster in MAINTAINING.md already links
+    # the pack by path, so nothing else is owed.
+    errors = generate_agents(args.root)
+    code = 0 if not errors else 1
+    for error in errors:
+        print(f"new.py: {error}", file=sys.stderr)
+    if code == 0 and (args.root / ".codex/agents").is_dir():
+        print(f"wrote .codex/agents/{args.pack}.toml")
     print("next: 'python3 scripts/check.py --lane roles' to confirm, then assign it")
     return code
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Scaffold a search artifact from templates/",
+        description="Create search artifacts and regenerate derived agent files",
         epilog="scripts/check.py validates; this writes. See templates/README.md.",
     )
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT,
@@ -200,7 +233,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     checkpoint = sub.add_parser("checkpoint", help="a dated durable record")
     checkpoint.add_argument("slug")
-    checkpoint.add_argument("--node", help="a ledger node this engaged")
+    engagement = checkpoint.add_mutually_exclusive_group(required=True)
+    engagement.add_argument("--node", help="a ledger node this engaged")
+    engagement.add_argument("--approach", help="the portfolio approach this engaged")
     checkpoint.add_argument("--timestamp", action="store_true",
                             help="stamp a UTC time, to order it against another record "
                                  "written the same day")
@@ -212,7 +247,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     module = sub.add_parser("module", help="a manuscript module")
     module.add_argument("slug")
-    module.add_argument("--node", help="the claim label it will carry")
+    module.add_argument("--node", required=True, help="the claim label it will carry")
     module.add_argument("--kind", default="theorem", choices=KINDS)
     module.add_argument("--title")
     module.set_defaults(handler=cmd_module)
@@ -227,6 +262,9 @@ def build_parser() -> argparse.ArgumentParser:
     role = sub.add_parser("role", help="install an optional capability pack")
     role.add_argument("pack")
     role.set_defaults(handler=cmd_role)
+
+    agents = sub.add_parser("agents", help="regenerate agent files from profiles.yaml")
+    agents.set_defaults(handler=cmd_agents)
     return parser
 
 
@@ -236,10 +274,10 @@ def main(argv: list[str] | None = None) -> int:
 
     for field, pattern, want in (("target", NODE_ID_RE, "a node id like 'q:main'"),
                                  ("node", NODE_ID_RE, "a node id like 'lem:key'"),
+                                 ("approach", APPROACH_ID_RE,
+                                  "an approach id like 'ap:first-route'"),
                                  ("slug", SLUG_RE, "a lowercase slug like 'first-attempt'")):
         value = getattr(args, field, None)
-        # `module --slug` is a filename and may carry a numeric prefix; `node` is optional
-        # on checkpoint and module, where it is prose guidance rather than an id.
         if isinstance(value, str) and not pattern.match(value):
             return fail(f"{field} '{value}': want {want}")
     return args.handler(args)

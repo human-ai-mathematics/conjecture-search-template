@@ -14,8 +14,7 @@ from typing import Any
 
 # PyYAML is the checker's one dependency, declared in the root pyproject.toml. Every
 # other module in this package imports it *from here* rather than directly, so this hint
-# is what a missing install produces no matter which module happens to load first — it
-# used to depend on `checkpoints` sorting before `ledger` in one import statement.
+# is what a missing install produces no matter which module happens to load first.
 try:
     import yaml
 except ImportError:  # pragma: no cover - environment guard

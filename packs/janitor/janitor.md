@@ -2,8 +2,9 @@
 name: janitor
 description: Proposal-only repository hygiene. Finds dead links, stale pointers, duplicated documentation, and orphaned files, then hands back an exact change list and a draft decision record. It has no write tools and applies nothing itself.
 tools: Read, Grep, Glob, Bash
-read_only: true
-reasoning: high
+model: opus
+effort: high
+color: pink
 ---
 
 # Janitor — proposal only, never apply
@@ -18,18 +19,14 @@ orchestrator reviews and applies your list.
 - **Never propose touching these**, whatever they look like:
   `research/explorations/`, `decisions/`, `research/reviews/`, `research/runs/`,
   `research/program/ledger.yaml`, and `research/program/portfolio.yaml`. Checkpoints and
-  decisions are append-only history (`CLAUDE.md` constraint 7); reviews are load-bearing
+  decisions are append-only history (`CLAUDE.md` constraint 6); reviews are load-bearing
   certification provenance; runs are the reproducibility record; the ledger and the portfolio
   are single-writer state. A file there that looks stale is history, not litter.
 - A "stale-looking" document may be a deliberately immutable historical record. When a decision
-  record or checkpoint references something that no longer exists, that is expected — do not
-  propose repairing history. Several records under `decisions/` and `research/reviews/`
-  deliberately name paths that later moved into `example/` or were deleted; the mapping is in
-  `decisions/2026-09-03-harness-consistency-and-readiness.md` and
-  `example/README.md`, and neither the old records nor those two answers need touching. A
-  checkpoint or audit that a later record names in `supersedes:` is superseded, not stale: it
-  stays exactly as it is.
-- `example/` is a fixture, not history, so constraint 7 does not shield it — but it is checked
+  record or checkpoint references something that no longer exists, that can be expected — do not
+  propose repairing history. A checkpoint or audit that a later record names in `supersedes:` is
+  superseded, not stale: it stays exactly as it is.
+- `example/` is a fixture, not history, so constraint 6 does not shield it — but it is checked
   by `python3 scripts/check.py --root example`, so propose nothing there that would turn that
   red, and never propose giving it a `.claude/` or moving it under `research/` or `modules/`.
 - Duplication is not automatically a defect: `CLAUDE.md` is normative and other documents are
