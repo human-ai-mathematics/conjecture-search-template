@@ -162,7 +162,7 @@ list whatever is still outstanding.
    search sharp. Do not start a sustained search without one — and a *scaffolded* brief is
    not a written one, which is why `ready` fails until its instructions are gone.
 
-3. **Add program constraints, if any.** [`CLAUDE.md`](CLAUDE.md) ships thirteen universal hard
+3. **Add program constraints, if any.** [`CLAUDE.md`](CLAUDE.md) ships twelve universal hard
    constraints. Anything specific to this repository's mathematics goes in the *Program
    constraints* section as `P1, P2, …` — kept separate so a fork can drop them without
    leaving a `Reserved` hole. Merge barriers belong here, and the `synthesizer` role should

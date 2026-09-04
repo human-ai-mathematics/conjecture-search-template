@@ -74,7 +74,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             texlive-latex-recommended texlive-latex-extra texlive-science \
-            texlive-fonts-recommended texlive-extra-utils biber latexmk
+            texlive-fonts-recommended texlive-extra-utils \
+            texlive-bibtex-extra biber latexmk
+          # texlive-bibtex-extra is what provides biblatex.sty; preamble.tex loads
+          # biblatex and biber is only its backend, so omitting it fails the build.
           command -v make4ht
 
       - name: Compile the manuscript
