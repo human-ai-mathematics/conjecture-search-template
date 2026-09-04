@@ -3,6 +3,11 @@
 # `blank_issues_enabled: true` on purpose: the five forms cover what the site's buttons
 # open, and a contributor with something that fits none of them should not have to
 # pretend it does.
+#
+# The two URLs below are the only place in the repository that hardcodes the
+# owner/repo slug: everything the site links derives it from the `origin` remote.
+# A fork therefore has to repoint exactly this file, which is README.md's
+# instantiation step 5 and docs/PUBLISHING-THE-SITE.md.
 blank_issues_enabled: true
 contact_links:
   - name: Ask a question, or think out loud
