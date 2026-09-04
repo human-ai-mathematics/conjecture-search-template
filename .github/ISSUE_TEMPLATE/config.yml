@@ -11,13 +11,13 @@
 blank_issues_enabled: true
 contact_links:
   - name: Ask a question, or think out loud
-    url: https://github.com/numina-functional-inequalities/template-exploration/discussions
+    url: https://github.com/numina-functional-inequalities/conjecture-search-template/discussions
     about: >
       Interpretation, background, why a route was abandoned, whether an idea is worth
       trying. Nothing has to be finished to be worth saying here.
 
   - name: Read the search first
-    url: https://numina-functional-inequalities.github.io/template-exploration/
+    url: https://numina-functional-inequalities.github.io/conjecture-search-template/
     about: >
       The target, what is established and at what certification level, what remains
       open, which mechanisms have been tried, and why each route stopped.
