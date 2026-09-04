@@ -10,12 +10,6 @@ contract is intended to remain stable; from that point onward, use standard sema
 
 ## [Unreleased]
 
-### Fixed
-
-- Keep installed capability-pack roles synchronized with their pack sources.
-- Remove the synthesizer's stale reference to the retired decisions archive.
-- Verify the byte-preserved source and checksum declared by migrated numerical artifacts.
-
 ## [0.1.0] - 2026-09-04
 
 ### Added
@@ -39,6 +33,12 @@ contract is intended to remain stable; from that point onward, use standard sema
 
 - Remove the constraint-citation index and its `check.py constraints` command.
 - Remove the `decisions/` control-plane archive and its contribution workflow.
+
+### Fixed
+
+- Keep installed capability-pack roles synchronized with their pack sources.
+- Remove the synthesizer's stale reference to the retired decisions archive.
+- Verify the byte-preserved source and checksum declared by migrated numerical artifacts.
 
 [Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/releases/tag/v0.1.0
