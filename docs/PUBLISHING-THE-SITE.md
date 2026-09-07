@@ -87,9 +87,20 @@ missing, which is the worst of both.
 
 ## 3. Deploy it
 
-[`../.github/workflows/pages.yml`](../.github/workflows/pages.yml) validates and builds on
-every push and pull request. It deploys only from the repository's configured default branch,
-so a fork using `main`, `master`, or another name needs no workflow edit.
+[`../.github/workflows/pages.yml`](../.github/workflows/pages.yml) runs only when a human
+dispatches it — **Actions → site → Run workflow**. It validates, builds and then deploys, and
+it deploys only from the repository's configured default branch, so dispatching it from a topic
+branch builds the site and stops there. A fork using `main`, `master`, or another name needs no
+edit to that gate.
+
+Publishing is manual because it is expensive and because it is a claim: the build installs TeX
+Live and compiles every certified dossier, and the result is a snapshot a reader is invited to
+cite. Nothing about a push says the repository is ready to make that claim.
+
+The cheap half runs on its own. [`../.github/workflows/check.yml`](../.github/workflows/check.yml)
+runs `scripts/check.py`, the worked example and the checker's test suite on every pull request
+into `main`, so a revision that cannot be published is caught before it is merged rather than at
+the next dispatch.
 
 Before the first run, a human has to enable Pages: **Settings → Pages → Build and
 deployment → Source: GitHub Actions**. Nothing in the workflow can do that, and until it
