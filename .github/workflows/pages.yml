@@ -20,12 +20,16 @@
 # A failed build leaves the previously deployed site online while the repository moves
 # on. That is why every page carries its source commit and build time: a reader can
 # always tell which revision they are looking at.
+#
+# This workflow runs only when a human asks for it. Compiling the manuscript installs
+# TeX Live and builds every certified dossier, which is minutes of runner time on a
+# revision nobody has asked to publish, and publishing is a deliberate act: the site is
+# a snapshot a reader is invited to cite, not a mirror of whatever was pushed last.
+# The cheap structural checks still run on their own, on pull requests, in `check.yml`.
 
 name: site
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -123,12 +127,10 @@ jobs:
           path: build/site
 
   deploy:
-    # Only the default branch publishes, on a push or an explicit manual dispatch. A pull
-    # request builds the site and stops there, which catches a revision that cannot be
-    # published before it is merged.
-    if: >-
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      github.ref_name == github.event.repository.default_branch
+    # Only the default branch publishes. Dispatching from any other branch builds the
+    # site and stops there, which is how you check that a revision *can* be published
+    # without publishing it.
+    if: github.ref_name == github.event.repository.default_branch
     needs: build
     runs-on: ubuntu-latest
     environment:

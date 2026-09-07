@@ -38,6 +38,7 @@ _spec.loader.exec_module(site_module)
 EXAMPLE = REPO / "example"
 FRONTEND = REPO / "site"
 PAGES_WORKFLOW = REPO / ".github/workflows/pages.yml"
+CHECK_WORKFLOW = REPO / ".github/workflows/check.yml"
 
 
 class SiteFixture(CheckerFixture):
@@ -432,7 +433,7 @@ class FrontendSyntax(unittest.TestCase):
 
 
 class PagesWorkflow(unittest.TestCase):
-    """Pin the two deployment details that otherwise fail only on GitHub's runner."""
+    """Pin the deployment details that otherwise fail only on GitHub's runner."""
 
     def test_make4ht_comes_from_the_ubuntu_package_that_ships_it(self):
         text = PAGES_WORKFLOW.read_text(encoding="utf-8")
@@ -447,6 +448,40 @@ class PagesWorkflow(unittest.TestCase):
         self.assertIn("github.event.repository.default_branch", text)
         self.assertNotIn("refs/heads/main", text)
         self.assertNotIn("branches: [main]", text)
+
+    def test_publishing_happens_only_when_a_human_asks(self):
+        # Restoring `push:` here would republish the site from every commit on the
+        # default branch, which is the behaviour this repository decided against.
+        text = PAGES_WORKFLOW.read_text(encoding="utf-8")
+        triggers = text.split("\non:", 1)[1].split("\npermissions:", 1)[0]
+
+        self.assertIn("workflow_dispatch", triggers)
+        self.assertNotIn("push", triggers)
+        self.assertNotIn("pull_request", triggers)
+
+
+class CheckWorkflow(unittest.TestCase):
+    """The cheap checks are the ones that may run unattended."""
+
+    def test_pull_requests_are_validated(self):
+        text = CHECK_WORKFLOW.read_text(encoding="utf-8")
+        triggers = text.split("\non:", 1)[1].split("\npermissions:", 1)[0]
+
+        self.assertIn("pull_request", triggers)
+        self.assertIn("scripts/check.py", text)
+        self.assertIn("unittest discover", text)
+
+    def test_the_expensive_half_stays_out_of_it(self):
+        # If TeX Live ever reappears here, every pull request pays minutes for a
+        # document nobody asked to build. The comments name those tools to say where
+        # they live, so this reads the steps and not the prose around them.
+        steps = "\n".join(line for line in CHECK_WORKFLOW.read_text(encoding="utf-8").splitlines()
+                          if not line.lstrip().startswith("#"))
+
+        self.assertNotIn("texlive", steps)
+        self.assertNotIn("latexmk", steps)
+        self.assertNotIn("make4ht", steps)
+        self.assertNotIn("deploy-pages", steps)
 
 
 if __name__ == "__main__":

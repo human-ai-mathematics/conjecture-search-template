@@ -10,6 +10,16 @@ contract is intended to remain stable; from that point onward, use standard sema
 
 ## [Unreleased]
 
+### Added
+
+- Add a `check` workflow that validates the repository, the worked example and the checker's
+  test suite on pull requests into the default branch.
+
+### Changed
+
+- Publish the site only on an explicit manual dispatch. The `site` workflow no longer runs on
+  push or pull request, so no revision is built or deployed unless a human asks for it.
+
 ## [0.1.0] - 2026-09-04
 
 ### Added
