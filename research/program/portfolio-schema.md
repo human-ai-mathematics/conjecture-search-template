@@ -35,13 +35,13 @@ live route needs no portfolio.
 ```yaml
 ---
 type: brief
-target: q:main-conjecture
+target: conj:main
 ---
 ```
 
-`target` must resolve to a ledger node of a claim-bearing kind — a `definition` is fixed by
-decision and an `obstruction` is a fence the search reads, so neither is something a search
-resolves — and must agree with `portfolio.yaml`'s `target` when both exist. The body is prose; the sections the template ships are what an agent
+`target` must resolve to a ledger node that a search can resolve — not a `definition`, which is
+fixed by decision, and not a node some other node cites in `bounded_by` or
+`heuristic_barriers`, which is a fence the search reads — and must agree with `portfolio.yaml`'s `target` when both exist. The body is prose; the sections the template ships are what an agent
 needs before it can attack the problem honestly — the exact negation, what counts as a
 complete proof and a complete refutation, edge cases, known equivalent-strength traps,
 the initial families, the blocked/reopen criteria, and a budget policy that permits an
@@ -54,7 +54,7 @@ verbatim as a marked copy, and never sharpens it in place.
 ## `portfolio.yaml`
 
 ```yaml
-target: q:main-conjecture
+target: conj:main
 
 families:
   - id: fam:transport

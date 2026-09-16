@@ -44,21 +44,19 @@
 
 % --- theorem environments (shared numbering by section) ----------------------
 %
-% These ten are the *claim environments*: a \label inside one of them, in modules/,
+% These eight are the *claim environments*: a \label inside one of them, in modules/,
 % must be a ledger node whose `kind` is the environment's name. The environment name
 % and the ledger `kind` vocabulary are deliberately the same list, and scripts/check.py
-% enforces the correspondence. `remark` is not on the list — it stays expository, which
-% is why an obstruction has an environment of its own rather than borrowing one.
+% enforces the correspondence. `remark` is not on the list — it stays expository. An
+% obstruction has no environment: it is a claim like any other, cited as a fence.
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{proposition}[theorem]{Proposition}
 \newtheorem{corollary}[theorem]{Corollary}
 \newtheorem{conjecture}[theorem]{Conjecture}
-\newtheorem{question}[theorem]{Question}
 \theoremstyle{definition}
 \newtheorem{definition}[theorem]{Definition}
 \newtheorem{assumption}[theorem]{Assumption}
-\newtheorem{obstruction}[theorem]{Obstruction}
 \theoremstyle{remark}
 \newtheorem{example}[theorem]{Example}
 \newtheorem{remark}[theorem]{Remark}

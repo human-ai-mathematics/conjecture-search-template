@@ -20,7 +20,7 @@ the validator needs no configuration to find it. The program's *name* is `meta.p
 | What ledger fields are valid? | [`ledger-schema.md`](ledger-schema.md) |
 | Which routes are alive, blocked, duplicated, saturated? | `portfolio.yaml` — gated; [scaffold](../../templates/portfolio.yaml), [worked](../../example/research/program/portfolio.yaml) |
 | What portfolio and brief fields are valid? | [`portfolio-schema.md`](portfolio-schema.md) |
-| Which proof shapes are fenced or suspect? | Proved obstruction nodes via `bounded_by`; open ones via `heuristic_barriers` |
+| Which proof shapes are fenced or suspect? | Proved nodes cited in `bounded_by`; open ones in `heuristic_barriers` |
 | Which conventions do claims rest on? | `kind: definition` nodes with `status: defined`, and `depends_on` |
 | What has been attempted? | [`../explorations/`](../explorations/) |
 | What can be computed numerically? | [`../../experiments/README.md`](../../experiments/README.md) |
@@ -73,7 +73,7 @@ file.
 
 1. Read `brief.md`, then select a node from the ledger or an approach from the portfolio.
 2. Read the node's manuscript anchor, `depends_on` closure, `assumes`/`implies`, and both
-   classes of obstruction in full.
+   classes of fence (`bounded_by`, `heuristic_barriers`) in full.
 3. Record a checkpoint when the result is durable. Send numerical work through `numerics` and
    treat it as directional.
 4. Propose the route's new state through the handoff's `portfolio_delta`.

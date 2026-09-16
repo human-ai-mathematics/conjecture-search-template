@@ -2,7 +2,7 @@
 
 This is the lane that owns *what is mathematically claimed*. It validates node
 identity and schema, the acyclic proof DAG, the separation of proof dependencies from
-implication antecedents, the two classes of obstruction, and the coupling between a
+implication antecedents, the two classes of fence, and the coupling between a
 node id and a ``\\label`` in ``modules/``. Proof certification lives in ``proofs.py``;
 search activity lives in ``portfolio.py``; neither belongs here.
 """
@@ -22,9 +22,12 @@ LEDGER_PATH = Path("research/program/ledger.yaml")
 #: The repository bibliography, resolved relative to the repository root.
 BIBLIOGRAPHY = Path("references.bib")
 
+#: Mathematical form, and nothing else. Whether a node *acts* as an obstruction is a role
+#: carried by the edges that cite it — ``bounded_by`` for a proved fence,
+#: ``heuristic_barriers`` for an open one — never a kind of its own.
 KIND = {
-    "theorem", "lemma", "proposition", "corollary", "definition", "assumption",
-    "question", "conjecture", "obstruction", "example",
+    "theorem", "lemma", "proposition", "corollary", "conjecture", "definition",
+    "example", "assumption",
 }
 
 #: The LaTeX environments that carry a claim. Deliberately the same words as ``KIND``:
@@ -319,8 +322,7 @@ def _acyclic(program: str, nodes: dict[str, dict]) -> list[str]:
 
 def _validate_node(program: str, nid: str, node: dict, *, root: Path,
                    labels: dict[str, dict], bib_keys: set[str] | None,
-                   nodes: dict[str, dict], obstruction_ids: set[str],
-                   errors: list[str]) -> None:
+                   nodes: dict[str, dict], errors: list[str]) -> None:
     for field in sorted(set(node) - NODE_FIELDS):
         errors.append(f"[{program}] {nid}: unknown field '{field}'")
     for field in sorted(LIST_FIELDS & set(node)):
@@ -438,14 +440,16 @@ def _validate_node(program: str, nid: str, node: dict, *, root: Path,
                     f"[{program}] {nid}.{field}: '{ref}' is not a node in this ledger"
                 )
 
+    # A fence is a role, not a kind: any proved node may bound a claim, and any open node
+    # may warn about one. Only the status decides which of the two lists it belongs in.
     for ref in as_list(node.get("bounded_by")):
         if not isinstance(ref, str) or not ref.strip():
             errors.append(f"[{program}] {nid}.bounded_by: references must be non-empty strings")
-        elif ref not in obstruction_ids:
-            errors.append(f"[{program}] {nid}.bounded_by: '{ref}' is not a declared obstruction")
+        elif ref not in nodes:
+            errors.append(f"[{program}] {nid}.bounded_by: '{ref}' is not a node in this ledger")
         elif nodes[ref].get("status") != "proved":
             errors.append(
-                f"[{program}] {nid}.bounded_by: '{ref}' is not an established obstruction; "
+                f"[{program}] {nid}.bounded_by: '{ref}' is not proved; "
                 "use heuristic_barriers for an open barrier"
             )
 
@@ -454,13 +458,18 @@ def _validate_node(program: str, nid: str, node: dict, *, root: Path,
             errors.append(
                 f"[{program}] {nid}.heuristic_barriers: references must be non-empty strings"
             )
-        elif ref not in obstruction_ids:
+        elif ref not in nodes:
             errors.append(
-                f"[{program}] {nid}.heuristic_barriers: '{ref}' is not a declared obstruction"
+                f"[{program}] {nid}.heuristic_barriers: '{ref}' is not a node in this ledger"
             )
         elif nodes[ref].get("status") == "proved":
             errors.append(
                 f"[{program}] {nid}.heuristic_barriers: '{ref}' is established; use bounded_by"
+            )
+        elif nodes[ref].get("status") != "open":
+            errors.append(
+                f"[{program}] {nid}.heuristic_barriers: '{ref}' is "
+                f"{nodes[ref].get('status')}, not an open barrier"
             )
 
     if node.get("implies") and status != "proved":
@@ -533,16 +542,13 @@ def check(root: Path, research: Path, errors: list[str],
             "path": path,
             "meta": meta,
             "nodes": nodes,
-            "obs_ids": {
-                nid for nid, node in nodes.items() if node.get("kind") == "obstruction"
-            },
         })
 
     for ledger in ledgers:
         program, nodes = ledger["program"], ledger["nodes"]
         for nid, node in nodes.items():
             _validate_node(program, nid, node, root=root, labels=labels, bib_keys=bib_keys,
-                           nodes=nodes, obstruction_ids=ledger["obs_ids"], errors=errors)
+                           nodes=nodes, errors=errors)
         errors.extend(_acyclic(program, nodes))
         for nid, node in nodes.items():
             if node.get("status") != "proved":

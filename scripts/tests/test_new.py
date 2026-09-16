@@ -41,33 +41,33 @@ class ScaffoldTests(unittest.TestCase):
         return (self.root / relative).read_text(encoding="utf-8")
 
     def test_a_brief_is_written_with_its_target_substituted(self):
-        code, output = self.run_scaffold("brief", "--target", "q:main")
+        code, output = self.run_scaffold("brief", "--target", "conj:main")
 
         self.assertEqual(code, 0, output)
         brief = self.read("research/program/brief.md")
-        self.assertIn("target: q:main", brief)
+        self.assertIn("target: conj:main", brief)
         self.assertNotIn("{{TARGET_NODE}}", brief)
 
     def test_a_scaffold_never_overwrites_an_existing_file(self):
         """Two record areas here are append-only, and a scaffolder that clobbers is how a
         durable record stops being durable."""
-        self.run_scaffold("brief", "--target", "q:main")
+        self.run_scaffold("brief", "--target", "conj:main")
         (self.root / "research/program/brief.md").write_text("hand written\n")
 
-        code, output = self.run_scaffold("brief", "--target", "q:other")
+        code, output = self.run_scaffold("brief", "--target", "conj:other")
 
         self.assertEqual(code, 1)
         self.assertIn("already exists", output)
         self.assertEqual(self.read("research/program/brief.md"), "hand written\n")
 
     def test_a_checkpoint_lands_under_a_dated_filename(self):
-        code, output = self.run_scaffold("checkpoint", "first-attempt", "--node", "q:main")
+        code, output = self.run_scaffold("checkpoint", "first-attempt", "--node", "conj:main")
 
         self.assertEqual(code, 0, output)
         written = sorted((self.root / "research/explorations").glob("*.md"))
         self.assertEqual(len(written), 1)
         self.assertTrue(written[0].name.endswith("-first-attempt.md"))
-        self.assertIn("- q:main", written[0].read_text())
+        self.assertIn("- conj:main", written[0].read_text())
 
     def test_a_timestamped_checkpoint_keeps_the_plain_date_in_its_filename(self):
         """`date:` may carry a UTC time to order same-day records; the filename prefix

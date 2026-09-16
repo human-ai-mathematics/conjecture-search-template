@@ -6,8 +6,8 @@
 # Field contract: research/program/ledger-schema.md. Six fields are required; every
 # relation below is optional and may be deleted.
 
-  # kind: theorem|lemma|proposition|corollary|conjecture|question|definition|
-  #       assumption|obstruction|example  — and it must match the LaTeX environment
+  # kind: theorem|lemma|proposition|corollary|conjecture|definition|example|
+  #       assumption  — and it must match the LaTeX environment
   #       the statement is written in.
   # status: open|proved|refuted|defined ('defined' only for a definition).
   # provenance: internal|literature (literature also needs import_class + references).
@@ -22,5 +22,5 @@
     # assumes: []            # antecedents of an implication, never proof dependencies
     # implies: []            # what this node yields
     # refines: []            # statements this one sharpens
-    # bounded_by: []         # proved obstruction nodes — hard fences
-    # heuristic_barriers: [] # open obstruction nodes — advisory only
+    # bounded_by: []         # proved nodes this must respect — hard fences
+    # heuristic_barriers: [] # open nodes warning against a method — advisory only

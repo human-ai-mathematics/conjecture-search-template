@@ -31,7 +31,7 @@ same kind of objects, differing only in the box. Because that check does not eva
 `conj:example`, widening it cannot repair the mismatch. It is marked `duplicate` against
 `ap:example-finite-battery` and is not being worked.
 
-Widening the box is not a new route either. `obs:example` fences the whole family:
+Widening the box is not a new route either. `conj:finite-battery` fences the whole family:
 agreement across any finite battery constrains nothing about the instances not tried, so a
 larger enumeration buys a larger silence.
 

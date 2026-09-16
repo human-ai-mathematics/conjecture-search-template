@@ -13,15 +13,15 @@ from fixtures import CheckerFixture, node  # noqa: E402
 
 class CheckpointTests(CheckerFixture):
     def test_exploration_requires_a_typed_dated_envelope(self):
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
         directory = self.root / "research/explorations"
         directory.mkdir(parents=True)
         (directory / "2026-08-26-bare.md").write_text("# no front matter\n")
         (directory / "README.md").write_text("navigation, not an attempt\n")
-        self.add_checkpoint("wrong-outcome", nodes=("q:open",), outcome="promising")
-        self.add_checkpoint("stale-date", nodes=("q:open",),
+        self.add_checkpoint("wrong-outcome", nodes=("conj:open",), outcome="promising")
+        self.add_checkpoint("stale-date", nodes=("conj:open",),
                              front_matter={"date": "2026-08-25"})
-        self.add_checkpoint("extra-field", nodes=("q:open",),
+        self.add_checkpoint("extra-field", nodes=("conj:open",),
                              front_matter={"verdict": "pass"})
         self.add_checkpoint("engages-nothing")
 
@@ -36,23 +36,23 @@ class CheckpointTests(CheckerFixture):
         self.assertNotIn("README.md", errors)
 
     def test_exploration_nodes_and_cited_artifacts_must_resolve(self):
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
         artifact = self.add_run("2026-08-26T000000Z-example.jsonl")
-        self.add_checkpoint("grounded", nodes=("q:open",), artifacts=(artifact,))
-        self.add_checkpoint("dangling", date="2026-08-27", nodes=("q:ghost",),
+        self.add_checkpoint("grounded", nodes=("conj:open",), artifacts=(artifact,))
+        self.add_checkpoint("dangling", date="2026-08-27", nodes=("conj:ghost",),
                              artifacts=("research/runs/missing.jsonl", "solutions/aside.jsonl"))
 
         errors = self.errors()
 
-        self.assertIn("nodes: 'q:ghost' is not a ledger node id", errors)
+        self.assertIn("nodes: 'conj:ghost' is not a ledger node id", errors)
         self.assertIn("'research/runs/missing.jsonl' does not exist", errors)
         self.assertIn("'solutions/aside.jsonl' must be an artifact under research/runs/", errors)
         self.assertNotIn("2026-08-26-grounded.md", errors)
 
     def test_candidate_list_and_candidate_outcome_require_each_other(self):
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
-        self.add_checkpoint("claims-none", nodes=("q:open",), outcome="candidate")
-        self.add_checkpoint("unflagged", date="2026-08-27", nodes=("q:open",),
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
+        self.add_checkpoint("claims-none", nodes=("conj:open",), outcome="candidate")
+        self.add_checkpoint("unflagged", date="2026-08-27", nodes=("conj:open",),
                              outcome="dead-end",
                              candidates=({"id": "cand:quiet", "statement": "S"},))
 
@@ -62,8 +62,8 @@ class CheckpointTests(CheckerFixture):
 
     def test_candidate_ids_are_namespaced_unique_and_never_ledger_nodes(self):
         self.add_ledger("program", "program", [
-            node("q:open", status="open", kind="question"),
-            node("cand:collide", status="open", kind="question"),
+            node("conj:open", status="open", kind="conjecture"),
+            node("cand:collide", status="open", kind="conjecture"),
         ])
         self.add_checkpoint("first", outcome="candidate",
                              candidates=({"id": "cand:same", "statement": "S"},))
@@ -84,12 +84,12 @@ class CheckpointTests(CheckerFixture):
         self.assertIn("statement: must be a non-empty string", errors)
 
     def test_a_candidate_stays_live_until_a_later_exploration_retires_it(self):
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
         self.add_checkpoint("propose", outcome="candidate", candidates=(
             {"id": "cand:alpha", "statement": "A"},
             {"id": "cand:beta", "statement": "B"},
         ))
-        self.add_checkpoint("kill", date="2026-08-27", nodes=("q:open",),
+        self.add_checkpoint("kill", date="2026-08-27", nodes=("conj:open",),
                              retires=("cand:alpha",))
 
         report = self.check()
@@ -100,8 +100,8 @@ class CheckpointTests(CheckerFixture):
                          "research/explorations/2026-08-26-propose.md")
 
     def test_retiring_an_unproposed_or_not_yet_proposed_candidate_fails(self):
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
-        self.add_checkpoint("early", nodes=("q:open",),
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
+        self.add_checkpoint("early", nodes=("conj:open",),
                              retires=("cand:later", "cand:ghost"))
         self.add_checkpoint("later", date="2026-08-27", outcome="candidate",
                              candidates=({"id": "cand:later", "statement": "L"},))
@@ -118,9 +118,9 @@ class CheckpointTests(CheckerFixture):
     # --- the two additions that attach memory to the search ------------------------------
 
     def test_a_checkpoint_may_be_anchored_to_a_portfolio_approach(self):
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
         self.add_portfolio({
-            "target": "q:open",
+            "target": "conj:open",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [{"id": "ap:real", "family": "fam:one", "state": "active"}],
         })
@@ -135,23 +135,23 @@ class CheckpointTests(CheckerFixture):
         self.assertNotIn("2026-08-26-anchored.md", errors)
 
     def test_an_approach_reference_needs_a_portfolio_to_resolve_against(self):
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
         self.add_checkpoint("anchored", approach="ap:real")
 
         self.assertIn("names an approach, but this repository has no "
                       "research/program/portfolio.yaml", self.errors())
 
     def test_supersession_points_backwards_at_the_same_genre(self):
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
-        first = self.add_checkpoint("first", nodes=("q:open",))
-        second = self.add_checkpoint("second", date="2026-08-27", nodes=("q:open",),
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
+        first = self.add_checkpoint("first", nodes=("conj:open",))
+        second = self.add_checkpoint("second", date="2026-08-27", nodes=("conj:open",),
                                      supersedes=(first,))
-        self.add_checkpoint("backwards", date="2026-08-28", nodes=("q:open",),
+        self.add_checkpoint("backwards", date="2026-08-28", nodes=("conj:open",),
                             supersedes=(second, "research/explorations/2026-08-29-later.md"))
-        self.add_checkpoint("later", date="2026-08-29", nodes=("q:open",))
-        self.add_checkpoint("selfish", date="2026-08-30", nodes=("q:open",),
+        self.add_checkpoint("later", date="2026-08-29", nodes=("conj:open",))
+        self.add_checkpoint("selfish", date="2026-08-30", nodes=("conj:open",),
                             supersedes=("research/explorations/2026-08-30-selfish.md",))
-        self.add_checkpoint("wrong-genre", date="2026-08-31", nodes=("q:open",),
+        self.add_checkpoint("wrong-genre", date="2026-08-31", nodes=("conj:open",),
                             supersedes=("research/reviews/2026-08-25-audit.md",))
 
         errors = self.errors()
@@ -165,9 +165,9 @@ class CheckpointTests(CheckerFixture):
 
     def test_superseded_checkpoints_leave_the_current_heads(self):
         """Supersession changes what to read first; it deletes nothing."""
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
-        first = self.add_checkpoint("first", nodes=("q:open",))
-        second = self.add_checkpoint("second", date="2026-08-27", nodes=("q:open",),
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
+        first = self.add_checkpoint("first", nodes=("conj:open",))
+        second = self.add_checkpoint("second", date="2026-08-27", nodes=("conj:open",),
                                      supersedes=(first,))
 
         report = self.check()
@@ -178,13 +178,13 @@ class CheckpointTests(CheckerFixture):
         self.assertEqual(memory["superseded"], {first: [second]})
 
     def test_an_audit_may_be_superseded_but_a_proof_review_may_not(self):
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
         stale = self.add_review("stale-audit", report_type="audit", date="2026-08-25")
         fresh = self.add_review("current-audit", report_type="audit", date="2026-08-26",
                                 supersedes=(stale,))
-        solution = self.add_solution("proof", node_ids=("q:open",))
+        solution = self.add_solution("proof", node_ids=("conj:open",))
         review = self.add_review("proof-review", date="2026-08-27",
-                                 node_ids=("q:open",), solutions=(solution,))
+                                 node_ids=("conj:open",), solutions=(solution,))
         replacing = self.root / "research/reviews/2026-08-28-replaces-a-proof.md"
         replacing.write_text(
             "---\ntype: audit\ndate: '2026-08-28'\n"

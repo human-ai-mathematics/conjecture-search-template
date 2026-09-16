@@ -52,7 +52,7 @@ constraint 7).
 3. Classify: peer-reviewed publication, or preprint. If you cannot establish which, it is
    `preprint-unreviewed`.
 4. Check the result against the target's `bounded_by` fences. A literature result contradicting a
-   repository obstruction means one of them is wrong — report that collision loudly rather than
+   proved repository fence means one of them is wrong — report that collision loudly rather than
    resolving it yourself.
 5. State what the result does **not** give: the gap between it and the open node is the
    deliverable.

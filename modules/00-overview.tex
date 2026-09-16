@@ -4,8 +4,8 @@
 % ledger node id in research/program/ledger.yaml with a matching `kind`. Structural
 % labels (\section, \subsection, equations) are not nodes and need none.
 %
-% This file ships with orientation prose and no claims. A worked module holding an
-% obstruction, an open question and a proved proposition is in example/modules/.
+% This file ships with orientation prose and no claims. A worked module holding a fence,
+% an open conjecture and a proved proposition is in example/modules/.
 \documentclass[../main.tex]{subfiles}
 \begin{document}
 
@@ -23,11 +23,11 @@ in \texttt{depends\_on}, so changing it is a mathematical edit the checker can s
 There is no separate notation or normalization file: a second list would be a copy of
 the dependency graph that nothing keeps honest.
 
-An obstruction is a fence: a statement violating it is wrong by construction, so it is
-read \emph{before} a proof is attempted or a numerical run is spent
-(\texttt{CLAUDE.md} constraint 5). It is an ordinary ledger node ---
-\texttt{kind: obstruction}, stated under a \texttt{\textbackslash label} in an
-\texttt{obstruction} environment like any other claim --- and it lives here, rather
+An obstruction is a fence, read \emph{before} a proof is attempted or a numerical run
+is spent (\texttt{CLAUDE.md} constraint 5). It is not a kind of node: it is an ordinary
+claim in the environment matching its form, and other nodes cite it --- in
+\texttt{bounded\_by} once it is proved, so a statement violating it is wrong by
+construction, or in \texttt{heuristic\_barriers} while it is open. It lives here, rather
 than in a registry of its own, because a fence is only useful next to the mathematics
 it fences. State both halves: what it rules out, and what it leaves open.
 

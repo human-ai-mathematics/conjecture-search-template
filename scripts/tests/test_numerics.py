@@ -22,7 +22,7 @@ class NumericsTests(CheckerFixture):
     def setUp(self):
         super().setUp()
         self.add_ledger("program", "program",
-                        [node("q:open", status="open", kind="question")])
+                        [node("conj:open", status="open", kind="conjecture")])
 
     def test_a_well_formed_artifact_passes(self):
         self.add_run("2026-08-26T000000Z-fixture.jsonl", records=3)

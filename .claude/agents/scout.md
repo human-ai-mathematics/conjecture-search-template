@@ -1,6 +1,6 @@
 ---
 name: scout
-description: Read-only orientation on an unfamiliar or ambiguous node, target, route, or open question. It returns what a statement says, what it depends on, which obstructions fence it, which approaches have already attacked it, and where the artifacts live. It never writes and never proposes mathematics.
+description: Read-only orientation on an unfamiliar or ambiguous node, target, route, or open question. It returns what a statement says, what it depends on, which fences bound it, which approaches have already attacked it, and where the artifacts live. It never writes and never proposes mathematics.
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: high
@@ -32,7 +32,7 @@ facts, not opinions about how to proceed. Many scouts run in parallel; each is c
 3. Open the manuscript anchor: the node `id` **is** its LaTeX `\label`, inside the claim
    environment matching its `kind`, in the file the node's `file` names under `modules/`.
 4. Follow `depends_on`, and separately record `assumes`, `implies`, and `refines`.
-5. Read every hard `bounded_by` and advisory `heuristic_barriers` obstruction in full.
+5. Read every hard `bounded_by` and advisory `heuristic_barriers` fence in full.
 6. Read `python3 scripts/check.py portfolio`: which families are active, which routes are
    blocked and on what, which are already marked duplicates, and which families are closed
    with what reopening condition.

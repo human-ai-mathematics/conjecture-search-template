@@ -71,7 +71,7 @@ class CoreTests(CheckerFixture):
     def test_unknown_fields_are_rejected_even_when_empty(self):
         nodes = [
             node("lem:base", unlocks=["thm:uses"]),
-            node("q:empty", status="open", kind="question", unlocks=[]),
+            node("conj:empty", status="open", kind="conjecture", unlocks=[]),
             node("thm:uses", depends_on=["lem:base"]),
         ]
         self.add_ledger("main", "program", nodes)
@@ -79,7 +79,7 @@ class CoreTests(CheckerFixture):
         errors = self.errors()
 
         self.assertIn("lem:base: unknown field 'unlocks'", errors)
-        self.assertIn("q:empty: unknown field 'unlocks'", errors)
+        self.assertIn("conj:empty: unknown field 'unlocks'", errors)
         self.assertNotIn("already declares", errors)
 
     def test_non_schema_navigation_and_assumption_fields_are_unknown(self):
@@ -186,9 +186,9 @@ class CoreTests(CheckerFixture):
             "program",
             [
                 node(
-                    "q:schema",
+                    "conj:schema",
                     status="open",
-                    kind="question",
+                    kind="conjecture",
                     depends_on="thm:premise",
                     related=["thm:premise"],
                     evidence_eligible=True,
@@ -204,10 +204,10 @@ class CoreTests(CheckerFixture):
 
         errors = self.errors()
 
-        self.assertIn("q:schema.depends_on: must be a list", errors)
-        self.assertIn("q:schema: unknown field 'related'", errors)
-        self.assertIn("q:schema: unknown field 'evidence_eligible'", errors)
-        self.assertIn("q:schema: unknown field 'mystery'", errors)
+        self.assertIn("conj:schema.depends_on: must be a list", errors)
+        self.assertIn("conj:schema: unknown field 'related'", errors)
+        self.assertIn("conj:schema: unknown field 'evidence_eligible'", errors)
+        self.assertIn("conj:schema: unknown field 'mystery'", errors)
         self.assertIn("unknown top-level field 'workflow'", errors)
         self.assertIn("meta: unknown field 'mystery_meta'", errors)
 
@@ -226,7 +226,7 @@ class CoreTests(CheckerFixture):
         self.add_ledger(
             "main",
             "program",
-            [node("obs:synthetic", status="open", kind="obstruction",
+            [node("obs:synthetic", status="open", kind="conjecture",
                   label="thm:effective-anchor")],
         )
 
@@ -240,7 +240,7 @@ class CoreTests(CheckerFixture):
         self.add_ledger(
             "main",
             "program",
-            [node("obs:synthetic", status="open", kind="obstruction",
+            [node("obs:synthetic", status="open", kind="conjecture",
                   file="modules/other.tex")],
         )
 
@@ -388,9 +388,9 @@ class CoreTests(CheckerFixture):
             node(
                 "thm:reduction",
                 assumes=["ass:x"],
-                implies=["q:target"],
+                implies=["conj:target"],
             ),
-            node("q:target", status="open", kind="conjecture"),
+            node("conj:target", status="open", kind="conjecture"),
             node("thm:uses-reduction", depends_on=["thm:reduction"]),
             node("thm:bad-dependency", depends_on=["ass:x"]),
         ]
@@ -445,9 +445,9 @@ class CoreTests(CheckerFixture):
             "main",
             "program",
             [node(
-                "q:extra-fields",
+                "conj:extra-fields",
                 status="open",
-                kind="question",
+                kind="conjecture",
                 evidence="numerical-directional",
                 evidence_run="research/runs/old.jsonl",
                 evidence_target="A1",
@@ -459,19 +459,27 @@ class CoreTests(CheckerFixture):
         errors = self.errors()
 
         for field in ("evidence", "evidence_run", "evidence_target", "numerics", "note"):
-            self.assertIn(f"q:extra-fields: unknown field '{field}'", errors)
+            self.assertIn(f"conj:extra-fields: unknown field '{field}'", errors)
 
-    def test_bounded_by_requires_ledger_obstruction_node(self):
+    def test_a_fence_is_a_role_decided_by_status_not_a_kind(self):
+        """Any proved node may bound a claim; any open node may warn about one."""
         self.add_ledger(
             "main",
             "program",
             [
-                node("obs:established", kind="obstruction"),
-                node("obs:warning", status="open", kind="obstruction"),
-                node("thm:bounded", bounded_by=["obs:established"]),
-                node("q:warned", status="open", kind="question", heuristic_barriers=["obs:warning"]),
-                node("q:bad-hard", status="open", kind="question", bounded_by=["obs:warning"]),
-                node("thm:non-obstruction", bounded_by=["thm:bounded"]),
+                node("lem:established"),
+                node("conj:warning", status="open", kind="conjecture"),
+                node("conj:refuted", status="refuted", kind="conjecture",
+                     refuted_by=["lem:established"]),
+                node("thm:bounded", bounded_by=["lem:established"]),
+                node("conj:warned", status="open", kind="conjecture",
+                     heuristic_barriers=["conj:warning"]),
+                node("conj:bad-hard", status="open", kind="conjecture",
+                     bounded_by=["conj:warning"]),
+                node("conj:bad-soft", status="open", kind="conjecture",
+                     heuristic_barriers=["lem:established"]),
+                node("conj:bad-refuted", status="open", kind="conjecture",
+                     heuristic_barriers=["conj:refuted"]),
                 node("thm:unknown", bounded_by=["obs:missing"]),
                 node("thm:bad-mechanism", mechanism=["direct-excess"]),
             ],
@@ -480,13 +488,17 @@ class CoreTests(CheckerFixture):
         errors = self.errors()
 
         self.assertNotIn("thm:bounded.bounded_by", errors)
-        self.assertNotIn("q:warned.heuristic_barriers", errors)
-        self.assertIn("q:bad-hard.bounded_by: 'obs:warning' is not an established obstruction", errors)
+        self.assertNotIn("conj:warned.heuristic_barriers", errors)
+        self.assertIn("conj:bad-hard.bounded_by: 'conj:warning' is not proved", errors)
         self.assertIn(
-            "thm:non-obstruction.bounded_by: 'thm:bounded' is not a declared obstruction",
+            "conj:bad-soft.heuristic_barriers: 'lem:established' is established; use bounded_by",
             errors,
         )
-        self.assertIn("thm:unknown.bounded_by: 'obs:missing' is not a declared obstruction", errors)
+        self.assertIn(
+            "conj:bad-refuted.heuristic_barriers: 'conj:refuted' is refuted, not an open barrier",
+            errors,
+        )
+        self.assertIn("thm:unknown.bounded_by: 'obs:missing' is not a node in this ledger", errors)
         self.assertIn("thm:bad-mechanism: unknown field 'mechanism'", errors)
 
     def test_status_vocabulary_is_shared_and_minimal(self):
@@ -498,7 +510,7 @@ class CoreTests(CheckerFixture):
     def test_kind_vocabulary_is_shared_and_minimal(self):
         self.assertEqual(ledger.KIND, {
             "theorem", "proposition", "lemma", "corollary", "conjecture",
-            "assumption", "question", "definition", "obstruction", "example",
+            "assumption", "definition", "example",
         })
 
     def test_removed_node_kinds_are_rejected(self):
@@ -507,6 +519,8 @@ class CoreTests(CheckerFixture):
             node("hyp:invalid", status="open", kind="hypothesis"),
             node("prog:invalid", status="open", kind="program"),
             node("rem:invalid", status="open", kind="remark"),
+            node("q:invalid", status="open", kind="question"),
+            node("obs:invalid", status="open", kind="obstruction"),
         ])
 
         errors = self.errors()
@@ -516,6 +530,8 @@ class CoreTests(CheckerFixture):
             ("hyp:invalid", "hypothesis"),
             ("prog:invalid", "program"),
             ("rem:invalid", "remark"),
+            ("q:invalid", "question"),
+            ("obs:invalid", "obstruction"),
         ):
             self.assertIn(f"{nid}: bad kind '{kind}'", errors)
 

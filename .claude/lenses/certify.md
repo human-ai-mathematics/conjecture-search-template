@@ -13,7 +13,7 @@ contract; everything below is what `certify` adds.
 1. **Statement agreement.** The dossier theorem, the ledger `summary:`, and the manuscript
    statement at the `\label` the node `refines` must agree mathematically — not merely
    resolve. This is precisely what `check.py` cannot do (`CLAUDE.md` constraint 4).
-2. **Barriers.** The proof must respect every hard `bounded_by` obstruction. Check advisory
+2. **Barriers.** The proof must respect every hard `bounded_by` fence. Check advisory
    `heuristic_barriers` without treating them as established facts.
 3. **Hypothesis accounting.** List every hypothesis actually used. Flag any used but unstated,
    and any stated but unused (the latter is a sharpening opportunity, not a defect).

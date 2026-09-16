@@ -76,7 +76,7 @@ how many attempts ran or how long they took.
 
 ## What is left
 
-`q:example` is untouched and still `open`: it asks whether the identity survives weighting,
-which no route here attacked. `cand:example-identity-stability` is still live. Neither is a
+`conj:weighted-example` is untouched and still `open`: it states that the identity survives
+weighting, which no route here attacked. `cand:example-identity-stability` is still live. Neither is a
 loose end in the target's search — the target is settled — and both are why a repository
 does not empty out when a conjecture falls.

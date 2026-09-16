@@ -16,7 +16,7 @@ import re
 from pathlib import Path
 
 from .common import yaml  # noqa: F401
-from .common import APPROACH_ID_RE, contained_path, read_front_matter
+from .common import APPROACH_ID_RE, as_list, contained_path, read_front_matter
 
 PORTFOLIO_PATH = Path("research/program/portfolio.yaml")
 BRIEF_PATH = Path("research/program/brief.md")
@@ -46,8 +46,12 @@ APPROACH_EXPLAINED_STATES = {"blocked", "completed", "duplicate"}
 APPROACH_LIVE_STATES = {"active", "queued"}
 
 #: Kinds a search cannot be aimed at. A definition is fixed by decision, not resolved by
-#: work, and an obstruction is a fence the search reads rather than a thing it settles.
-NON_TARGET_KINDS = {"definition", "obstruction"}
+#: work. A fence is not a kind: a node some other node cites in ``bounded_by`` or
+#: ``heuristic_barriers`` is excluded by that role instead (see :func:`resolve`).
+NON_TARGET_KINDS = {"definition"}
+
+#: The ledger fields that make the cited node a fence.
+FENCE_FIELDS = ("bounded_by", "heuristic_barriers")
 
 #: Once the target is one of these, the search has its answer.
 RESOLVED_STATUSES = {"proved", "refuted"}
@@ -418,7 +422,17 @@ def resolve(portfolio: dict | None, brief: dict | None, node_ids: set[str],
         if target_node.get("kind") in NON_TARGET_KINDS:
             errors.append(
                 f"{context}.target: '{target}' is a {target_node.get('kind')}; a search "
-                "resolves a claim, and a definition or a fence is not one to resolve"
+                "resolves a claim, and a definition is not one to resolve"
+            )
+        fenced = sorted(
+            nid for nid, other in nodes.items()
+            if isinstance(other, dict)
+            and any(target in as_list(other.get(field)) for field in FENCE_FIELDS)
+        )
+        if fenced:
+            errors.append(
+                f"{context}.target: '{target}' is a fence for {', '.join(fenced)}; a search "
+                "reads a fence rather than settling it"
             )
         if portfolio is not None and target_node.get("status") in RESOLVED_STATUSES:
             still_live = sorted(

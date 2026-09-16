@@ -36,5 +36,5 @@ None.
 ## Exclusions
 
 Nothing beyond the single identity is certified. In particular this report says
-nothing about `q:example`, which remains open, and reviewing a proof is not a
+nothing about `conj:weighted-example`, which remains open, and reviewing a proof is not a
 check of the surrounding exposition.

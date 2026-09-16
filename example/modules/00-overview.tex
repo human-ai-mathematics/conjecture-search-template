@@ -2,9 +2,9 @@
 %
 % Every claim-bearing theorem-environment \label here is a node in this example's
 % ledger, example/research/program/ledger.yaml, with a matching `kind`; the
-% \section label is structural and is not a node. The shape worth copying: an
-% obstruction that fences the search, an open question, a proved statement carrying
-% a dossier, and a conjecture refuted by a proved refuter.
+% \section label is structural and is not a node. The shape worth copying: an open
+% barrier that fences the search, an open conjecture, a proved statement carrying a
+% dossier, and a conjecture refuted by a proved refuter.
 %
 % The master is ../../main.tex rather than the ../main.tex that templates/module.tex
 % teaches, because this file sits one level deeper inside example/. A module in a real
@@ -26,22 +26,21 @@ it in \texttt{depends\_on}, so changing it is a mathematical edit the checker ca
 see. There is no separate notation or normalization file: a second list would be a
 copy of the dependency graph that nothing keeps honest.
 
-\subsection{An obstruction}
+\subsection{A fence}
 
-An obstruction is a fence: a statement violating it is wrong by construction, so
-it is read \emph{before} a proof is attempted or a numerical run is spent
-(\texttt{CLAUDE.md} constraint 5). It is an ordinary ledger node --- \texttt{kind:
-obstruction}, stated here in an \texttt{obstruction} environment under a
-\texttt{\textbackslash label} like any other claim ---
-and it is stated here, rather than in a registry of its own, because a fence is
-only useful next to the mathematics it fences.
+A fence is a statement the search reads \emph{before} a proof is attempted or a
+numerical run is spent (\texttt{CLAUDE.md} constraint 5). It is not a kind of node: it
+is an ordinary claim, written in the environment matching its mathematical form, that
+other nodes cite. A proved one bounds them through \texttt{bounded\_by}, and a statement
+violating it is wrong by construction; an open one only warns, through
+\texttt{heuristic\_barriers}. It is stated here, rather than in a registry of its own,
+because a fence is only useful next to the mathematics it fences.
 
-State both halves. An obstruction that records only what it rules out, or only
-that something is hard, fences nothing: the escape routes are what the next agent
-reads.
+State both halves. A fence that records only what it rules out, or only that something
+is hard, fences nothing: the escape routes are what the next agent reads.
 
-\begin{obstruction}[worked example of an obstruction]
-\label{obs:example}
+\begin{conjecture}[a barrier on numerical evidence]
+\label{conj:finite-battery}
   \emph{Rules out.} Establishing a universal statement from a finite battery of
   instances. Agreement across every instance tried constrains nothing about the
   untried ones, so no run --- however large --- discharges a universal claim.
@@ -50,25 +49,27 @@ reads.
   statement, and an exact arithmetic witness for such an instance is a genuine
   candidate --- though it still requires an independently reviewed refutation
   dossier before it carries logical force (\texttt{CLAUDE.md} constraint 2).
-\end{obstruction}
+\end{conjecture}
 
-\subsection{An open question}
+\subsection{An open conjecture}
 
 An \texttt{open} node is one nobody has discharged. It carries no proof provenance,
-and saying it is ``probably true'' is not a ledger classification --- the question
+and saying it is ``probably true'' is not a ledger classification --- the conjecture
 below is elementary and almost certainly has a one-line proof, and it stays
 \texttt{open} until someone writes that proof into a dossier and a reviewer checks
-it. Status records what has been established, never what is expected.
+it. Status records what has been established, never what is expected. An open
+question is written this way too: as a conjecture, in the direction the search is
+trying to establish, so that it has an exact negation.
 
-\begin{question}
-\label{q:example}
-  Does \ref{prop:example} survive weighting? Fix weights $w_1,\dots,w_n > 0$ with
-  $\sum_{i=1}^n w_i = 1$ and write $\bar a_w = \sum_{i=1}^n w_i a_i$. Is
+\begin{conjecture}
+\label{conj:weighted-example}
+  \ref{prop:example} survives weighting. Fix weights $w_1,\dots,w_n > 0$ with
+  $\sum_{i=1}^n w_i = 1$ and write $\bar a_w = \sum_{i=1}^n w_i a_i$. Then
   \[
     \sum_{i=1}^n w_i (a_i - \bar a_w)^2 = \sum_{i=1}^n w_i a_i^2 - \bar a_w^2
   \]
-  for all real $a_1,\dots,a_n$?
-\end{question}
+  for all real $a_1,\dots,a_n$.
+\end{conjecture}
 
 \subsection{A proved statement}
 

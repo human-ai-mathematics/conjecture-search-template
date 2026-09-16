@@ -35,7 +35,7 @@ date: "2026-09-02"
 outcome: dead-end
 approach: ap:example-finite-battery
 nodes:
-  - q:example
+  - conj:example
 artifacts:
   - research/runs/2026-09-02T092336.680787Z-example.jsonl
 supersedes:

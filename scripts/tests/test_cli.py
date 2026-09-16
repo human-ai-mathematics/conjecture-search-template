@@ -34,7 +34,7 @@ class CommandLineTests(CheckerFixture):
         malformed = node("thm:bad")
         malformed["status"] = []
         self.add_ledger("program", "program", [malformed])
-        self.add_checkpoint("dangling", nodes=("q:ghost",))
+        self.add_checkpoint("dangling", nodes=("conj:ghost",))
 
         everything = self.cli()
         core_only = self.cli("--lane", "core")
@@ -46,7 +46,7 @@ class CommandLineTests(CheckerFixture):
 
     def test_a_lane_with_no_files_reports_nothing(self):
         """Activation is structural: an absent lane has no rules to obey."""
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
 
         for lane in ("portfolio", "numerics", "checkpoints", "roles"):
             with self.subTest(lane=lane):
@@ -60,27 +60,27 @@ class CommandLineTests(CheckerFixture):
             [
                 node("lem:base"),
                 node(
-                    "q:frontier",
+                    "conj:frontier",
                     status="open",
-                    kind="question",
+                    kind="conjecture",
                     depends_on=["lem:base"],
                 ),
             ],
         )
 
         status = self.cli("status")
-        detail = self.cli("node", "q:frontier")
+        detail = self.cli("node", "conj:frontier")
 
         self.assertEqual(status.returncode, 0)
         self.assertIn("[program]", status.stdout)
-        self.assertIn("open (1): q:frontier", status.stdout)
+        self.assertIn("open (1): conj:frontier", status.stdout)
         self.assertEqual(detail.returncode, 0)
-        self.assertIn("[program] q:frontier", detail.stdout)
+        self.assertIn("[program] conj:frontier", detail.stdout)
         self.assertIn("depends_on:", detail.stdout)
         self.assertIn("used_by: []", detail.stdout)
 
     def test_cli_lists_live_candidate_statements(self):
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
         self.add_checkpoint("propose", outcome="candidate",
                             candidates=({"id": "cand:alpha",
                                          "statement": "the candidate statement"},))
@@ -92,15 +92,15 @@ class CommandLineTests(CheckerFixture):
         self.assertIn("the candidate statement", result.stdout)
 
     def test_cli_portfolio_view_shows_routes_blockers_and_relations(self):
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
-        why = self.add_checkpoint("blocked", nodes=("q:open",), approach="ap:stuck")
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
+        why = self.add_checkpoint("blocked", nodes=("conj:open",), approach="ap:stuck")
         self.add_portfolio({
-            "target": "q:open",
+            "target": "conj:open",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [
                 {"id": "ap:live", "family": "fam:one", "state": "active"},
                 {"id": "ap:stuck", "family": "fam:one", "state": "blocked",
-                 "blocker": "q:open", "reopen_if": "a new mechanism appears",
+                 "blocker": "conj:open", "reopen_if": "a new mechanism appears",
                  "checkpoints": [why]},
             ],
         })
@@ -108,17 +108,17 @@ class CommandLineTests(CheckerFixture):
         result = self.cli("portfolio")
 
         self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertIn("target: q:open", result.stdout)
+        self.assertIn("target: conj:open", result.stdout)
         self.assertIn("[fam:one] active", result.stdout)
         self.assertIn("ap:stuck [blocked]", result.stdout)
-        self.assertIn("blocked on: q:open", result.stdout)
+        self.assertIn("blocked on: conj:open", result.stdout)
         self.assertIn("reopen if: a new mechanism appears", result.stdout)
 
     def test_cli_checkpoint_view_shows_heads_and_names_the_superseding_record(self):
         """A current-memory view must say what to read instead, not just what is stale."""
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
-        old = self.add_checkpoint("first", nodes=("q:open",))
-        self.add_checkpoint("second", date="2026-08-27", nodes=("q:open",),
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
+        old = self.add_checkpoint("first", nodes=("conj:open",))
+        self.add_checkpoint("second", date="2026-08-27", nodes=("conj:open",),
                             supersedes=(old,))
         stale = self.add_review("stale-audit", report_type="audit", date="2026-08-25")
         self.add_review("current-audit", report_type="audit", date="2026-08-26",
@@ -151,17 +151,17 @@ class CommandLineTests(CheckerFixture):
                 )
 
     def test_node_view_accepts_only_a_bare_node_id(self):
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
 
-        result = self.cli("node", "program/q:open")
+        result = self.cli("node", "program/conj:open")
 
         self.assertEqual(result.returncode, 1)
-        self.assertIn("No ledger node matches 'program/q:open'", result.stderr)
+        self.assertIn("No ledger node matches 'program/conj:open'", result.stderr)
 
     def test_a_scoped_run_summarises_only_the_lanes_it_was_asked_for(self):
         """A green scoped run must not report an error count it also exits 0 on."""
-        self.add_ledger("program", "program", [node("q:open", status="open", kind="question")])
-        self.add_checkpoint("dangling", nodes=("q:ghost",))
+        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
+        self.add_checkpoint("dangling", nodes=("conj:ghost",))
 
         result = self.cli("--lane", "core")
 
@@ -190,8 +190,8 @@ class CommandLineTests(CheckerFixture):
         self.assertIn("research/program/brief.md: absent", template.stdout)
 
         self.add_ledger("program", "real-program",
-                        [node("q:target", status="open", kind="question")])
-        self.add_brief("q:target", body="The negation, spelled out.\n")
+                        [node("conj:target", status="open", kind="conjecture")])
+        self.add_brief("conj:target", body="The negation, spelled out.\n")
 
         instantiated = self.cli("ready")
 
@@ -201,8 +201,8 @@ class CommandLineTests(CheckerFixture):
     def test_readiness_asks_nothing_about_the_manuscript_front_matter(self):
         """Publication metadata is independent of mathematical search readiness."""
         self.add_ledger("program", "real-program",
-                        [node("q:target", status="open", kind="question")])
-        self.add_brief("q:target", body="The negation, spelled out.\n")
+                        [node("conj:target", status="open", kind="conjecture")])
+        self.add_brief("conj:target", body="The negation, spelled out.\n")
         (self.root / "main.tex").write_text(
             "\\title{<Document title>}\n\\author{<author>}\nReplace this abstract.\n"
         )

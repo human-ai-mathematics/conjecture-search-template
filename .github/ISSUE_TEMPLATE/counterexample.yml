@@ -65,11 +65,11 @@ body:
       required: true
 
   - type: checkboxes
-    id: obstructions
+    id: fences
     attributes:
       label: Fences
       options:
         - label: >
-            I have read the obstructions listed on the claim's page. A statement that
-            violates a proved obstruction is wrong by construction, and an example that
-            only re-establishes one is already known.
+            I have read the fences the claim's ledger node cites. A statement that
+            violates a proved fence is wrong by construction, and an example that only
+            re-establishes one is already known.

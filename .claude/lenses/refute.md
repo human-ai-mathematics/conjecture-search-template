@@ -13,8 +13,8 @@ contract; everything below is what `refute` adds.
 1. Write the exact logical negation, quantifier order included, **before** choosing an
    instance. A single witness refutes a universal claim; failure of a uniform constant may
    require a family whose relevant quantity diverges (`CLAUDE.md` constraint 10).
-2. Read the relevant obstruction nodes: an existing fence may already contain your attack in
-   sharper form.
+2. Read the relevant fences (`bounded_by`, `heuristic_barriers`): an existing one may already
+   contain your attack in sharper form.
 3. Construct the worst instance your failure lens admits. Prefer an **exact** witness (closed
    form, exact spectral computation) over a sampled one: an exact witness can escalate to a
    dossier, a sampled one cannot.

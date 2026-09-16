@@ -34,7 +34,7 @@ by the `synthesizer` (constraint 11).
 | portfolio and brief fields | [`program/portfolio-schema.md`](program/portfolio-schema.md) |
 | claim state and logical edges | `program/ledger.yaml` |
 | which routes are alive, blocked, or saturated | `program/portfolio.yaml` |
-| hard/advisory proof barriers | proved/open obstruction nodes via `bounded_by`/`heuristic_barriers` |
+| hard/advisory proof barriers | proved/open nodes cited in `bounded_by`/`heuristic_barriers` |
 | proof dossiers | [`../solutions/`](../solutions/) |
 | shared adversarial instances | [`instances.md`](instances.md) |
 | durable search memory and dead ends | [`explorations/`](explorations/) |
@@ -49,7 +49,7 @@ portfolio holds none of those: a route is not a claim.
 ## Contribution flow
 
 1. Read the brief, then select a ledger node or a portfolio approach and read its manuscript
-   statement, dependencies, obstructions, and prior checkpoints.
+   statement, dependencies, fences, and prior checkpoints.
 2. Do the work. Put numerical work through `numerics`.
 3. Record a checkpoint when the result is durable, with its validated front matter. A tentative
    statement stays there as a `cand:` candidate until it is precise, stable, and worth tracking

@@ -6,7 +6,7 @@ template ships one instance of each supplied helper rather than a schema to inte
 
 * `matches`   — a calibration of one side against the closed form of the other;
 * `searched`  — an exhaustive check over a finite integer family, which is `consistent` over
-  that family and, by `obs:example`, establishes nothing about the family it did not cover;
+  that family and, by `conj:finite-battery`, establishes nothing about the family it did not cover;
 * `compare`   — a computed value against a proposed bound, the inequality shape.
 
 None of them certifies anything. Copy this file's shape for a real diagnostic; delete it once
@@ -59,7 +59,7 @@ def run_records(seed: int, *, n: int = 2_000, grid: int = 2, width: int = 4) -> 
                     "calibration"),
         searched("small-integer-vectors", CLAIM, domain=domain, witness=witness,
                  evidence="exact",
-                 note="exhaustive over the stated domain only (obs:example)").record("search"),
+                 note="exhaustive over the stated domain only (conj:finite-battery)").record("search"),
         compare("standard-normal-sample", "|sample mean| <= 4 / sqrt(n)",
                 bound=threshold, value=abs(mean), evidence="directional",
                 note="directional: one finite sample says nothing universal").record(

@@ -5,7 +5,7 @@ One entry point, seven validation lanes:
 
 * ``core`` — the claim graph: node schema, the acyclic proof DAG, manuscript anchors,
   the separation of proof dependencies from implication antecedents, and both classes
-  of obstruction;
+  of fence (``bounded_by`` and ``heuristic_barriers``);
 * ``proofs`` — dossiers under ``solutions/`` and the persisted review provenance that
   makes ``mode: agent`` mean something;
 * ``checkpoints`` — dated durable memory in ``research/explorations/``, the candidate

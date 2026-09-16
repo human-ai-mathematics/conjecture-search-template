@@ -111,7 +111,7 @@ independently of numerical outcomes, as required by [`../CLAUDE.md`](../CLAUDE.m
 
 1. `solutions/<id>.tex` exists, compiles standalone, audit header complete.
 2. The theorem matches the manuscript statement(s) it `refines`, and
-   respects every `bounded_by` obstruction.
+   respects every `bounded_by` fence.
 3. The ledger node has a complete `proofs:` record; `python3 scripts/check.py`
    returns 0 errors.
 4. The proof record uses `mode: agent` (independent named agent plus persisted report) or

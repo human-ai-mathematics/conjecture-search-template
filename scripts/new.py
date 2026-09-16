@@ -5,9 +5,9 @@ This is the repository's writer. ``scripts/check.py`` reads and never writes, an
 stayed separate on purpose: a validator that edits the tree it is judging is a validator
 nobody can trust twice.
 
-    python3 scripts/new.py brief --target q:main
-    python3 scripts/new.py portfolio --target q:main
-    python3 scripts/new.py checkpoint first-attempt --node q:main
+    python3 scripts/new.py brief --target conj:main
+    python3 scripts/new.py portfolio --target conj:main
+    python3 scripts/new.py checkpoint first-attempt --node conj:main
     python3 scripts/new.py dossier lem:key
     python3 scripts/new.py module 01-reductions --node lem:key --kind lemma
     python3 scripts/new.py node lem:key --kind lemma --file 01-reductions.tex
@@ -39,8 +39,8 @@ NODE_ID_RE = re.compile(r"^[a-z][a-z0-9]*:[a-z0-9][a-z0-9-]*$")
 APPROACH_ID_RE = re.compile(r"^ap:[a-z0-9][a-z0-9-]*$")
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 KINDS = (
-    "theorem", "lemma", "proposition", "corollary", "conjecture", "question",
-    "definition", "assumption", "obstruction", "example",
+    "theorem", "lemma", "proposition", "corollary", "conjecture", "definition",
+    "example", "assumption",
 )
 
 
@@ -285,7 +285,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    for field, pattern, want in (("target", NODE_ID_RE, "a node id like 'q:main'"),
+    for field, pattern, want in (("target", NODE_ID_RE, "a node id like 'conj:main'"),
                                  ("node", NODE_ID_RE, "a node id like 'lem:key'"),
                                  ("approach", APPROACH_ID_RE,
                                   "an approach id like 'ap:first-route'"),

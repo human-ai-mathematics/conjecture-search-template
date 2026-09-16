@@ -24,7 +24,7 @@ lives in `portfolio.yaml` (gated; see [`portfolio-schema.md`](portfolio-schema.m
 | field | values / meaning |
 |---|---|
 | `id` | Stable id. It **is** the manuscript anchor: `\label{<id>}` in `modules/`. |
-| `kind` | `theorem`, `proposition`, `lemma`, `corollary`, `conjecture`, `assumption`, `question`, `definition`, `obstruction`, or `example`. |
+| `kind` | `theorem`, `proposition`, `lemma`, `corollary`, `conjecture`, `assumption`, `definition`, or `example`. Mathematical form only: an open question is a `conjecture` in the direction the search tries to establish, and an obstruction is whichever form it has, cited as a fence through `bounded_by` or `heuristic_barriers`. |
 | `status` | `open`, `proved`, `refuted`, or `defined`. `defined` is valid exactly for definitions. |
 | `provenance` | `internal` or `literature`. This is independent of logical status. |
 | `file` | The file under `modules/` holding that `\label`. |
@@ -38,9 +38,8 @@ lives in `portfolio.yaml` (gated; see [`portfolio-schema.md`](portfolio-schema.m
 Concretely, and all of it checked:
 
 - `\label{<id>}` appears in `modules/`, inside a claim environment whose name equals the
-  node's `kind`. The ten claim environments are the ten `kind` values, declared in
-  `preamble.tex`; `remark` is deliberately not among them, which is why an obstruction has
-  an `obstruction` environment rather than borrowing one.
+  node's `kind`. The eight claim environments are the eight `kind` values, declared in
+  `preamble.tex`; `remark` is deliberately not among them.
 - A `\label` on a `\section`, an equation, or a `remark` is structural: it needs no node,
   and a node may not claim it. This holds however deeply the object is nested: a numbered
   `equation`, `align`, `figure` or `table` owns the label it contains even inside a claim,
@@ -78,8 +77,8 @@ All relation fields are YAML lists of same-ledger node ids.
 | `assumes` | Antecedents of an implication. They affect applicability, not whether the implication itself was proved. |
 | `implies` | Conclusions advertised by a proved implication. |
 | `refines` | Statements made more precise or stronger by this node. |
-| `bounded_by` | Proved obstruction nodes: hard mathematical fences. |
-| `heuristic_barriers` | Open obstruction nodes: advisory method barriers only. |
+| `bounded_by` | Proved nodes: hard mathematical fences. |
+| `heuristic_barriers` | Open nodes: advisory method barriers only. |
 | `refuted_by` | Proved refuters of a refuted node. Not a proof dependency: see below. |
 
 This distinction prevents a standard category error. A theorem of the form $A\Rightarrow B$ can

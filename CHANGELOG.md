@@ -24,6 +24,15 @@ contract is intended to remain stable; from that point onward, use standard sema
 
 ### Changed
 
+- **Breaking:** reduce the ledger `kind` vocabulary from ten to eight: `theorem`, `lemma`,
+  `proposition`, `corollary`, `conjecture`, `definition`, `example`, `assumption`. `question`
+  and `obstruction` are removed. Being an obstruction is a role carried by the edges, not a
+  form: `bounded_by` may now name any proved node and `heuristic_barriers` any open node, and a
+  portfolio or brief may not target a node another node cites in either list. Constraint 5
+  keeps its number. **Migrating a fork:** rewrite each `question` node as a `conjecture` in
+  the direction the search tries to establish; rewrite each `obstruction` node as the form it
+  has — `theorem`, `proposition` or `lemma` when proved, `conjecture` when open — and change
+  its manuscript environment to match. Id prefixes are conventions and need not change.
 - Publish the site only on an explicit manual dispatch. The `site` workflow no longer runs on
   push or pull request, so no revision is built or deployed unless a human asks for it.
 

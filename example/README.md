@@ -62,8 +62,8 @@ Steps 4 and 8 are the two the harness exists to keep apart. A run found nothing 
 certified nothing (`CLAUDE.md` constraint 2); a status moved only after a dossier was
 independently reviewed (constraints 9 and 10).
 
-`q:example` is left `open` and `cand:example-identity-stability` is left live, on purpose:
-a repository does not empty out when its conjecture falls.
+`conj:weighted-example` is left `open` and `cand:example-identity-stability` is left live, on
+purpose: a repository does not empty out when its conjecture falls.
 
 ## Three things it does differently, and why
 

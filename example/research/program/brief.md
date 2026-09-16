@@ -74,7 +74,7 @@ recorded as partial rather than presented as the answer:
   and is trivially true;
 - any version with $\tfrac{1}{2}$ weakened to a constant depending on $n$;
 - any version restricted to vectors with a fixed number of distinct entries;
-- a numerical verification over any finite battery, which `obs:example` fences outright.
+- a numerical verification over any finite battery, which `conj:finite-battery` fences outright.
 
 **A complete refutation** must exhibit a specific $n$ and a specific vector, verify both
 sides by exact arithmetic, and reach `status: refuted` through the ordinary channel: the

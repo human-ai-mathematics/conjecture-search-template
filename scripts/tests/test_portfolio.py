@@ -17,8 +17,8 @@ from fixtures import CheckerFixture, node  # noqa: E402
 
 def target_ledger(case: CheckerFixture) -> None:
     case.add_ledger("program", "program", [
-        node("q:target", status="open", kind="question"),
-        node("obs:fence", status="open", kind="obstruction"),
+        node("conj:target", status="open", kind="conjecture"),
+        node("obs:fence", status="open", kind="conjecture"),
     ])
 
 
@@ -33,7 +33,7 @@ class PortfolioTests(CheckerFixture):
     def test_ids_are_namespaced_unique_and_resolve(self):
         target_ledger(self)
         self.add_portfolio({
-            "target": "q:ghost",
+            "target": "conj:ghost",
             "families": [
                 {"id": "fam:one", "mechanism": "M", "state": "active"},
                 {"id": "fam:one", "mechanism": "M", "state": "active"},
@@ -51,14 +51,14 @@ class PortfolioTests(CheckerFixture):
         self.assertIn("want an id of the form 'fam:<slug>', got 'localization'", errors)
         self.assertIn("want an id of the form 'ap:<slug>', got 'cand:wrong-namespace'", errors)
         self.assertIn("ap:orphan.family: 'fam:missing' is not a family", errors)
-        self.assertIn("target: 'q:ghost' is not a ledger node id", errors)
+        self.assertIn("target: 'conj:ghost' is not a ledger node id", errors)
 
     def test_a_blocked_route_names_its_blocker_and_its_reopening_condition(self):
         target_ledger(self)
-        vague = self.add_checkpoint("vague", nodes=("q:target",), approach="ap:vague")
-        fenced = self.add_checkpoint("fenced", nodes=("q:target",), approach="ap:fenced")
+        vague = self.add_checkpoint("vague", nodes=("conj:target",), approach="ap:vague")
+        fenced = self.add_checkpoint("fenced", nodes=("conj:target",), approach="ap:fenced")
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [
                 {"id": "ap:vague", "family": "fam:one", "state": "blocked",
@@ -85,10 +85,10 @@ class PortfolioTests(CheckerFixture):
             "propose", outcome="candidate", approach="ap:on-candidate",
             candidates=({"id": "cand:gap", "statement": "S"},),
         )
-        on_node = self.add_checkpoint("on-node", nodes=("q:target",), approach="ap:on-node")
-        on_prose = self.add_checkpoint("on-prose", nodes=("q:target",), approach="ap:on-prose")
+        on_node = self.add_checkpoint("on-node", nodes=("conj:target",), approach="ap:on-node")
+        on_prose = self.add_checkpoint("on-prose", nodes=("conj:target",), approach="ap:on-prose")
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [
                 {"id": "ap:on-candidate", "family": "fam:one", "state": "blocked",
@@ -114,10 +114,10 @@ class PortfolioTests(CheckerFixture):
         target_ledger(self)
         self.add_checkpoint("propose", outcome="candidate",
                             candidates=({"id": "cand:gap", "statement": "S"},))
-        why = self.add_checkpoint("kill", date="2026-08-27", nodes=("q:target",),
+        why = self.add_checkpoint("kill", date="2026-08-27", nodes=("conj:target",),
                                   retires=("cand:gap",))
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [{"id": "ap:stale", "family": "fam:one", "state": "blocked",
                             "blocker": "cand:gap", "reopen_if": "never",
@@ -129,10 +129,10 @@ class PortfolioTests(CheckerFixture):
 
     def test_a_closed_family_owes_a_synthesis_and_a_reopening_condition(self):
         target_ledger(self)
-        checkpoint = self.add_checkpoint("synthesis", nodes=("q:target",),
+        checkpoint = self.add_checkpoint("synthesis", nodes=("conj:target",),
                                          approach="ap:complete")
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [
                 {"id": "fam:bare", "mechanism": "M", "state": "saturated"},
                 {"id": "fam:complete", "mechanism": "M", "state": "parked",
@@ -157,10 +157,10 @@ class PortfolioTests(CheckerFixture):
     def test_a_closed_family_cannot_hold_an_active_or_queued_route(self):
         """A queued route is planned live work, so the family has not actually closed."""
         target_ledger(self)
-        checkpoint = self.add_checkpoint("synthesis", nodes=("q:target",),
+        checkpoint = self.add_checkpoint("synthesis", nodes=("conj:target",),
                                          approach="ap:done")
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:closed", "mechanism": "M", "state": "saturated",
                           "closure_checkpoint": checkpoint, "reopen_if": "a new idea"}],
             "approaches": [
@@ -180,7 +180,7 @@ class PortfolioTests(CheckerFixture):
     def test_the_tree_is_acyclic_and_stays_inside_one_family(self):
         target_ledger(self)
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [
                 {"id": "fam:one", "mechanism": "M", "state": "active"},
                 {"id": "fam:two", "mechanism": "M", "state": "active"},
@@ -204,7 +204,7 @@ class PortfolioTests(CheckerFixture):
     def test_duplicate_routes_are_declared_and_never_both_active(self):
         target_ledger(self)
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [
                 {"id": "ap:original", "family": "fam:one", "state": "active"},
@@ -228,7 +228,7 @@ class PortfolioTests(CheckerFixture):
     def test_checkpoint_references_must_resolve(self):
         target_ledger(self)
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [{"id": "ap:one", "family": "fam:one", "state": "queued",
                             "checkpoints": ["research/explorations/2026-01-01-ghost.md",
@@ -245,7 +245,7 @@ class PortfolioTests(CheckerFixture):
         """Unknown fields are how a statement would try to sneak in."""
         target_ledger(self)
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "conjecture": "an inequality nobody validated",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active",
                           "statement": "smuggled"}],
@@ -262,21 +262,21 @@ class PortfolioTests(CheckerFixture):
     def test_the_ledger_rejects_search_state(self):
         """The claim graph accepts only its current mathematical-state fields."""
         self.add_ledger("program", "program", [
-            node("q:target", status="open", kind="question",
+            node("conj:target", status="open", kind="conjecture",
                  approach="ap:one", family="fam:one"),
         ])
 
         errors = self.errors()
 
-        self.assertIn("q:target: unknown field 'approach'", errors)
-        self.assertIn("q:target: unknown field 'family'", errors)
+        self.assertIn("conj:target: unknown field 'approach'", errors)
+        self.assertIn("conj:target: unknown field 'family'", errors)
 
     def test_a_state_change_owes_a_checkpoint_that_explains_it(self):
         """Checkpoints = why the portfolio changed. A route does not stop for no reason."""
         target_ledger(self)
-        why = self.add_checkpoint("why", nodes=("q:target",), approach="ap:explained")
+        why = self.add_checkpoint("why", nodes=("conj:target",), approach="ap:explained")
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [
                 {"id": "ap:silent-block", "family": "fam:one", "state": "blocked",
@@ -304,7 +304,7 @@ class PortfolioTests(CheckerFixture):
         readme.parent.mkdir(parents=True, exist_ok=True)
         readme.write_text("# Checkpoints\n\nThe contract, not a record.\n")
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [{"id": "ap:one", "family": "fam:one", "state": "queued",
                             "checkpoints": ["research/explorations/README.md"]}],
@@ -315,10 +315,10 @@ class PortfolioTests(CheckerFixture):
 
     def test_a_checkpoint_naming_an_approach_must_name_the_one_that_lists_it(self):
         target_ledger(self)
-        theirs = self.add_checkpoint("theirs", nodes=("q:target",), approach="ap:theirs")
-        unanchored = self.add_checkpoint("unanchored", date="2026-08-27", nodes=("q:target",))
+        theirs = self.add_checkpoint("theirs", nodes=("conj:target",), approach="ap:theirs")
+        unanchored = self.add_checkpoint("unanchored", date="2026-08-27", nodes=("conj:target",))
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [
                 {"id": "ap:theirs", "family": "fam:one", "state": "queued"},
@@ -334,10 +334,10 @@ class PortfolioTests(CheckerFixture):
 
     def test_a_closure_checkpoint_belongs_to_the_family_it_closes(self):
         target_ledger(self)
-        outside = self.add_checkpoint("outside", nodes=("q:target",),
+        outside = self.add_checkpoint("outside", nodes=("conj:target",),
                                       approach="ap:elsewhere")
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [
                 {"id": "fam:closed", "mechanism": "M", "state": "saturated",
                  "closure_checkpoint": outside, "reopen_if": "a new mechanism"},
@@ -352,9 +352,9 @@ class PortfolioTests(CheckerFixture):
 
     def test_a_family_accepts_only_the_current_closure_field(self):
         target_ledger(self)
-        checkpoint = self.add_checkpoint("synthesis", nodes=("q:target",))
+        checkpoint = self.add_checkpoint("synthesis", nodes=("conj:target",))
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "parked",
                           "saturation_checkpoint": checkpoint,
                           "reopen_if": "a new mechanism"}],
@@ -366,9 +366,9 @@ class PortfolioTests(CheckerFixture):
 
     def test_an_unavailable_claim_graph_is_a_portfolio_dependency_error(self):
         """Scoping restricts what is reported; it never turns a missing check into a pass."""
-        self.add_brief("q:target")
+        self.add_brief("conj:target")
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [{"id": "ap:one", "family": "fam:one", "state": "blocked",
                             "blocker": "obs:fence", "reopen_if": "the fence moves",
@@ -384,22 +384,22 @@ class PortfolioTests(CheckerFixture):
 
     def test_the_brief_scopes_one_ledger_node_and_agrees_with_the_portfolio(self):
         target_ledger(self)
-        self.add_brief("q:ghost")
+        self.add_brief("conj:ghost")
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
         })
 
         errors = self.errors()
 
-        self.assertIn("brief.md.target: 'q:ghost' is not a ledger node id", errors)
+        self.assertIn("brief.md.target: 'conj:ghost' is not a ledger node id", errors)
         self.assertIn("disagrees with the problem brief's target", errors)
 
     def test_an_agreeing_brief_and_portfolio_pass(self):
         target_ledger(self)
-        self.add_brief("q:target")
+        self.add_brief("conj:target")
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [{"id": "ap:one", "family": "fam:one", "state": "active"}],
         })
@@ -409,7 +409,7 @@ class PortfolioTests(CheckerFixture):
     def test_a_blocker_moves_with_the_candidate_it_names(self):
         """Promotion is atomic: the route follows the statement to its node."""
         self.add_ledger("program", "program", [
-            node("q:target", status="open", kind="question"),
+            node("conj:target", status="open", kind="conjecture"),
             node("lem:stability", status="open", kind="lemma"),
         ])
         self.add_checkpoint(
@@ -421,7 +421,7 @@ class PortfolioTests(CheckerFixture):
             promotes=[{"candidate": "cand:stability", "node": "lem:stability"}],
         )
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [{
                 "id": "ap:stuck", "family": "fam:one", "state": "blocked",
@@ -440,7 +440,7 @@ class PortfolioTests(CheckerFixture):
         """Several coordinated routes are a sustained search, and one opens with a brief."""
         target_ledger(self)
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [{"id": "ap:one", "family": "fam:one", "state": "active"}],
         }, brief=False)
@@ -452,7 +452,7 @@ class PortfolioTests(CheckerFixture):
     def test_every_route_says_what_it_tries(self):
         target_ledger(self)
         self.add_portfolio({
-            "target": "q:target",
+            "target": "conj:target",
             "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
             "approaches": [{"id": "ap:mute", "family": "fam:one", "state": "queued",
                             "objective": "   "}],
@@ -476,10 +476,39 @@ class PortfolioTests(CheckerFixture):
 
         self.assertIn("target: 'def:convention' is a definition", errors)
 
+    def test_a_node_cited_as_a_fence_is_not_a_target(self):
+        """The fence role lives on the edges, so the target rule reads the edges."""
+        self.add_ledger("program", "program", [
+            node("conj:barrier", status="open", kind="conjecture"),
+            node("conj:fenced", status="open", kind="conjecture",
+                 heuristic_barriers=["conj:barrier"]),
+        ])
+        self.add_portfolio({
+            "target": "conj:barrier",
+            "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
+        })
+
+        errors = self.errors()
+
+        self.assertIn("target: 'conj:barrier' is a fence for conj:fenced", errors)
+
+    def test_a_node_merely_citing_a_fence_can_be_a_target(self):
+        self.add_ledger("program", "program", [
+            node("conj:barrier", status="open", kind="conjecture"),
+            node("conj:fenced", status="open", kind="conjecture",
+                 heuristic_barriers=["conj:barrier"]),
+        ])
+        self.add_portfolio({
+            "target": "conj:fenced",
+            "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
+        })
+
+        self.assertNotIn("is a fence", self.errors())
+
     def test_a_resolved_target_leaves_no_route_running(self):
         """The answer arrived; the routes it settled are not still being worked."""
         self.add_ledger("program", "program", [
-            node("obs:witness", kind="obstruction"),
+            node("obs:witness"),
             node("conj:target", status="refuted", kind="conjecture",
                  refuted_by=["obs:witness"]),
         ])

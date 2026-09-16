@@ -15,7 +15,7 @@
 %   ledger-node : {{NODE}}        research/program/ledger.yaml id(s) this discharges
 % The rest is for a human reader and has no second owner:
 %   refines     : <label(s)>          statement(s) sharpened
-%   bounded_by  : obs:...             obstruction(s) the statement must respect
+%   bounded_by  : <node(s)>           proved node(s) fencing the statement
 %   author      : <agent or name>
 %   date        : YYYY-MM-DD
 % Certification is NOT recorded here. The ledger's proofs[] record owns the mode and the
@@ -28,7 +28,7 @@
 
 \paragraph{Refined statement.}
 % State the sharp current form — not an obsolete loose open form. Cite the manuscript
-% target it sharpens with \ref{<label>}, and note which obstruction shapes it.
+% target it sharpens with \ref{<label>}, and note which fence shapes it.
 
 \begin{theorem}[refined form of \ref{<label>}]
 \label{thm:sol-{{FILE_ID}}}
@@ -42,8 +42,8 @@
   % statement but cannot justify any step of this proof.
 \end{proof}
 
-\paragraph{Obstructions respected.}
-% One line per bounded_by obstruction: why this statement form does not violate it.
+\paragraph{Fences respected.}
+% One line per bounded_by node: why this statement form does not violate it.
 
 % No \printbibliography here (matches modules/*.tex): main.tex prints the single shared
 % bibliography. Standalone, \cite shows "[?]" and \ref shows "??" — expected.

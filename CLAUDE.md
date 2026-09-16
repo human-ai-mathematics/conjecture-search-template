@@ -118,7 +118,7 @@ section, numbered `P1, P2, …`, so that a fork can drop them without disturbing
 4. **`check.py` is necessary, not sufficient.** A green check establishes structure only.
    Semantic agreement among manuscript, ledger, and dossier, and the correctness of a proof,
    require independent review.
-5. **Respect established fences.** `bounded_by` may name only a proved obstruction. A statement
+5. **Respect established fences.** `bounded_by` may name only a proved node. A statement
    violating one is wrong by construction. Put plausible but unproved method barriers in
    `heuristic_barriers`; they guide work but do not logically fence a claim.
 6. **`research/explorations/` is append-only.** Add dated files; never

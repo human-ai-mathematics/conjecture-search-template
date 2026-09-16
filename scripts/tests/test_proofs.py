@@ -230,8 +230,8 @@ class ProofsTests(CheckerFixture):
 
     def test_refuted_nodes_name_a_certified_refuter(self):
         nodes = [
-            node("obs:proved-counterexample", kind="obstruction"),
-            node("q:open-counterexample", status="open", kind="question"),
+            node("obs:proved-counterexample"),
+            node("conj:open-counterexample", status="open", kind="conjecture"),
             node(
                 "conj:refuted",
                 status="refuted",
@@ -243,7 +243,7 @@ class ProofsTests(CheckerFixture):
                 "conj:open-refuter",
                 status="refuted",
                 kind="conjecture",
-                refuted_by=["q:open-counterexample"],
+                refuted_by=["conj:open-counterexample"],
             ),
         ]
         self.add_ledger("main", "program", nodes)
@@ -252,12 +252,12 @@ class ProofsTests(CheckerFixture):
 
         self.assertNotIn("conj:refuted.refuted_by", errors)
         self.assertIn("conj:missing-refuter: refuted node requires refuted_by", errors)
-        self.assertIn("conj:open-refuter.refuted_by: 'q:open-counterexample' is not proved", errors)
+        self.assertIn("conj:open-refuter.refuted_by: 'conj:open-counterexample' is not proved", errors)
 
     def test_a_refuter_is_not_a_proof_dependency_of_what_it_refutes(self):
         """A refuted node has no proof, so depends_on has nothing to record."""
         nodes = [
-            node("obs:proved-counterexample", kind="obstruction"),
+            node("obs:proved-counterexample"),
             node(
                 "conj:refuted",
                 status="refuted",
@@ -337,7 +337,7 @@ class ProofsTests(CheckerFixture):
         path.write_text(
             "% prop:outside before the delimited metadata\n"
             + path.read_text()
-            + "% q:outside after the delimited metadata\n"
+            + "% conj:outside after the delimited metadata\n"
             + "% checked_by: prose outside the header is not metadata\n"
         )
         self.add_ledger(
@@ -464,17 +464,17 @@ class ProofsTests(CheckerFixture):
         )
         nodes = [
             node("ass:x", status="open", kind="assumption"),
-            node("obs:warning", status="open", kind="obstruction"),
+            node("obs:warning", status="open", kind="conjecture"),
             node(
                 "thm:conditional",
                 assumes=["ass:x"],
-                implies=["q:open"],
+                implies=["conj:open"],
                 proofs=[{"artifact": solution, "mode": "agent", "review": review}],
             ),
             node(
-                "q:open",
+                "conj:open",
                 status="open",
-                kind="question",
+                kind="conjecture",
                 heuristic_barriers=["obs:warning"],
             ),
         ]
