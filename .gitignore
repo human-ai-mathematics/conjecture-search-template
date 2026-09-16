@@ -288,3 +288,7 @@ __marimo__/
 .mtc
 
 build/
+
+# MyST
+_build/
+node_modules/

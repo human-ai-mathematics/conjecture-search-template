@@ -1,0 +1,23 @@
+diff --git a/node_modules/mystmd/dist/myst.cjs b/node_modules/mystmd/dist/myst.cjs
+index 2478ab1..c6166ac 100755
+--- a/node_modules/mystmd/dist/myst.cjs
++++ b/node_modules/mystmd/dist/myst.cjs
+@@ -309295,6 +309295,8 @@ function kindToEnvironment(kind) {
+       return "observation";
+     case "corollary":
+       return "corollary";
++    case "assumption":
++      return "assumption";
+     default:
+       return "";
+   }
+@@ -309353,7 +309355,8 @@ var TexProofSerializer = class _TexProofSerializer {
+       "\\newtheorem{remark}{Remark}[section]",
+       "\\newtheorem{axiom}{Axiom}[section]",
+       "\\newtheorem{conjecture}{Conjecture}[section]",
+-      "\\newtheorem{observation}{Observation}[section]"
++      "\\newtheorem{observation}{Observation}[section]",
++      "\\newtheorem{assumption}{Assumption}[section]"
+     ];
+     const block5 = writeTexLabelledComment("theorem", definitions2, _TexProofSerializer.COMMENT_LENGTH);
+     const percents = "".padEnd(_TexProofSerializer.COMMENT_LENGTH, "%");

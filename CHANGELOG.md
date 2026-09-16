@@ -12,6 +12,13 @@ contract is intended to remain stable; from that point onward, use standard sema
 
 ### Added
 
+- Add a MyST source for the manuscript and the dossiers: `myst.yml` and `index.md` at the
+  root and in `example/`, `modules/*.md`, `example/solutions/*.md`, `templates/module.md`,
+  `templates/solution.md`, and a local LaTeX export template in `templates/latex/`.
+  `package.json` pins `mystmd` 1.10.1 and applies `patches/mystmd+1.10.1.patch` on
+  `npm ci`: without it, MyST's LaTeX export silently drops every `prf:assumption`.
+  `references.bib` now ships empty, because MyST refuses a bibliography holding only
+  comments; its guidance moved to `myst.yml`.
 - Add a `check` workflow that validates the repository, the worked example and the checker's
   test suite on pull requests into the default branch.
 

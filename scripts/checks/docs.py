@@ -15,6 +15,10 @@ history correctly, not carrying a defect.
 
 ``templates/`` is exempt for a different reason: a scaffold's links are written for where the
 file is going, not where it sits.
+
+Build output and installed tooling — MyST's ``_build/`` and npm's ``node_modules/``, in the
+repository or in ``example/`` — are not documentation at all, and are skipped wherever they
+sit.
 """
 from __future__ import annotations
 
@@ -27,6 +31,9 @@ LINK_RE = re.compile(r"\[[^\]\n]*\]\(([^)\s]+)\)")
 
 #: Append-only archives, plus the scaffolds whose links point at their destination.
 EXEMPT = ("research/reviews", "research/explorations", "templates", "build")
+
+#: Generated or installed trees, skipped at any depth.
+GENERATED = {"_build", "node_modules"}
 
 SKIP_PREFIXES = ("http://", "https://", "mailto:", "#", "//", "data:")
 
@@ -54,6 +61,8 @@ def check(root: Path, errors: list[str]) -> int:
             continue
         if any(part.startswith(".") and part not in {".claude", ".codex"}
                for part in Path(relative).parts):
+            continue
+        if GENERATED & set(Path(relative).parts):
             continue
         try:
             text = path.read_text(encoding="utf-8")
