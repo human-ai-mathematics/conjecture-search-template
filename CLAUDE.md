@@ -188,7 +188,9 @@ inherit. Same rule: numbered, cited, never renumbered.
 
 ## Global convention
 
-Write Markdown mathematics in LaTeX `$...$`.
+Write Markdown mathematics in LaTeX `$...$`. The manuscript (`modules/`) and the proof
+dossiers (`solutions/`) are MyST Markdown: a claim is a `prf:<kind>` directive carrying a
+`:label:`, and a cross-reference is `[](#<label>)`.
 
 ## Verify
 
@@ -204,13 +206,14 @@ python3 scripts/check.py status       # the live frontier
 python3 scripts/check.py portfolio    # the live search
 python3 scripts/check.py checkpoints  # current heads of durable memory
 python3 scripts/check.py candidates   # statements proposed but not yet nodes
-python3 scripts/check.py dossiers     # active dossiers, for the standalone LaTeX build
 python3 scripts/check.py --root example   # the worked example, kept green as a fixture
 ```
 
-`check.py` never writes. Creation and generation belong to `python3 scripts/new.py`: its
-scaffolds never overwrite hand-authored files, while `new.py agents` deliberately replaces
-generated role frontmatter and adapters. It never touches the ledger (constraint 1).
+`check.py` writes nothing the repository tracks: it reads the manuscript by running `myst build
+--site`, whose output lands in the gitignored `_build/`. Creation and generation belong to
+`python3 scripts/new.py`: its scaffolds never overwrite hand-authored files, while `new.py
+agents` deliberately replaces generated role frontmatter and adapters. It never touches the
+ledger (constraint 1).
 
 `check` and `ready` answer different questions. A freshly cloned template passes `check` and
 fails `ready`, and both are correct: activation is structural, so an unopened optional gate is
@@ -219,4 +222,5 @@ other, and neither is `publish-ready`, which asks only about the manuscript's ti
 and abstract — publication details that block no mathematics.
 
 `check.sh` distinguishes "all checks passed" from "all *available* checks passed" and names
-what it skipped. Only PyYAML is required, declared in the root `pyproject.toml`.
+what it skipped. Two things are required, and neither is skipped: PyYAML, declared in the root
+`pyproject.toml`, and MyST, pinned and patched in `package.json` and installed with `npm ci`.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Create routine search artifacts and regenerate derived agent definitions.
 
-This is the repository's writer. ``scripts/check.py`` reads and never writes, and the two
+This is the repository's writer. ``scripts/check.py`` reads, writing nothing tracked, and the two
 stayed separate on purpose: a validator that edits the tree it is judging is a validator
 nobody can trust twice.
 

@@ -33,7 +33,7 @@ done
 STATUS=0
 SKIPPED=()
 
-# PyYAML is the checker's one dependency, declared in the root pyproject.toml. Use the
+# PyYAML is the checker's Python dependency, declared in the root pyproject.toml. Use the
 # interpreter that already has it; fall back to uv, which reads that manifest, so a fresh
 # clone bootstraps itself instead of printing an install hint and stopping.
 PY=(python3)

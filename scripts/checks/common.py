@@ -12,7 +12,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-# PyYAML is the checker's one dependency, declared in the root pyproject.toml. Every
+# PyYAML is the checker's Python dependency, declared in the root pyproject.toml. Every
 # other module in this package imports it *from here* rather than directly, so this hint
 # is what a missing install produces no matter which module happens to load first.
 try:

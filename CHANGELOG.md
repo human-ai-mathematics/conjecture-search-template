@@ -10,69 +10,86 @@ contract is intended to remain stable; from that point onward, use standard sema
 
 ## [Unreleased]
 
+This release makes MyST Markdown the source of the manuscript and of the proof dossiers.
+Mathematics stays LaTeX, the PDF is still built by LaTeX, and `references.bib` stays; what
+changes is that a claim is a typed node MyST parses rather than a `\label` a regular
+expression finds. It also reduces the ledger kinds to eight and removes the old website.
+Every fork has to migrate: see *Migrating a fork* below.
+
 ### Added
 
-- Add a minimal `site` workflow that, on manual dispatch only, validates the repository and
-  publishes `myst build --html` — the manuscript and the dossiers — to GitHub Pages.
+- Add the MyST project: `myst.yml` and `index.md` at the root and in `example/`, modules
+  under `modules/*.md`, dossiers under `solutions/*.md`, the scaffolds `templates/module.md`
+  and `templates/solution.md`, and the local, `pdflatex`-based export template
+  `templates/latex/`. `package.json` pins `mystmd` 1.10.1 and `npm ci` applies
+  `patches/mystmd+1.10.1.patch`, without which MyST's LaTeX export silently drops every
+  `prf:assumption`.
+- Add `scripts/checks/manuscript.py`, which builds the MyST site content and reads its tree.
+  Every MyST error, unknown directive or role, unresolved cross-reference, duplicate label,
+  and pair of labels colliding on one HTML anchor (`a:b-c` and `a-b:c`) is a `core` error.
 - `./scripts/check.sh` builds the PDF of the manuscript and of every dossier, in the
-  repository and in `example/`, and fails on a LaTeX error in any of them or on a claim
-  label missing from the exported manuscript: `myst build --pdf` itself reports neither.
-  It installs MyST with `npm ci` when it can, and fails when it cannot.
-- Add a MyST source for the manuscript and the dossiers: `myst.yml` and `index.md` at the
-  root and in `example/`, `modules/*.md`, `example/solutions/*.md`, `templates/module.md`,
-  `templates/solution.md`, and a local LaTeX export template in `templates/latex/`.
-  `package.json` pins `mystmd` 1.10.1 and applies `patches/mystmd+1.10.1.patch` on
-  `npm ci`: without it, MyST's LaTeX export silently drops every `prf:assumption`.
-  `references.bib` now ships empty, because MyST refuses a bibliography holding only
-  comments; its guidance moved to `myst.yml`.
-- Add a `check` workflow that validates the repository, the worked example and the checker's
-  test suite on pull requests into the default branch. It installs MyST with `npm ci` first.
-
-### Removed
-
-- **Breaking:** remove the LaTeX source of the manuscript: `main.tex`, `preamble.tex`,
-  `.latexmkrc`, `modules/*.tex`, the dossier and module scaffolds `templates/*.tex`, and the
-  editor's LaTeX output setting in `.vscode/settings.json`. `new.py module` and `new.py
-  dossier` write `.md`, and `new.py node --file` defaults to `00-overview.md`. **Migrating a
-  fork:** convert each module and dossier to MyST by hand — a claim environment becomes a
-  `prf:<kind>` directive with `:label: <id>`, `\ref{<id>}` becomes `[](#<id>)`, a dossier's
-  comment header becomes front matter — move your macros from `preamble.tex` to `math:` in
-  `myst.yml`, point every ledger `file:` and `proofs[].artifact` at the `.md` path, and run
-  `npm ci`. `myst build <file>.tex --md` is no shortcut: it drops every theorem environment.
-  Checkpoints and reviews already written keep their `.tex` paths; they are append-only, the
-  `docs` lane exempts them, and a review's `.tex` scope still covers the converted dossier.
-- **Breaking:** remove the derived website: `site/`, `scripts/site.py`, the `site` Pages
-  workflow and `docs/PUBLISHING-THE-SITE.md`. The manuscript becomes MyST Markdown in this
-  release, and its rendering replaces the site; ledger and portfolio views may return on top
-  of it later. The issue forms stay, as the public inbox constraint 12 fences.
+  repository and in `example/`, and fails on a LaTeX error or on a claim missing from the
+  exported manuscript — two failures `myst build --pdf` does not report. It installs MyST
+  with `npm ci` when it can and fails when it cannot.
+- Add a `check` workflow that installs MyST and validates the repository, the worked example
+  and the checker's test suite on pull requests into the default branch.
+- Add a minimal `site` workflow that, on manual dispatch only, validates the repository and
+  publishes `myst build --html` to GitHub Pages.
 
 ### Changed
 
-- **Breaking:** `scripts/check.py` reads the manuscript through MyST. It runs `myst build
-  --site` and validates the tree MyST writes: a node's anchor is a `:label:` on the
-  `prf:<kind>` directive in `modules/*.md`, and every MyST error, unknown directive or
-  role, unresolved cross-reference, duplicate label and HTML-anchor collision
-  (`a:b-c` against `a-b:c`) is a `core` error. The LaTeX label scanner is gone. MyST is
-  now required: `npm ci`. The checker writes nothing tracked, only MyST's gitignored
-  `_build/`.
-- **Breaking:** a dossier is `solutions/<id>.md`, and its header is YAML front matter
-  (`ledger-node`, `refines`, `bounded_by`, `author`, `date`, plus MyST's `title` and
-  `exports`) instead of the `% === SOLUTION HEADER` comment block. `ledger-node` may be a
-  list. A review written before this release that names `solutions/<id>.tex` still covers
-  `solutions/<id>.md`, so an immutable review does not have to be rewritten.
-- **Breaking:** `check.py publish-ready` looks for its placeholders in `myst.yml` and in the
-  abstract of `modules/00-overview.md`. `check.py dossiers` is removed.
+- **Breaking:** `scripts/check.py` reads the manuscript through MyST. A node's anchor is a
+  `:label:` on the `prf:<kind>` directive in `modules/*.md` matching its `kind`; `file:` names
+  a `.md` file. MyST is required, and the checker now writes MyST's gitignored `_build/` —
+  still nothing the repository tracks.
+- **Breaking:** a dossier is `solutions/<id>.md`, and its header is YAML front matter —
+  `ledger-node` (an id or a list), `refines`, `bounded_by`, `author`, `date`, plus the MyST
+  fields `title`, `subtitle`, `short_title`, `label`, `exports` and `numbering` — instead of
+  the `% === SOLUTION HEADER` comment block. A review written before this release that names
+  `solutions/<id>.tex` still covers `solutions/<id>.md`, so no immutable review needs
+  rewriting.
 - **Breaking:** reduce the ledger `kind` vocabulary from ten to eight: `theorem`, `lemma`,
-  `proposition`, `corollary`, `conjecture`, `definition`, `example`, `assumption`. `question`
-  and `obstruction` are removed. Being an obstruction is a role carried by the edges, not a
-  form: `bounded_by` may now name any proved node and `heuristic_barriers` any open node, and a
-  portfolio or brief may not target a node another node cites in either list. Constraint 5
-  keeps its number. **Migrating a fork:** rewrite each `question` node as a `conjecture` in
-  the direction the search tries to establish; rewrite each `obstruction` node as the form it
-  has — `theorem`, `proposition` or `lemma` when proved, `conjecture` when open — and change
-  its manuscript environment to match. Id prefixes are conventions and need not change.
-- Publish the site only on an explicit manual dispatch. The `site` workflow no longer runs on
-  push or pull request, so no revision is built or deployed unless a human asks for it.
+  `proposition`, `corollary`, `conjecture`, `definition`, `example`, `assumption`. Being an
+  obstruction is a role carried by the edges, not a form: `bounded_by` may name any proved
+  node, `heuristic_barriers` any open node, and a brief or portfolio may not target a node
+  another node cites in either. Constraint 5 changes in wording only.
+- **Breaking:** `check.py publish-ready` looks for its placeholders in `myst.yml` and in the
+  abstract at the top of `modules/00-overview.md`. `new.py module` and `new.py dossier` write
+  MyST, and `new.py node --file` defaults to `00-overview.md`.
+- `references.bib` ships empty, because MyST refuses a bibliography holding only comments; its
+  guidance moved to `myst.yml`.
+
+### Removed
+
+- **Breaking:** the LaTeX source: `main.tex`, `preamble.tex`, `.latexmkrc`, `modules/*.tex`,
+  `templates/module.tex`, `templates/solution.tex`, and the LaTeX output setting in
+  `.vscode/settings.json`.
+- **Breaking:** `check.py dossiers`, which existed to feed the old LaTeX build.
+- **Breaking:** the derived website: `site/`, `scripts/site.py`, its Pages workflow and
+  `docs/PUBLISHING-THE-SITE.md`. The MyST site replaces it; ledger and portfolio views may
+  return on top of it later. The issue forms stay, as the public inbox constraint 12 fences.
+- The `question` and `obstruction` ledger kinds, and their LaTeX environments.
+
+### Migrating a fork
+
+1. **Kinds.** Rewrite each `question` node as a `conjecture` stated in the direction the search
+   tries to establish, and each `obstruction` node as the form it has: `theorem`,
+   `proposition` or `lemma` when proved, `conjecture` when open. Id prefixes are conventions
+   and need not change.
+2. **Toolchain.** Copy `package.json`, `package-lock.json`, `patches/`, `myst.yml`, `index.md`
+   and `templates/latex/` from the template, add `_build/` and `node_modules/` to
+   `.gitignore`, and run `npm ci`. Move the macros from `preamble.tex` to `math:` in
+   `myst.yml`, and the title, subtitle and author from `main.tex` to its `project:`.
+3. **Modules.** Convert each `modules/*.tex` to `modules/*.md` by hand: a claim environment
+   becomes a `prf:<kind>` directive with `:label: <id>`, `\ref{<id>}` becomes `[](#<id>)`,
+   `\section` becomes a heading, and the abstract becomes a `+++ {"part": "abstract"}` block in
+   the first module. `myst build <file>.tex --md` is not a shortcut: it drops every theorem
+   environment. Point each ledger `file:` at the `.md`.
+4. **Dossiers.** Convert each `solutions/*.tex` the same way, turn its comment header into
+   front matter, and point each `proofs[].artifact` at the `.md`. Leave the reviews alone.
+5. **Records.** Checkpoints and reviews already written keep their `.tex` paths: they are
+   append-only, and the `docs` lane exempts them.
+6. Delete `main.tex`, `preamble.tex` and `.latexmkrc`, then run `./scripts/check.sh`.
 
 ## [0.1.0] - 2026-09-04
 
