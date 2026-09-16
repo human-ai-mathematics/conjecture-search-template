@@ -51,10 +51,6 @@ A worked instance of every artifact genre — nodes, a dossier, a review, checkp
 portfolio, a run artifact, a proof and a refutation — is in [`example/`](example/README.md). It
 is a fixture to copy from, not this repository's history, and the live search starts empty.
 
-None of the three domains is the website. [`site/`](site/README.md) renders them and owns
-nothing: it is a derived view, gated by nothing, validated by no lane, and skippable
-entirely ([`CLAUDE.md`](CLAUDE.md)).
-
 ## Verify
 
 ```bash
@@ -92,24 +88,6 @@ A *lane* is a partition of the checker, not one of the three domains above and n
 A green check establishes structure only. It says nothing about whether a proof is correct
 (`CLAUDE.md` constraint 4). It also says nothing about whether the repository has been
 instantiated — a fresh clone is correctly green and correctly *not ready*.
-
-## Publish
-
-The repository's state also renders as a website: the target, what is established and at
-what certification level, what is open, which mechanisms were tried, and why each route
-stopped — for a reader who will never open `ledger.yaml`.
-
-```bash
-python3 scripts/site.py --serve           # build it and read it at :8000
-python3 scripts/site.py --root example     # the worked example, fully populated
-```
-
-It is a **derived view, never a second source**: everything on it is computed at build
-time from the same report `check.py` prints, it refuses to publish a tree that does not
-validate, and its output lives under gitignored `build/`. The frontend is
-[`site/`](site/README.md); the pipeline, the GitHub Pages deployment and the public
-contribution inbox are [`docs/PUBLISHING-THE-SITE.md`](docs/PUBLISHING-THE-SITE.md).
-The site is optional and a repository that never publishes one is complete.
 
 ## Build
 
@@ -183,12 +161,8 @@ list whatever is still outstanding.
    role; [`.claude/agents/MAINTAINING.md`](.claude/agents/MAINTAINING.md) is the guide. If
    nothing here will run under Codex, delete `.codex/` — the roles lane will not complain.
 
-5. **Repoint the contribution links, if you publish a site.**
-   `.github/ISSUE_TEMPLATE/config.yml` names this template repository by URL; everything
-   else on the site derives its slug from the `origin` remote.
-   [`docs/PUBLISHING-THE-SITE.md`](docs/PUBLISHING-THE-SITE.md) covers this and the
-   one-time GitHub Pages setting. Skip the step entirely if you are not publishing —
-   nothing else depends on it.
+5. **Repoint the contribution links.** `.github/ISSUE_TEMPLATE/config.yml` names this
+   template repository by URL, and is the only file that does. Nothing else depends on it.
 
 6. **Name the repository and the manuscript.** Replace `{{REPO_TITLE}}` above and the
    placeholders in [`main.tex`](main.tex) (title, subtitle, author, abstract), then delete

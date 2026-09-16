@@ -20,8 +20,7 @@ body:
     attributes:
       label: What this attacks
       description: >
-        The target's node id, a blocked route's id, or the blocker itself. The site
-        fills this in.
+        The target's node id, a blocked route's id, or the blocker itself.
       placeholder: "conj:example"
     validations:
       required: true

@@ -59,12 +59,10 @@ Numerics, literature import, and repository hygiene are capability packs on the 
 present when used, irrelevant when not. The three roles that drive them ship uninstalled in
 [`packs/`](packs/README.md) — `python3 scripts/new.py role <pack>` installs one.
 
-The [published site](docs/PUBLISHING-THE-SITE.md) is neither. A gate owns durable state and
-a pack is a role; the site owns no state and is nobody's job — it is `check.py status` and
-`check.py portfolio` rendered for a reader who will never open the YAML, derived at build
-time and refusing to publish a tree that does not validate. Nothing in `scripts/check.py`
-mentions it, and a repository that never publishes one is complete. What its existence does
-add is constraint 12, which fences the inbox it opens.
+The public inbox — the issue forms under `.github/ISSUE_TEMPLATE/` — is neither. A gate owns
+durable state and a pack is a role; the inbox owns no state and is nobody's job. Nothing in
+`scripts/check.py` mentions it, and a repository that never opens one is complete. What its
+existence does add is constraint 12, which fences it.
 
 An afternoon of speculative work may cross none of these and leave no repository artifact at
 all. That is a correct outcome, not a gap. Something crosses a gate when it must survive the

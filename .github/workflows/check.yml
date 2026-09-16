@@ -1,14 +1,8 @@
 # Validate the repository on every pull request into the default branch.
 #
-# This is the half of the old `site` workflow that is worth paying for automatically:
-# `scripts/check.py` needs one dependency and finishes in seconds, so a pull request
-# that breaks the ledger, the worked example, or the checker's own tests says so before
-# it is merged. The expensive half — TeX Live, `latexmk`, `make4ht`, and the deploy —
-# lives in `pages.yml` and runs only when a human dispatches it.
-#
-# A structurally invalid revision is not this repository's research state. That rule is
-# enforced twice: here, before a merge, and again in `pages.yml`, because `scripts/site.py`
-# refuses to publish one.
+# `scripts/check.py` finishes in seconds, so a pull request that breaks the ledger, the
+# worked example, or the checker's own tests says so before it is merged. A structurally
+# invalid revision is not this repository's research state.
 #
 # The branch filter names `main` literally. GitHub's `pull_request` trigger takes no
 # expression, so a fork whose default branch is called something else has to edit this
@@ -52,6 +46,3 @@ jobs:
 
       - name: Run the checker's own test suite
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
-
-      - name: Check that the frontend parses
-        run: node --check site/site.js

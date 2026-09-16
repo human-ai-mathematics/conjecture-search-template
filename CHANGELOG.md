@@ -15,6 +15,13 @@ contract is intended to remain stable; from that point onward, use standard sema
 - Add a `check` workflow that validates the repository, the worked example and the checker's
   test suite on pull requests into the default branch.
 
+### Removed
+
+- **Breaking:** remove the derived website: `site/`, `scripts/site.py`, the `site` Pages
+  workflow and `docs/PUBLISHING-THE-SITE.md`. The manuscript becomes MyST Markdown in this
+  release, and its rendering replaces the site; ledger and portfolio views may return on top
+  of it later. The issue forms stay, as the public inbox constraint 12 fences.
+
 ### Changed
 
 - Publish the site only on an explicit manual dispatch. The `site` workflow no longer runs on

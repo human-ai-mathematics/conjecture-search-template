@@ -168,14 +168,11 @@ python3 scripts/check.py checkpoints   # current heads of durable memory
 A green check establishes structure only. It says nothing about whether a proof is correct
 (constraint 4) — that is what the review is for.
 
-## Showing it to someone
+## Outside contributions
 
-`python3 scripts/site.py --serve` renders everything above as a website: the target, the
-claim graph, the search map, the blockers, and the dated records explaining why each route
-stopped. It is a derived view that refuses to publish a tree which does not validate, and
-it is optional. [`PUBLISHING-THE-SITE.md`](PUBLISHING-THE-SITE.md) covers the deployment
-and the public contribution inbox, which changes nothing by itself
-([`../CLAUDE.md`](../CLAUDE.md) constraint 12).
+The issue forms under `.github/ISSUE_TEMPLATE/` are a public inbox. A report arriving there
+changes nothing by itself ([`../CLAUDE.md`](../CLAUDE.md) constraint 12): it is triaged into
+the artifact that already holds its genre, through the role that owns it.
 
 This harness is tuned for sustained conjecture search and nothing else; what it is *not* for
 is in [`../CLAUDE.md`](../CLAUDE.md) under **Scope**, and that list is worth reading before

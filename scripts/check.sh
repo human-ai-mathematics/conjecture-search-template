@@ -67,18 +67,6 @@ run "structure"       "${PY[@]}" scripts/check.py
 run "worked example"  "${PY[@]}" scripts/check.py --root example
 run "checker tests"   "${PY[@]}" -m unittest discover -s scripts/tests -p 'test_*.py'
 
-# The site is a derived view and not a validator, so this asks only whether it still
-# builds — the exporter refuses a tree that does not validate, and the two runs above
-# have already said whether this one does. A build here catches the case that matters:
-# a derivation that no longer survives the shape of the current repository.
-run "site"            "${PY[@]}" scripts/site.py --out build/site
-if command -v node >/dev/null 2>&1; then
-  # A syntax error in the frontend is a blank page, and nothing else would notice.
-  run "site frontend" node --check site/site.js
-else
-  skip "site frontend" "node not installed"
-fi
-
 if command -v uv >/dev/null 2>&1; then
   run "numerics"      sh -c 'cd experiments && uv run pytest -q'
 else

@@ -166,12 +166,7 @@ venv.bak/
 .ropeproject
 
 # mkdocs documentation
-#
-# The stock Python .gitignore ignores /site here, because mkdocs *generates* into it.
-# This repository does not use mkdocs, and /site is the hand-written frontend of the
-# published website — source, not output. The rule is removed rather than negated so
-# that nothing has to remember why an exception exists. What the site build *generates*
-# is build/site/, covered by the build/ rule at the end of this file.
+/site
 
 # mypy
 .mypy_cache/

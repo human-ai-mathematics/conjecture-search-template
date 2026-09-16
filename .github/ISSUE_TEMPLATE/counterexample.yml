@@ -27,7 +27,7 @@ body:
     id: anchor
     attributes:
       label: Which claim
-      description: The ledger node id you are refuting. The site fills this in.
+      description: The ledger node id you are refuting.
       placeholder: "conj:example"
     validations:
       required: true

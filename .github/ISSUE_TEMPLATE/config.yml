@@ -1,13 +1,11 @@
 # Issues are for things that are actionable. Conversation goes to Discussions.
 #
-# `blank_issues_enabled: true` on purpose: the five forms cover what the site's buttons
-# open, and a contributor with something that fits none of them should not have to
-# pretend it does.
+# `blank_issues_enabled: true` on purpose: the five forms cover the usual reports, and a
+# contributor with something that fits none of them should not have to pretend it does.
 #
-# The two URLs below are the only place in the repository that hardcodes the
-# owner/repo slug: everything the site links derives it from the `origin` remote.
-# A fork therefore has to repoint exactly this file, which is README.md's
-# instantiation step 5 and docs/PUBLISHING-THE-SITE.md.
+# The URL below is the only place in the repository that hardcodes the owner/repo slug.
+# A fork therefore has to repoint exactly this file, which is README.md's instantiation
+# step 5.
 blank_issues_enabled: true
 contact_links:
   - name: Ask a question, or think out loud
@@ -15,9 +13,3 @@ contact_links:
     about: >
       Interpretation, background, why a route was abandoned, whether an idea is worth
       trying. Nothing has to be finished to be worth saying here.
-
-  - name: Read the search first
-    url: https://numina-functional-inequalities.github.io/conjecture-search-template/
-    about: >
-      The target, what is established and at what certification level, what remains
-      open, which mechanisms have been tried, and why each route stopped.

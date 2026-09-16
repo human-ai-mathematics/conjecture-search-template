@@ -1,7 +1,7 @@
 # A suspected gap in a certified proof.
 #
-# The `anchor` field is prefilled by the site: every contribution link carries the stable
-# id of whatever was on screen, so a report arrives already pointing at the exact claim.
+# The `anchor` field names the stable id of the claim, so a report arrives already
+# pointing at it.
 name: Proof gap
 description: A step you believe is unjustified in a proof this repository certifies.
 title: "Proof gap in "
@@ -21,7 +21,7 @@ body:
     id: anchor
     attributes:
       label: Which claim
-      description: The ledger node id, e.g. `prop:example`. The site fills this in.
+      description: The ledger node id, e.g. `prop:example`.
       placeholder: "prop:example"
     validations:
       required: true

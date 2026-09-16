@@ -23,7 +23,7 @@ body:
     attributes:
       label: What it bears on
       description: >
-        A ledger node id, a route id, or the target. The site fills this in.
+        A ledger node id, a route id, or the target.
       placeholder: "q:example"
     validations:
       required: true
