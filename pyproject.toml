@@ -1,6 +1,7 @@
-# The structural checker's one dependency, declared so a fresh clone can install it.
+# The structural checker's Python dependency, declared so a fresh clone can install it.
 #
-# scripts/check.py needs PyYAML and nothing else; everything else it uses is in the
+# scripts/check.py needs PyYAML and, outside Python, MyST — pinned in package.json and
+# installed with 'npm ci' — to read the manuscript. Everything else it uses is in the
 # standard library. The numerics harness has its own manifest under experiments/.
 #
 #   uv run python scripts/check.py        # uv reads this file and provisions on the fly

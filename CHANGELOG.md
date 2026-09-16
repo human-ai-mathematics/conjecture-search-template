@@ -12,6 +12,12 @@ contract is intended to remain stable; from that point onward, use standard sema
 
 ### Added
 
+- Add a minimal `site` workflow that, on manual dispatch only, validates the repository and
+  publishes `myst build --html` — the manuscript and the dossiers — to GitHub Pages.
+- `./scripts/check.sh` builds the PDF of the manuscript and of every dossier, in the
+  repository and in `example/`, and fails on a LaTeX error in any of them or on a claim
+  label missing from the exported manuscript: `myst build --pdf` itself reports neither.
+  It installs MyST with `npm ci` when it can, and fails when it cannot.
 - Add a MyST source for the manuscript and the dossiers: `myst.yml` and `index.md` at the
   root and in `example/`, `modules/*.md`, `example/solutions/*.md`, `templates/module.md`,
   `templates/solution.md`, and a local LaTeX export template in `templates/latex/`.
@@ -20,7 +26,7 @@ contract is intended to remain stable; from that point onward, use standard sema
   `references.bib` now ships empty, because MyST refuses a bibliography holding only
   comments; its guidance moved to `myst.yml`.
 - Add a `check` workflow that validates the repository, the worked example and the checker's
-  test suite on pull requests into the default branch.
+  test suite on pull requests into the default branch. It installs MyST with `npm ci` first.
 
 ### Removed
 

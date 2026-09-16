@@ -2,9 +2,10 @@
 # Every validator in this repository, in the order that fails fastest.
 #
 # Structure first — scripts/check.py, every lane at once (cheap, and the thing
-# most edits touch) — then the numerical harness, then the document and every
-# dossier the ledger currently certifies. A green run establishes structure only:
-# it says nothing about whether a proof is correct (CLAUDE.md constraint 4).
+# most edits touch) — then the numerical harness, then the PDF of the manuscript
+# and of every dossier, in the repository and in example/. A green run establishes
+# structure only: it says nothing about whether a proof is correct (CLAUDE.md
+# constraint 4).
 #
 # While iterating on one lane, run it directly instead:
 #   python3 scripts/check.py --lane portfolio
@@ -14,7 +15,7 @@
 # must stay green on this script while correctly failing those.
 #
 #   ./scripts/check.sh            # everything available
-#   ./scripts/check.sh --fast     # skip the LaTeX build
+#   ./scripts/check.sh --fast     # skip the PDF build
 #   ./scripts/check.sh --strict   # a missing tool is a failure, not a skip
 set -uo pipefail
 
@@ -38,6 +39,19 @@ SKIPPED=()
 PY=(python3)
 if ! python3 -c 'import yaml' >/dev/null 2>&1 && command -v uv >/dev/null 2>&1; then
   PY=(uv run --quiet --project . python)
+fi
+
+# MyST is required, not optional: scripts/check.py reads the manuscript through it, so
+# without it there is no structure check to run. package.json pins it; install it the
+# way uv installs PyYAML above, and fail rather than skip when that is impossible.
+MYST=node_modules/.bin/myst
+if [ ! -x "$MYST" ] && command -v npm >/dev/null 2>&1; then
+  printf '=== installing MyST (npm ci) ===\n'
+  npm ci --no-audit --no-fund >/dev/null
+fi
+if [ ! -x "$MYST" ]; then
+  printf '!!! FAILED: MyST is required and could not be installed; install Node.js with npm, then run npm ci\n'
+  exit 1
 fi
 
 run() {
@@ -73,21 +87,49 @@ else
   skip "numerics" "uv not installed"
 fi
 
+# Build every PDF export of one MyST tree — the manuscript and each dossier — and fail
+# on what `myst build --pdf` does not: it exits 0 when pdflatex fails, and its LaTeX
+# serializer silently drops any directive it has no environment for. So read each
+# LaTeX log for an error, and require every claim label the manuscript lane found to
+# reach the exported manuscript as a \label.
+pdf() {
+  local tree="$1"
+  rm -rf "$tree/_build/exports"
+  (cd "$tree" && "$OLDPWD/$MYST" build --pdf >/dev/null 2>&1) || return 1
+  "${PY[@]}" - "$tree" <<'PY'
+import re, sys
+from pathlib import Path
+sys.path.insert(0, "scripts")
+from checks import manuscript
+
+tree = Path(sys.argv[1])
+exports = tree / "_build/exports"
+failed = False
+for log in sorted(exports.glob("*_pdf_logs/*.log")):
+    if log.name.endswith(".shell.log"):
+        continue
+    errors = [line for line in log.read_text(errors="replace").splitlines()
+              if re.match(r"^\./.*\.tex:\d+: ", line)]
+    if errors:
+        failed = True
+        print(f"{log}: LaTeX errors:", *errors[:5], sep="\n  ")
+labels = manuscript.read(tree / "_build/site/content", [])
+exported = "\n".join(path.read_text() for path in exports.glob("manuscript_pdf_tex/*.tex"))
+for label, entry in sorted(labels.items()):
+    if entry["kind"] and f"\\label{{{label}}}" not in exported:
+        failed = True
+        print(f"{entry['file']}: prf:{entry['kind']} '{label}' is missing from the PDF")
+sys.exit(1 if failed else 0)
+PY
+}
+
 if [ "$FAST" -eq 0 ]; then
-  if command -v latexmk >/dev/null 2>&1; then
-    run "document"    latexmk -pdf -outdir=build main.tex
-    # Standalone compilation is part of the proof definition of done (solutions/README.md).
-    # main.tex subfiles the modules, never the dossiers, so each dossier is built explicitly.
-    for tree in . example; do
-      while read -r dossier; do
-        [ -n "$dossier" ] || continue
-        [ -f "$tree/$dossier" ] || continue
-        run "dossier $tree/$dossier" \
-          latexmk -pdf -cd -outdir="$PWD/build" "$tree/$dossier"
-      done < <("${PY[@]}" scripts/check.py dossiers --root "$tree" 2>/dev/null)
-    done
+  if command -v latexmk >/dev/null 2>&1 && command -v pdflatex >/dev/null 2>&1; then
+    # Standalone PDFs are part of the proof definition of done (solutions/README.md).
+    run "pdf"           pdf .
+    run "example pdf"   pdf example
   else
-    skip "document" "latexmk not installed"
+    skip "pdf" "latexmk or pdflatex not installed"
   fi
 fi
 
@@ -100,7 +142,7 @@ elif [ "$FAST" -eq 1 ]; then
   else
     echo "all AVAILABLE fast checks passed (structure only — see CLAUDE.md constraint 4)"
   fi
-  echo "document and dossier builds were omitted by --fast."
+  echo "PDF builds were omitted by --fast."
   if [ "${#SKIPPED[@]}" -ne 0 ]; then
     echo "Other unavailable checks:"
     for entry in "${SKIPPED[@]}"; do

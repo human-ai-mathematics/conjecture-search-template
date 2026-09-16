@@ -1,8 +1,11 @@
 # Validate the repository on every pull request into the default branch.
 #
 # `scripts/check.py` finishes in seconds, so a pull request that breaks the ledger, the
-# worked example, or the checker's own tests says so before it is merged. A structurally
-# invalid revision is not this repository's research state.
+# manuscript, the worked example, or the checker's own tests says so before it is merged. A
+# structurally invalid revision is not this repository's research state.
+#
+# The PDFs are not built here: that needs TeX Live, which is minutes of runner time on
+# every pull request. `./scripts/check.sh` builds them locally.
 #
 # The branch filter names `main` literally. GitHub's `pull_request` trigger takes no
 # expression, so a fork whose default branch is called something else has to edit this
@@ -31,8 +34,18 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install the checker's one dependency
+      - name: Install PyYAML
         run: pip install pyyaml
+
+      # The checker reads the manuscript through MyST, at the version package.json pins
+      # and with the patch npm ci applies.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install MyST
+        run: npm ci
 
       # Structure first, and the worked example alongside it: the example is a fixture
       # the repository keeps green, and a pull request is the first thing that would
