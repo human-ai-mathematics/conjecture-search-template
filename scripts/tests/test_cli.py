@@ -203,18 +203,22 @@ class CommandLineTests(CheckerFixture):
         self.add_ledger("program", "real-program",
                         [node("conj:target", status="open", kind="conjecture")])
         self.add_brief("conj:target", body="The negation, spelled out.\n")
-        (self.root / "main.tex").write_text(
-            "\\title{<Document title>}\n\\author{<author>}\nReplace this abstract.\n"
-        )
+        config = self.root / "myst.yml"
+        config.write_text(config.read_text().replace(
+            "title: Fixture", "title: <Document title>\n  authors:\n    - name: <author>"
+        ))
+        (self.root / "modules/00-overview.md").write_text("# Orientation\n\nReplace this abstract.\n")
         (self.root / "README.md").write_text("# {{REPO_TITLE}}\n")
 
         ready = self.cli("ready")
         publish = self.cli("publish-ready")
 
         self.assertEqual(ready.returncode, 0, ready.stdout)
-        self.assertNotIn("main.tex", ready.stdout)
+        self.assertNotIn("myst.yml", ready.stdout)
         self.assertEqual(publish.returncode, 1)
         self.assertIn("set the manuscript title", publish.stdout)
+        self.assertIn("set the manuscript author", publish.stdout)
+        self.assertIn("write the abstract", publish.stdout)
         self.assertIn("name the repository", publish.stdout)
 
     def test_the_worked_example_is_an_instantiated_repository(self):

@@ -293,14 +293,13 @@ class ProofsTests(CheckerFixture):
         )
 
     def test_a_dossier_header_must_say_what_it_proves(self):
-        """The header is parsed, not grepped: the word and the id may not sit apart."""
-        relative = "solutions/loose-header.tex"
+        """The header is parsed, not grepped: an id in the prose declares nothing."""
+        relative = "solutions/loose-header.md"
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
-            "% a dossier that mentions ledger-node nowhere in particular\n"
-            + "% padding\n" * 20
-            + "% thm:loose appears far below, in prose\n"
+            "---\ntitle: A dossier that forgot its node\n---\n\n"
+            "ledger-node: thm:loose appears in the prose, which is not the header\n"
         )
         self.add_ledger(
             "main", "program",
@@ -317,8 +316,7 @@ class ProofsTests(CheckerFixture):
         relative = self.add_solution("unknown-header", node_ids=("thm:header",))
         path = self.root / relative
         path.write_text(path.read_text().replace(
-            "% =========================\n",
-            "%   checked_by  : none\n% =========================\n",
+            "title: Fixture dossier\n", "title: Fixture dossier\nchecked_by: none\n",
         ))
         self.add_ledger(
             "main", "program",
@@ -331,36 +329,58 @@ class ProofsTests(CheckerFixture):
 
         self.assertIn("dossier header has unknown field 'checked_by'", errors)
 
-    def test_field_shaped_narrative_comments_outside_the_header_are_ignored(self):
-        relative = self.add_solution("narrative-colons", node_ids=("thm:narrative",))
+    def test_a_dossier_header_accepts_the_myst_fields_it_needs_to_render(self):
+        relative = "solutions/rendered.md"
         path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
-            "% prop:outside before the delimited metadata\n"
-            + path.read_text()
-            + "% conj:outside after the delimited metadata\n"
-            + "% checked_by: prose outside the header is not metadata\n"
+            "---\n"
+            "title: Solution\n"
+            "ledger-node: thm:rendered\n"
+            "refines: [thm:rendered]\n"
+            "bounded_by: []\n"
+            "author: /root/researcher\n"
+            "date: '2026-09-01'\n"
+            "exports:\n  - format: pdf+tex\n    template: ../templates/latex\n"
+            "---\n\nproof\n"
         )
         self.add_ledger(
             "main", "program",
-            [node("thm:narrative", proofs=[{
+            [node("thm:rendered", proofs=[{
                 "artifact": relative, "mode": "human", "accepted_by": "fixture human",
             }])],
         )
 
         self.assertEqual(self.errors(), "")
 
-    def test_a_dossier_header_requires_both_delimiters(self):
-        relative = self.add_solution("open-header", node_ids=("thm:open-header",))
+    def test_a_dossier_without_front_matter_is_reported(self):
+        relative = "solutions/bare.md"
         path = self.root / relative
-        path.write_text(path.read_text().replace("% =========================\n", ""))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("ledger-node: thm:bare\n")
         self.add_ledger(
             "main", "program",
-            [node("thm:open-header", proofs=[{
+            [node("thm:bare", proofs=[{
                 "artifact": relative, "mode": "human", "accepted_by": "fixture human",
             }])],
         )
 
-        self.assertIn("dossier header has no 'ledger-node' field", self.errors())
+        self.assertIn("dossier must start with YAML front matter", self.errors())
+
+    def test_a_dossier_node_list_must_hold_ids(self):
+        relative = self.add_solution("mangled", node_ids=("thm:mangled",))
+        path = self.root / relative
+        path.write_text(path.read_text().replace(
+            "ledger-node:\n- thm:mangled\n", "ledger-node:\n  id: thm:mangled\n",
+        ))
+        self.add_ledger(
+            "main", "program",
+            [node("thm:mangled", proofs=[{
+                "artifact": relative, "mode": "human", "accepted_by": "fixture human",
+            }])],
+        )
+
+        self.assertIn("'ledger-node' must be a node id or a list of them", self.errors())
 
     def test_an_unimplemented_machine_certification_mode_is_invalid(self):
         lean_solution = self.add_solution("lean-proof", node_ids=("thm:lean",))
@@ -375,15 +395,14 @@ class ProofsTests(CheckerFixture):
 
         self.assertIn("thm:lean.proofs[0].mode: want one of ['agent', 'human'], got 'lean'", errors)
 
-    def test_solution_path_is_confined_to_tex_dossiers(self):
-        self.module.write_text("% ledger-node: thm:outside\n\\label{thm:outside}\n")
+    def test_solution_path_is_confined_to_solutions(self):
         self.add_ledger(
             "main",
             "program",
             [node(
                 "thm:outside",
                 proofs=[{
-                    "artifact": "modules/test.tex",
+                    "artifact": "modules/test.md",
                     "mode": "human",
                     "accepted_by": "fixture human",
                 }],
@@ -439,8 +458,38 @@ class ProofsTests(CheckerFixture):
         errors = self.errors()
 
         self.assertIn("dossier header declares ledger-node "
-                      "'thm:missing-from-header-extra', not 'thm:missing-from-header'",
+                      "['thm:missing-from-header-extra'], not 'thm:missing-from-header'",
                       errors)
+
+    def test_a_tex_dossier_is_no_longer_a_dossier(self):
+        relative = "solutions/legacy.tex"
+        (self.root / "solutions").mkdir(exist_ok=True)
+        (self.root / relative).write_text("% === SOLUTION HEADER ===\n")
+        self.add_ledger(
+            "main", "program",
+            [node("thm:legacy", proofs=[{
+                "artifact": relative, "mode": "human", "accepted_by": "fixture human",
+            }])],
+        )
+
+        self.assertIn("'solutions/legacy.tex' must be a .md file", self.errors())
+
+    def test_a_review_of_the_tex_dossier_still_covers_its_markdown_conversion(self):
+        """Reviews are immutable; converting a dossier to MyST changed no proof."""
+        solution = self.add_solution("converted", node_ids=("thm:converted",))
+        review = self.add_review(
+            "converted-review",
+            node_ids=("thm:converted",),
+            solutions=("solutions/converted.tex",),
+        )
+        self.add_ledger(
+            "main", "program",
+            [node("thm:converted", proofs=[{
+                "artifact": solution, "mode": "agent", "review": review,
+            }])],
+        )
+
+        self.assertEqual(self.errors(), "")
 
     def test_multiple_independent_proofs_may_coexist(self):
         first = self.add_solution("first-proof", node_ids=("thm:two-proofs",))

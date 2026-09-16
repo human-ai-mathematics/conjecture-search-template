@@ -3,7 +3,7 @@
 This is the lane that owns *what is mathematically claimed*. It validates node
 identity and schema, the acyclic proof DAG, the separation of proof dependencies from
 implication antecedents, the two classes of fence, and the coupling between a
-node id and a ``\\label`` in ``modules/``. Proof certification lives in ``proofs.py``;
+node id and a ``:label:`` in ``modules/``, as ``manuscript.py`` reads it from MyST. Proof certification lives in ``proofs.py``;
 search activity lives in ``portfolio.py``; neither belongs here.
 """
 from __future__ import annotations
@@ -29,27 +29,6 @@ KIND = {
     "theorem", "lemma", "proposition", "corollary", "conjecture", "definition",
     "example", "assumption",
 }
-
-#: The LaTeX environments that carry a claim. Deliberately the same words as ``KIND``:
-#: a ``\label`` inside one of these, in ``modules/``, is a ledger node whose ``kind`` is
-#: the environment's name. Everything else — ``\section``, ``\subsection``, ``equation``,
-#: ``remark`` — is structural or expository and carries no node.
-CLAIM_ENVIRONMENTS = frozenset(KIND)
-
-#: Numbered structural environments that own the labels they contain. A ``\label`` inside
-#: one of these names the equation, figure or table itself — never the claim it happens to
-#: sit inside — so it stays structural even when nested in a theorem. Without this, every
-#: numbered equation inside a claim would demand a ledger node of its own, which is the
-#: opposite of what ``ledger-schema.md`` promises.
-SELF_LABELLING_ENVIRONMENTS = frozenset({
-    "equation", "equation*", "align", "align*", "alignat", "alignat*",
-    "flalign", "flalign*", "gather", "gather*", "multline", "multline*",
-    "eqnarray", "eqnarray*", "subequations",
-    "figure", "figure*", "table", "table*", "algorithm", "listing",
-})
-
-ENVIRONMENT_RE = re.compile(r"\\(begin|end)\{([A-Za-z][A-Za-z0-9*]*)\}")
-LABEL_RE = re.compile(r"\\label\{([^}]+)\}")
 
 # One logical-status vocabulary. Mathematical form belongs in ``kind``;
 # speculative prose is not a ledger classification.
@@ -77,133 +56,17 @@ LIST_FIELDS = {
     "heuristic_barriers", "references", "proofs", "refuted_by",
 }
 BIB_ENTRY_RE = re.compile(r"@[A-Za-z]+\s*\{\s*([^,\s]+)\s*,")
+#: A BibTeX comment runs from an unescaped ``%`` to the end of the line.
+BIB_COMMENT_RE = re.compile(r"(?<!\\)%.*$", re.MULTILINE)
 TOP_LEVEL_FIELDS = {"meta", "nodes"}
 META_FIELDS = {"program", "scope"}
 
 
-def strip_comments(text: str) -> str:
-    """Blank out LaTeX comments, preserving every character offset.
-
-    An unescaped ``%`` starts a comment running to the end of the line. Commented text is
-    replaced by spaces rather than removed, so offsets into the result still index the
-    original: ``_labels_with_environments`` merges two regex streams by ``match.start()``
-    and would interleave them wrongly if the string shifted underneath it.
-
-    A character-wise scan rather than a regex, because ``\\%`` is an escaped percent and
-    not a comment while ``\\\\%`` is a line break followed by one, and a lookbehind cannot
-    tell those apart.
-
-    Without this a commented-out ``\\begin{theorem}`` or ``\\label`` entered the claim
-    inventory, so a draft parked behind a ``%`` demanded a ledger node it had no business
-    demanding. The same applies to ``.bib``, where ``%`` is also a comment.
-    """
-    out: list[str] = []
-    escaped = False
-    commented = False
-    for character in text:
-        if character == "\n":
-            escaped = commented = False
-            out.append(character)
-        elif commented:
-            out.append(" ")
-        elif escaped:
-            escaped = False
-            out.append(character)
-        elif character == "\\":
-            escaped = True
-            out.append(character)
-        elif character == "%":
-            commented = True
-            out.append(" ")
-        else:
-            out.append(character)
-    return "".join(out)
-
-
-def _labels_with_environments(text: str) -> list[tuple[str, str | None, int]]:
-    """Pair every ``\\label`` in one file with the claim environment enclosing it.
-
-    The enclosing environment is the innermost open *claim* environment, so a label
-    inside a ``proof`` or an ``itemize`` nested in a ``theorem`` still belongs to the
-    theorem. A label with no claim environment above it — a ``\\section`` anchor, an
-    equation tag, a ``remark`` — is structural and pairs with ``None``.
-
-    The scan stops at a self-labelling environment. A ``\\label`` inside an ``equation``
-    or a ``figure`` names that object, so it stays structural however deeply the object is
-    nested inside a claim; only a *neutral* wrapper such as ``proof`` is transparent.
-
-    The 1-based line of the ``\\label`` comes back with it. ``strip_comments`` preserves
-    every offset *and* every newline, so counting them here is exact — and it is the only
-    place in the repository that knows where an anchor physically sits, which is what lets
-    a reader be sent to the statement rather than to the file holding it.
-    """
-    events = sorted(
-        [(match.start(), "env", match.group(1), match.group(2))
-         for match in ENVIRONMENT_RE.finditer(text)]
-        + [(match.start(), "label", match.group(1), None)
-           for match in LABEL_RE.finditer(text)]
-    )
-    stack: list[str] = []
-    found: list[tuple[str, str | None, int]] = []
-    for position, kind, first, second in events:
-        if kind == "env":
-            if first == "begin":
-                stack.append(second)
-            elif stack and second in stack:
-                # Close to the matching \begin, tolerating unbalanced prose above it.
-                del stack[stack.index(second):]
-        else:
-            enclosing = None
-            for name in reversed(stack):
-                if name in SELF_LABELLING_ENVIRONMENTS:
-                    break  # the equation, figure or table owns this label
-                if name in CLAIM_ENVIRONMENTS:
-                    enclosing = name
-                    break
-            found.append((first, enclosing, text.count("\n", 0, position) + 1))
-    return found
-
-
-def manuscript_labels(root: Path, errors: list[str] | None = None) -> dict[str, dict]:
-    """Every ``\\label`` under ``modules/``, with its environment and file.
-
-    The invariant this supports is narrower and truer than "a label is a node id":
-    every *claim-bearing theorem-environment* label is exactly one ledger node, and a
-    structural label is not a node at all. Returned as a mapping so a duplicate is
-    detectable — a set silently merged two anchors that disagree.
-
-    Each entry carries ``environment``, ``file`` and the 1-based ``line`` of the
-    ``\\label``. The line is derived, never stored anywhere, and no validation depends
-    on it: it exists so a derived view can point a reader at the statement itself.
-    """
-    labels: dict[str, dict] = {}
-    modules = root / "modules"
-    if not modules.is_dir():
-        return labels
-    for path in sorted(modules.rglob("*.tex")):
-        relative = path.relative_to(root).as_posix()
-        try:
-            text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeError) as exc:
-            if errors is not None:
-                errors.append(f"{relative}: cannot read manuscript module: {exc}")
-            continue
-        for label, environment, line in _labels_with_environments(strip_comments(text)):
-            if label in labels and errors is not None:
-                errors.append(
-                    f"{relative}: duplicate manuscript label '{label}', already at "
-                    f"{labels[label]['file']}; one anchor, one place"
-                )
-                continue
-            labels[label] = {"environment": environment, "file": relative, "line": line}
-    return labels
-
-
 def unclaimed_labels(labels: dict[str, dict], node_ids: set[str]) -> list[str]:
-    """Claim-environment labels in ``modules/`` that no ledger node answers for."""
+    """Claim labels in ``modules/`` that no ledger node answers for."""
     return sorted(
         label for label, entry in labels.items()
-        if entry["environment"] is not None and label not in node_ids
+        if entry["kind"] is not None and label not in node_ids
     )
 
 
@@ -213,7 +76,8 @@ def bibliography_keys(root: Path) -> set[str] | None:
     if not path.is_file():
         return None
     try:
-        return set(BIB_ENTRY_RE.findall(strip_comments(path.read_text(encoding="utf-8"))))
+        text = BIB_COMMENT_RE.sub("", path.read_text(encoding="utf-8"))
+        return set(BIB_ENTRY_RE.findall(text))
     except (OSError, UnicodeError):
         return None
 
@@ -396,7 +260,7 @@ def _validate_node(program: str, nid: str, node: dict, *, root: Path,
         # node anchored anywhere else has no anchor a reader would think to look at.
         resolved_file = contained_path(
             root, node.get("file"), "modules", f"[{program}] {nid}.file", errors,
-            suffix=".tex", outside="a claim is stated in modules/, nowhere else",
+            suffix=".md", outside="a claim is stated in modules/, nowhere else",
         )
         if resolved_file is not None:
             declared_file = repo_relative(root, resolved_file)
@@ -408,15 +272,15 @@ def _validate_node(program: str, nid: str, node: dict, *, root: Path,
             "is the anchor"
         )
     else:
-        if anchor["environment"] is None:
+        if anchor["kind"] is None:
             errors.append(
                 f"[{program}] {nid}: '{nid}' labels a structural element in "
-                f"{anchor['file']}, not a claim environment; a node states a claim"
+                f"{anchor['file']}, not a claim directive; a node states a claim"
             )
-        elif isinstance(kind, str) and anchor["environment"] != kind:
+        elif isinstance(kind, str) and anchor["kind"] != kind:
             errors.append(
                 f"[{program}] {nid}.kind: '{kind}' disagrees with the "
-                f"\\begin{{{anchor['environment']}}} it labels in {anchor['file']}"
+                f"prf:{anchor['kind']} it labels in {anchor['file']}"
             )
         if declared_file is not None and declared_file != anchor["file"]:
             errors.append(
@@ -486,7 +350,7 @@ def check(root: Path, research: Path, errors: list[str],
     ``configured_ledger`` is passed in production so the single ledger is explicit and a
     stray second one is an error; fixture trees omit it and discover ledgers recursively.
     """
-    labels = manuscript_labels(root, errors) if labels is None else labels
+    labels = {} if labels is None else labels
     bib_keys = bibliography_keys(root)
     ledgers: list[dict] = []
     program_paths: dict[str, Path] = {}
@@ -566,8 +430,8 @@ def check(root: Path, research: Path, errors: list[str],
     declared = {nid for ledger in ledgers for nid in ledger["nodes"]}
     for label in unclaimed_labels(labels, declared):
         errors.append(
-            f"{labels[label]['file']}: \\label{{{label}}} states a "
-            f"\\begin{{{labels[label]['environment']}}} that no ledger node answers "
+            f"{labels[label]['file']}: :label: {label} states a "
+            f"prf:{labels[label]['kind']} that no ledger node answers "
             "for; give it a node or make it structural"
         )
 

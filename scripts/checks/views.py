@@ -35,9 +35,10 @@ RESEARCH_PLACEHOLDERS: tuple[tuple[str, str, str], ...] = (
 
 PUBLICATION_PLACEHOLDERS: tuple[tuple[str, str, str], ...] = (
     ("README.md", "{{REPO_TITLE}}", "name the repository"),
-    ("main.tex", "<Document title>", "set the manuscript title"),
-    ("main.tex", "<author>", "set the manuscript author"),
-    ("main.tex", "Replace this abstract.", "write the abstract"),
+    ("myst.yml", "<Document title>", "set the manuscript title"),
+    ("myst.yml", "<one-line subtitle", "set the manuscript subtitle"),
+    ("myst.yml", "<author>", "set the manuscript author"),
+    ("modules/00-overview.md", "Replace this abstract.", "write the abstract"),
     ("README.md", "# Instantiating this template",
      "delete the instantiation section once its steps are done"),
 )
@@ -86,10 +87,10 @@ def summary(report: dict, lanes: tuple[str, ...] = LANES) -> None:
     total = sum(len(item["nodes"]) for item in ledgers)
     error_count = sum(len(report["errors"][lane]) for lane in lanes)
     # Claim and structural labels are counted apart because only the first kind is
-    # required to be a node. Reported together, a template with one \section anchor and
+    # required to be a node. Reported together, a template with one heading anchor and
     # no claims at all read "0 nodes, 1 labels", which looks like a missing node.
     labels = report["labels"]
-    claims = sum(1 for entry in labels.values() if entry["environment"] is not None)
+    claims = sum(1 for entry in labels.values() if entry["kind"] is not None)
     print(
         f"\n{len(ledgers)} ledger(s), {total} nodes, {claims} claim label(s), "
         f"{len(labels) - claims} structural. {error_count} error(s)."
@@ -346,23 +347,3 @@ def checkpoints(report: dict) -> None:
     for relative, heirs in sorted(superseded_audits.items()):
         print(f"  superseded  {relative}\n      read instead: {', '.join(heirs)}")
 
-
-def dossiers(report: dict) -> None:
-    """Every dossier an active proof record names, one repo-relative path per line.
-
-    Machine-readable on purpose. ``scripts/check.sh`` consumes it to compile each dossier
-    standalone, which ``solutions/README.md`` makes part of the proof definition of done
-    and which no validator otherwise exercises: a dossier with a LaTeX syntax error used
-    to pass every check in the repository.
-    """
-    found: list[str] = []
-    for item in report["ledgers"]:
-        for node in item["nodes"].values():
-            for proof in as_list(node.get("proofs")):
-                if not isinstance(proof, dict):
-                    continue
-                artifact = proof.get("artifact")
-                if isinstance(artifact, str) and artifact not in found:
-                    found.append(artifact)
-    for path in sorted(found):
-        print(path)

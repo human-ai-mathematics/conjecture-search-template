@@ -6,6 +6,12 @@ touch the real ledger, the append-only checkpoints, or the immutable run artifac
 The fixtures deliberately omit ``configured_ledger``: production pins exactly one ledger
 path, while a fixture tree may hold several so that the one-ledger rule is itself
 testable.
+
+Each fixture is also a real MyST project — ``myst.yml``, a module under ``modules/`` — so
+that ``cli()`` runs the checker exactly as production does, MyST build included. The
+in-process ``check()`` skips that build and passes the anchors ``add_ledger`` wrote
+straight to ``analyze``: the lane rules never read prose, and a hundred MyST builds would
+test nothing more. How MyST's tree becomes those anchors is ``test_manuscript.py``'s job.
 """
 from __future__ import annotations
 
@@ -23,8 +29,36 @@ sys.path.insert(0, str(REPO / "scripts"))
 
 from checks import analyze, failures  # noqa: E402
 from checks.common import LANES  # noqa: E402
+from checks.ledger import KIND  # noqa: E402
 
 CHECK = REPO / "scripts/check.py"
+
+#: A fixture's MyST configuration. The site template is a local stub, so a fixture build
+#: never downloads MyST's theme.
+MYST_CONFIG = """version: 1
+project:
+  title: Fixture
+  toc:
+    - file: index.md
+    - pattern: '{modules,solutions}/!(README).md'
+site:
+  template: ./site-template
+"""
+
+
+def write_myst_project(root: Path) -> None:
+    """Make ``root`` a MyST project whose site build needs no network."""
+    (root / "myst.yml").write_text(MYST_CONFIG)
+    (root / "index.md").write_text("# Fixture\n")
+    template = root / "site-template"
+    template.mkdir(exist_ok=True)
+    (template / "template.yml").write_text("jtex: v1\ntitle: fixture stub\n")
+
+
+def dossier_text(node_ids: tuple[str, ...] | list[str], body: str) -> str:
+    """A dossier whose front matter names the nodes it discharges."""
+    header = {"title": "Fixture dossier", "ledger-node": list(node_ids)}
+    return "---\n" + yaml.safe_dump(header, sort_keys=False) + "---\n\n" + body
 
 
 def node(node_id: str, *, status: str = "proved", kind: str = "theorem", **fields):
@@ -33,7 +67,7 @@ def node(node_id: str, *, status: str = "proved", kind: str = "theorem", **field
         "kind": kind,
         "status": status,
         "provenance": "internal",
-        "file": "modules/test.tex",
+        "file": "modules/test.md",
         "summary": f"fixture summary for {node_id}",
     }
     result.update(fields)
@@ -48,8 +82,11 @@ class CheckerFixture(unittest.TestCase):
         self.research.mkdir(parents=True)
         modules = self.root / "modules"
         modules.mkdir()
-        self.module = modules / "test.tex"
-        self.module.write_text("fixture\n")
+        self.module = modules / "test.md"
+        self.module.write_text("# Fixture module\n")
+        write_myst_project(self.root)
+        #: What MyST would report for the module: ``{label: {"kind", "file"}}``.
+        self.anchors: dict[str, dict] = {}
         (self.root / "references.bib").write_text(
             "@article{FixtureReference,\n"
             "  title = {Fixture reference},\n"
@@ -71,9 +108,10 @@ class CheckerFixture(unittest.TestCase):
         if meta_fields:
             meta.update(meta_fields)
         fixture_nodes = [dict(item) for item in nodes]
-        # Anchor each node the way the manuscript must: inside the claim environment
-        # named by its own `kind`, so the fixture tree satisfies the same invariant a
-        # real modules/ does.
+        # Anchor each node the way the manuscript must: inside the claim directive named by
+        # its own `kind`, so the fixture tree satisfies the same invariant a real modules/
+        # does. A kind that is not a claim kind gets a structural heading label instead,
+        # which is what the manuscript lane would find for it.
         anchors = [
             (item["id"], str(item.get("kind") or "theorem"))
             for item in fixture_nodes
@@ -82,10 +120,14 @@ class CheckerFixture(unittest.TestCase):
         if anchors:
             with self.module.open("a", encoding="utf-8") as stream:
                 for label, kind in anchors:
-                    stream.write(
-                        f"\\begin{{{kind}}}\n\\label{{{label}}}\nfixture\n"
-                        f"\\end{{{kind}}}\n"
-                    )
+                    if kind in KIND:
+                        stream.write(f"\n:::{{prf:{kind}}}\n:label: {label}\nfixture\n:::\n")
+                    else:
+                        stream.write(f"\n({label})=\n## Fixture {label}\n")
+                    self.anchors[label] = {
+                        "kind": kind if kind in KIND else None,
+                        "file": self.module.relative_to(self.root).as_posix(),
+                    }
         if certify_fixture_proofs:
             bare_proved = [
                 item for item in fixture_nodes
@@ -94,16 +136,11 @@ class CheckerFixture(unittest.TestCase):
                 and "proofs" not in item
             ]
             if bare_proved:
-                solution = f"solutions/fixture-{relative.replace('/', '-')}.tex"
+                solution = f"solutions/fixture-{relative.replace('/', '-')}.md"
                 solution_path = self.root / solution
                 solution_path.parent.mkdir(parents=True, exist_ok=True)
-                covered = "; ".join(str(item.get("id")) for item in bare_proved)
-                solution_path.write_text(
-                    "% === SOLUTION HEADER ===\n"
-                    f"%   ledger-node : {covered}\n"
-                    "% =========================\n"
-                    "standalone fixture proofs\n"
-                )
+                covered = [str(item.get("id")) for item in bare_proved]
+                solution_path.write_text(dossier_text(covered, "standalone fixture proofs\n"))
                 for item in bare_proved:
                     item["proofs"] = [{
                         "artifact": solution,
@@ -114,16 +151,10 @@ class CheckerFixture(unittest.TestCase):
         return path
 
     def add_solution(self, name: str, *, node_ids: tuple[str, ...] = ()) -> str:
-        relative = f"solutions/{name}.tex"
+        relative = f"solutions/{name}.md"
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
-        covered = "; ".join(node_ids)
-        path.write_text(
-            "% === SOLUTION HEADER ===\n"
-            f"%   ledger-node : {covered}\n"
-            "% =========================\n"
-            "standalone proof fixture\n"
-        )
+        path.write_text(dossier_text(node_ids, "standalone proof fixture\n"))
         return relative
 
     def add_review(self, name: str, *, verdict: str = "pass",
@@ -241,6 +272,7 @@ class CheckerFixture(unittest.TestCase):
     # --- running the checker -----------------------------------------------------------
 
     def check(self, **kwargs) -> dict:
+        kwargs.setdefault("labels", self.anchors)
         return analyze(self.root, self.research, **kwargs)
 
     def errors(self, lanes: tuple[str, ...] = LANES, **kwargs) -> str:

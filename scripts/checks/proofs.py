@@ -8,7 +8,6 @@ author, and declare the node and dossier in its immutable historical scope.
 """
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 from .common import (as_list, check_record_date, contained_path, mentions_token,
@@ -21,13 +20,12 @@ SOLUTIONS = "solutions"
 PROOF_MODES = {"agent", "human"}
 PROOF_FIELDS = {"artifact", "mode", "review", "accepted_by"}
 
-#: The dossier header is deliberately small. Certification belongs to the ledger and
-#: review front matter, never to this human-readable summary.
-HEADER_LIMIT = 2500
-HEADER_GLOSS_RE = re.compile(r"\s{2,}")
-HEADER_START_RE = re.compile(r"^%\s*===\s+SOLUTION HEADER\b.*$")
-HEADER_END_RE = re.compile(r"^%\s*=+\s*$")
+#: The dossier header is the YAML front matter of ``solutions/<id>.md``, and deliberately
+#: small. Certification belongs to the ledger and review front matter, never to this
+#: human-readable summary, which is why a ``reviewer`` or ``checked_by`` field is an error.
 DOSSIER_HEADER_FIELDS = {"ledger-node", "refines", "bounded_by", "author", "date"}
+#: The MyST page fields a standalone dossier needs to render and export. Nothing else.
+DOSSIER_MYST_FIELDS = {"title", "subtitle", "short_title", "label", "exports", "numbering"}
 
 REVIEW_TYPES = {"proof-review", "audit"}
 #: An audit certifies nothing, so it carries only what every dated record carries —
@@ -105,58 +103,26 @@ def read_archive(root: Path, errors: list[str]) -> dict[str, dict]:
     return metadata_by_ref
 
 
-def parse_dossier_header(text: str) -> dict[str, str]:
-    """Read the ``%   field : value`` lines of a delimited solution header.
-
-    Only a complete ``SOLUTION HEADER`` block in the leading ``HEADER_LIMIT`` characters
-    is considered. Restricting the grammar to that block keeps a narrative comment such
-    as ``% prop:...`` from becoming metadata. The value ends at the first run of two or
-    more spaces, which separates it from the inline gloss written by the template.
-    """
-    lines = text[:HEADER_LIMIT].splitlines()
-    start = next((index for index, line in enumerate(lines)
-                  if HEADER_START_RE.fullmatch(line.strip())), None)
-    if start is None:
-        return {}
-    end = next((index for index, line in enumerate(lines[start + 1:], start + 1)
-                if HEADER_END_RE.fullmatch(line.strip())), None)
-    if end is None:
-        return {}
-
-    fields: dict[str, str] = {}
-    for line in lines[start + 1:end]:
-        stripped = line.strip()
-        if not stripped.startswith("%") or ":" not in stripped:
-            continue
-        name, _, value = stripped.lstrip("% ").partition(":")
-        name = name.strip()
-        if re.fullmatch(r"[a-z][a-z0-9_-]*", name) and name not in fields:
-            fields[name] = HEADER_GLOSS_RE.split(value.strip(), maxsplit=1)[0].strip()
-    return fields
-
-
 def _dossier(root: Path, program: str, nid: str, reference: object,
              errors: list[str]) -> Path | None:
     """Validate and return one natural-language proof dossier path.
 
-    The header is parsed, not searched. Grepping the first 2500 characters for the word
-    ``ledger-node`` and, separately, for the node id let the two sit a page apart and
-    still pass; a dossier that does not *say* which node it discharges is not a dossier
-    an independent reviewer can pick up.
+    The header is the dossier's YAML front matter, parsed rather than searched: a dossier
+    that does not *say* which node it discharges is not a dossier an independent reviewer
+    can pick up.
     """
     context = f"[{program}] {nid}.proofs[].artifact"
     artifact = contained_path(root, reference, SOLUTIONS, context, errors,
-                              suffix=".tex", outside="must stay under solutions/")
+                              suffix=".md", outside="must stay under solutions/")
     if artifact is None:
         return None
-    try:
-        text = artifact.read_text(encoding="utf-8")
-    except (OSError, UnicodeError) as exc:
-        errors.append(f"{context}: cannot read '{reference}': {exc}")
-        return None
 
-    header = parse_dossier_header(text)
-    for field in sorted(set(header) - DOSSIER_HEADER_FIELDS):
+    header_errors: list[str] = []
+    header = read_front_matter(artifact, "dossier", header_errors)
+    if header is None:
+        errors.extend(f"{context}: {message}" for message in header_errors)
+        return artifact
+    for field in sorted(set(header) - DOSSIER_HEADER_FIELDS - DOSSIER_MYST_FIELDS):
         errors.append(f"{context}: dossier header has unknown field '{field}'")
 
     declared = header.get("ledger-node")
@@ -164,9 +130,19 @@ def _dossier(root: Path, program: str, nid: str, reference: object,
         errors.append(
             f"{context}: dossier header has no 'ledger-node' field naming what it proves"
         )
-    elif not mentions_token(declared, nid):
+    elif isinstance(declared, str):
+        if not mentions_token(declared, nid):
+            errors.append(
+                f"{context}: dossier header declares ledger-node '{declared}', not '{nid}'"
+            )
+    elif isinstance(declared, list) and all(isinstance(item, str) for item in declared):
+        if nid not in declared:
+            errors.append(
+                f"{context}: dossier header declares ledger-node {declared}, not '{nid}'"
+            )
+    else:
         errors.append(
-            f"{context}: dossier header declares ledger-node '{declared}', not '{nid}'"
+            f"{context}: dossier header 'ledger-node' must be a node id or a list of them"
         )
 
     return artifact
@@ -240,6 +216,19 @@ def _certification(root: Path, program: str, nid: str, node: dict, nodes: dict[s
         errors.append(f"[{program}] {nid}.refuted_by: valid only with status refuted")
 
 
+def _in_scope(artifact_ref: str, solutions: set[str]) -> bool:
+    """Is this dossier one the report reviewed?
+
+    A report written before v0.2.0 names the dossier as ``solutions/<id>.tex``, and the
+    report is immutable. Converting that dossier to ``solutions/<id>.md`` changed its
+    format and not its proof, so the old name still covers it.
+    """
+    if artifact_ref in solutions:
+        return True
+    legacy = Path(artifact_ref)
+    return legacy.suffix == ".md" and legacy.with_suffix(".tex").as_posix() in solutions
+
+
 def _containment(root: Path, archive: dict[str, dict],
                  review_refs: dict[str, list[tuple[str, str, str]]],
                  errors: list[str]) -> None:
@@ -272,7 +261,7 @@ def _containment(root: Path, archive: dict[str, dict],
                     f"{context}.nodes: active [{program}] certification '{nid}' "
                     "is outside the report's declared historical scope"
                 )
-            if artifact_ref not in metadata["solutions"]:
+            if not _in_scope(artifact_ref, metadata["solutions"]):
                 errors.append(
                     f"{context}.solutions: active [{program}] certification '{nid}' uses "
                     f"'{artifact_ref}', outside the report's declared historical scope"

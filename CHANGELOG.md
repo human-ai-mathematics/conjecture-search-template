@@ -31,6 +31,20 @@ contract is intended to remain stable; from that point onward, use standard sema
 
 ### Changed
 
+- **Breaking:** `scripts/check.py` reads the manuscript through MyST. It runs `myst build
+  --site` and validates the tree MyST writes: a node's anchor is a `:label:` on the
+  `prf:<kind>` directive in `modules/*.md`, and every MyST error, unknown directive or
+  role, unresolved cross-reference, duplicate label and HTML-anchor collision
+  (`a:b-c` against `a-b:c`) is a `core` error. The LaTeX label scanner is gone. MyST is
+  now required: `npm ci`. The checker writes nothing tracked, only MyST's gitignored
+  `_build/`.
+- **Breaking:** a dossier is `solutions/<id>.md`, and its header is YAML front matter
+  (`ledger-node`, `refines`, `bounded_by`, `author`, `date`, plus MyST's `title` and
+  `exports`) instead of the `% === SOLUTION HEADER` comment block. `ledger-node` may be a
+  list. A review written before this release that names `solutions/<id>.tex` still covers
+  `solutions/<id>.md`, so an immutable review does not have to be rewritten.
+- **Breaking:** `check.py publish-ready` looks for its placeholders in `myst.yml` and in the
+  abstract of `modules/00-overview.md`. `check.py dossiers` is removed.
 - **Breaking:** reduce the ledger `kind` vocabulary from ten to eight: `theorem`, `lemma`,
   `proposition`, `corollary`, `conjecture`, `definition`, `example`, `assumption`. `question`
   and `obstruction` are removed. Being an obstruction is a role carried by the edges, not a

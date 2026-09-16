@@ -14,20 +14,27 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import checkpoints, docs, ledger, numerics, portfolio, proofs, roles
+from . import checkpoints, docs, ledger, manuscript, numerics, portfolio, proofs, roles
 from .common import LANES
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def analyze(root: Path | None = None, research: Path | None = None,
-            configured_ledger: str | Path | None = None) -> dict:
-    """Validate every lane of one repository tree and return the tagged report."""
+            configured_ledger: str | Path | None = None,
+            labels: dict[str, dict] | None = None) -> dict:
+    """Validate every lane of one repository tree and return the tagged report.
+
+    ``labels`` is the manuscript as :func:`manuscript.manuscript_labels` returns it. It is
+    built with MyST when omitted; the lane tests pass it in, so that a hundred small
+    fixture trees do not each start a MyST build to test rules that never read prose.
+    """
     root = Path(root) if root is not None else ROOT
     research = Path(research) if research is not None else root / "research"
     errors: dict[str, list[str]] = {lane: [] for lane in LANES}
 
-    labels = ledger.manuscript_labels(root, errors["core"])
+    if labels is None:
+        labels = manuscript.manuscript_labels(root, errors["core"])
     ledgers = ledger.check(root, research, errors["core"], configured_ledger, labels)
     node_ids = ledger.node_ids(ledgers)
 

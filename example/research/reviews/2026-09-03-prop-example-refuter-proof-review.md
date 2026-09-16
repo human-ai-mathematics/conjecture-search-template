@@ -8,7 +8,7 @@ reviewer: /root/template_reviewer
 nodes:
   - prop:example-refuter
 solutions:
-  - solutions/prop-example-refuter.tex
+  - solutions/prop-example-refuter.md
 ---
 
 # Review: `prop:example-refuter`

@@ -8,7 +8,7 @@ reviewer: /root/template_reviewer
 nodes:
   - prop:example
 solutions:
-  - solutions/prop-example.tex
+  - solutions/prop-example.md
 ---
 
 Worked example of a certifying review, kept so the template ships one of each

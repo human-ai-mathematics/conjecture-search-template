@@ -235,32 +235,31 @@ class CoreTests(CheckerFixture):
         self.assertIn("obs:synthetic: unknown field 'label'", errors)
 
     def test_a_declared_file_must_be_the_one_holding_the_anchor(self):
-        other = self.root / "modules/other.tex"
-        other.write_text("fixture without the anchor\n")
+        other = self.root / "modules/other.md"
+        other.write_text("# Fixture without the anchor\n")
         self.add_ledger(
             "main",
             "program",
             [node("obs:synthetic", status="open", kind="conjecture",
-                  file="modules/other.tex")],
+                  file="modules/other.md")],
         )
 
         errors = self.errors()
 
         self.assertIn(
-            "obs:synthetic.file: 'modules/other.tex' does not contain 'obs:synthetic'; "
-            "it is in modules/test.tex",
+            "obs:synthetic.file: 'modules/other.md' does not contain 'obs:synthetic'; "
+            "it is in modules/test.md",
             errors,
         )
 
     def test_a_claim_is_stated_in_modules_and_nowhere_else(self):
-        dossier = self.root / "solutions/elsewhere.tex"
+        dossier = self.root / "solutions/elsewhere.md"
         dossier.parent.mkdir(parents=True, exist_ok=True)
-        dossier.write_text("\\begin{theorem}\n\\label{thm:elsewhere}\nfixture\n"
-                           "\\end{theorem}\n")
+        dossier.write_text(":::{prf:theorem}\n:label: thm:elsewhere\nfixture\n:::\n")
         self.add_ledger(
             "main", "program",
             [node("thm:elsewhere", status="open", kind="theorem",
-                  file="solutions/elsewhere.tex")],
+                  file="solutions/elsewhere.md")],
         )
 
         errors = self.errors()
@@ -268,119 +267,57 @@ class CoreTests(CheckerFixture):
         self.assertIn("thm:elsewhere.file:", errors)
         self.assertIn("a claim is stated in modules/, nowhere else", errors)
 
-    def test_a_structural_label_needs_no_node_but_a_claim_label_does(self):
-        """The honest invariant: theorem environments are nodes, sections are not."""
-        self.module.write_text(
-            "\\section{Orientation}\n\\label{sec:overview}\n"
-            "\\begin{lemma}\n\\label{lem:orphan}\nfixture\n\\end{lemma}\n"
+    def test_a_manuscript_file_is_markdown(self):
+        (self.root / "modules/legacy.tex").write_text("fixture\n")
+        self.add_ledger(
+            "main", "program",
+            [node("thm:legacy", status="open", file="modules/legacy.tex")],
         )
+
+        self.assertIn("thm:legacy.file: 'modules/legacy.tex' must be a .md file",
+                      self.errors())
+
+    def test_a_structural_label_needs_no_node_but_a_claim_label_does(self):
+        """The honest invariant: claim directives are nodes, headings are not."""
         self.add_ledger("main", "program", [])
+        self.anchors.update({
+            "sec:overview": {"kind": None, "file": "modules/test.md"},
+            "lem:orphan": {"kind": "lemma", "file": "modules/test.md"},
+        })
 
         errors = self.errors()
 
         self.assertNotIn("sec:overview", errors)
-        self.assertIn("\\label{lem:orphan} states a \\begin{lemma} that no ledger node "
+        self.assertIn(":label: lem:orphan states a prf:lemma that no ledger node "
                       "answers for", errors)
 
-    def test_a_node_kind_must_agree_with_the_environment_it_labels(self):
-        """A \\begin{conjecture} behind kind: theorem is a real defect, now a caught one."""
+    def test_a_node_must_label_a_claim_not_a_structural_element(self):
+        self.add_ledger("main", "program",
+                        [node("sec:not-a-claim", status="open", kind="theorem")])
+        self.anchors["sec:not-a-claim"]["kind"] = None
+
+        self.assertIn("'sec:not-a-claim' labels a structural element in modules/test.md, "
+                      "not a claim directive", self.errors())
+
+    def test_a_node_kind_must_agree_with_the_directive_it_labels(self):
+        """A prf:conjecture behind kind: theorem is a real defect, and a caught one."""
         self.add_ledger(
             "main", "program",
             [node("thm:mislabelled", status="open", kind="theorem")],
         )
-        self.module.write_text(
-            "\\begin{conjecture}\n\\label{thm:mislabelled}\nfixture\n"
-            "\\end{conjecture}\n"
-        )
+        self.anchors["thm:mislabelled"]["kind"] = "conjecture"
 
         errors = self.errors()
 
         self.assertIn("thm:mislabelled.kind: 'theorem' disagrees with the "
-                      "\\begin{conjecture} it labels", errors)
+                      "prf:conjecture it labels", errors)
 
-    def test_one_anchor_lives_in_one_place(self):
-        self.add_ledger("main", "program",
-                        [node("lem:twice", status="open", kind="lemma")])
-        second = self.root / "modules/second.tex"
-        second.write_text("\\begin{lemma}\n\\label{lem:twice}\nfixture\n\\end{lemma}\n")
+    def test_a_node_without_its_label_is_reported(self):
+        self.add_ledger("main", "program", [node("thm:unanchored", status="open")])
+        del self.anchors["thm:unanchored"]
 
-        errors = self.errors()
-
-        self.assertIn("duplicate manuscript label 'lem:twice'", errors)
-
-    def test_a_label_inside_a_proof_still_belongs_to_its_theorem(self):
-        """The enclosing claim environment is the innermost one, not the innermost env."""
-        self.add_ledger(
-            "main", "program",
-            [node("prop:nested", status="open", kind="proposition")],
-        )
-        self.module.write_text(
-            "\\begin{proposition}\n\\label{prop:nested}\n"
-            "\\begin{proof}\n\\begin{itemize}\\item fixture\\end{itemize}\n"
-            "\\end{proof}\n\\end{proposition}\n"
-        )
-
-        self.assertEqual(self.errors(), "")
-
-    def test_a_numbered_equation_inside_a_claim_owns_its_own_label(self):
-        """An equation tag is structural however deeply a claim encloses it.
-
-        ledger-schema.md promises that "a \\label on a \\section, an equation, or a
-        remark is structural". Without this the promise held only at top level: a
-        numbered equation inside a theorem was read as a second claim, so every
-        display in the manuscript demanded a ledger node of its own.
-        """
-        self.add_ledger(
-            "main", "program",
-            [node("thm:carrier", status="open", kind="theorem")],
-        )
-        self.module.write_text(
-            "\\begin{theorem}\n\\label{thm:carrier}\n"
-            "\\begin{equation}\\label{eq:inner}x=x\\end{equation}\n"
-            "\\begin{align}\\label{eq:inner-align}y&=y\\end{align}\n"
-            "\\end{theorem}\n"
-        )
-
-        self.assertEqual(self.errors(), "")
-
-    def test_a_figure_or_table_inside_a_claim_owns_its_own_label(self):
-        """Same rule for the other numbered structural environments."""
-        self.add_ledger(
-            "main", "program",
-            [node("lem:holder", status="open", kind="lemma")],
-        )
-        self.module.write_text(
-            "\\begin{lemma}\n\\label{lem:holder}\n"
-            "\\begin{figure}\\label{fig:inner}\\end{figure}\n"
-            "\\begin{table}\\label{tab:inner}\\end{table}\n"
-            "\\end{lemma}\n"
-        )
-
-        self.assertEqual(self.errors(), "")
-
-    def test_an_anchor_records_the_line_it_sits_on(self):
-        """Derived, stored nowhere, and load-bearing for no validation.
-
-        It exists so a derived view can send a reader to the statement rather than to
-        the file holding it. Comments are blanked before the scan and must not shift the
-        count, which is the case a regex over the raw text would get wrong.
-        """
-        self.module.write_text(
-            "% \\begin{lemma} a commented-out claim\n"
-            "\\section{Orientation}\n"
-            "\\label{sec:orientation}\n"
-            "\\begin{lemma}\n"
-            "\\label{lem:anchored}\n"
-            "fixture\n"
-            "\\end{lemma}\n"
-        )
-
-        labels = ledger.manuscript_labels(self.root)
-
-        self.assertEqual(labels["sec:orientation"]["line"], 3)
-        self.assertEqual(labels["lem:anchored"]["line"], 5)
-        self.assertIsNone(labels["sec:orientation"]["environment"])
-        self.assertEqual(labels["lem:anchored"]["environment"], "lemma")
+        self.assertIn("thm:unanchored: no manuscript label 'thm:unanchored' in modules/",
+                      self.errors())
 
     def test_implication_truth_is_separate_from_applicability(self):
         nodes = [

@@ -29,7 +29,7 @@ nodes:
     kind: conjecture
     status: open
     provenance: internal
-    file: modules/00-overview.tex
+    file: modules/00-overview.md
     summary: "A finite battery of instances cannot establish a universal statement; numerical agreement over the instances tried constrains nothing about the untried ones."
 
   # ---------------------------------------------------------------------------
@@ -39,7 +39,7 @@ nodes:
     kind: conjecture
     status: open
     provenance: internal
-    file: modules/00-overview.tex
+    file: modules/00-overview.md
     summary: "The centred sum-of-squares identity of prop:example still holds when the mean is replaced by a weighted mean with positive weights summing to one."
     heuristic_barriers: [conj:finite-battery]
 
@@ -50,10 +50,10 @@ nodes:
     kind: proposition
     status: proved
     provenance: internal
-    file: modules/00-overview.tex
+    file: modules/00-overview.md
     summary: "For real a_1..a_n with mean abar, sum_i (a_i - abar)^2 = sum_i a_i^2 - n abar^2."
     proofs:
-      - artifact: solutions/prop-example.tex
+      - artifact: solutions/prop-example.md
         mode: agent
         review: research/reviews/2026-09-01-prop-example-proof-review.md
 
@@ -64,7 +64,7 @@ nodes:
     kind: conjecture
     status: refuted
     provenance: internal
-    file: modules/00-overview.tex
+    file: modules/00-overview.md
     summary: "Every finite real sequence with n >= 2 has centred sum of squares at least half its sum of squares."
     refuted_by: [prop:example-refuter]
 
@@ -72,10 +72,10 @@ nodes:
     kind: proposition
     status: proved
     provenance: internal
-    file: modules/00-overview.tex
+    file: modules/00-overview.md
     summary: "The sequence (1,1) has centred sum of squares 0 and half sum of squares 1, so conj:example fails."
     depends_on: [prop:example]
     proofs:
-      - artifact: solutions/prop-example-refuter.tex
+      - artifact: solutions/prop-example-refuter.md
         mode: agent
         review: research/reviews/2026-09-03-prop-example-refuter-proof-review.md

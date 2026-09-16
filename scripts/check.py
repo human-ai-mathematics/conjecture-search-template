@@ -3,7 +3,8 @@
 
 One entry point, seven validation lanes:
 
-* ``core`` — the claim graph: node schema, the acyclic proof DAG, manuscript anchors,
+* ``core`` — the claim graph: node schema, the acyclic proof DAG, manuscript anchors as
+  MyST parses ``modules/`` (and whatever MyST could not resolve there),
   the separation of proof dependencies from implication antecedents, and both classes
   of fence (``bounded_by`` and ``heuristic_barriers``);
 * ``proofs`` — dossiers under ``solutions/`` and the persisted review provenance that
@@ -34,14 +35,15 @@ absent contributes nothing, so an early repository pays for nothing it is not us
     python3 scripts/check.py candidates            # statements proposed but not nodes
     python3 scripts/check.py portfolio             # families, routes, blockers
     python3 scripts/check.py checkpoints           # current heads of durable memory
-    python3 scripts/check.py dossiers              # active dossiers, for the LaTeX build
 
-This command never writes. Scaffolding a brief, a portfolio, a checkpoint or a dossier is
-'python3 scripts/new.py'.
+This command writes nothing the repository tracks: reading the manuscript runs
+'myst build --site', whose output lands in the gitignored _build/. Scaffolding a brief, a
+portfolio, a checkpoint or a dossier is 'python3 scripts/new.py'.
 
 Exit 0 = clean, 1 = errors. A green run establishes structure only; it says nothing
 about whether a proof is correct (CLAUDE.md constraint 4). Requires PyYAML — see the
-root pyproject.toml, or 'pip install pyyaml'.
+root pyproject.toml, or 'pip install pyyaml' — and MyST, pinned in package.json and
+installed with 'npm ci'.
 """
 from __future__ import annotations
 
@@ -56,7 +58,7 @@ from checks.common import LANES  # noqa: E402
 from checks.ledger import LEDGER_PATH  # noqa: E402
 
 VIEWS = ("ready", "publish-ready", "status", "node", "candidates", "portfolio",
-         "checkpoints", "dossiers")
+         "checkpoints")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -86,9 +88,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if views.ready(report, args.root) else 1
     if args.command == "publish-ready":
         return 0 if views.publish_ready(report, args.root) else 1
-    if args.command == "dossiers":
-        views.dossiers(report)
-    elif args.command == "status":
+    if args.command == "status":
         views.status(report)
     elif args.command == "candidates":
         views.candidates(report)
