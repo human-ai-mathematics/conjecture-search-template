@@ -20,7 +20,7 @@ key), and it owns none of the mathematics. Three things, three homes:
 
 | what | where |
 |---|---|
-| the canonical quantified target | `modules/`, under the target node's `\label` |
+| the canonical quantified target | `modules/`, under the target node's `:label:` |
 | its identity, status, provenance and relations | [`ledger.yaml`](ledger.yaml) |
 | its negation, completion criteria, edge cases, traps and search policy | this file |
 
@@ -36,7 +36,7 @@ and re-copy.
 Where a definition is doing real work — a convention, a sign, a scaling — name the
 `kind: definition` node it rests on.
 
-> **Target** `{{TARGET_NODE}}`, stated at `\label{{{TARGET_NODE}}}` in
+> **Target** `{{TARGET_NODE}}`, stated at `:label: {{TARGET_NODE}}` in
 > [`../../modules/`](../../modules/). Replace this blockquote with the manuscript
 > statement, copied verbatim.
 

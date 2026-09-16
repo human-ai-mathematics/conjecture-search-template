@@ -97,11 +97,10 @@ class ScaffoldTests(unittest.TestCase):
         )
 
         self.assertEqual(code, 0, output)
-        module = self.read("modules/01-reductions.tex")
-        self.assertIn(r"\begin{lemma}", module)
-        self.assertIn(r"\label{lem:key}", module)
+        module = self.read("modules/01-reductions.md")
+        self.assertIn(":::{prf:lemma}\n:label: lem:key\n", module)
         self.assertIn(
-            "new.py node lem:key --kind lemma --file 01-reductions.tex", output
+            "new.py node lem:key --kind lemma --file 01-reductions.md", output
         )
 
     def test_a_module_requires_the_node_its_claim_will_use(self):
@@ -117,8 +116,9 @@ class ScaffoldTests(unittest.TestCase):
         code, output = self.run_scaffold("dossier", "lem:key")
 
         self.assertEqual(code, 0, output)
-        dossier = self.read("solutions/lem-key.tex")
-        self.assertIn("ledger-node : lem:key", dossier)
+        dossier = self.read("solutions/lem-key.md")
+        self.assertIn("ledger-node: lem:key\n", dossier)
+        self.assertRegex(dossier, r'date: "\d{4}-\d{2}-\d{2}"')
         self.assertNotIn("checked_by", dossier)
 
     def test_node_prints_and_writes_nothing(self):

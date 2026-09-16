@@ -8,9 +8,9 @@ role: reviewer
 You were assigned this lens and no other. Read `.claude/agents/reviewer.md` for the shared
 contract; everything below is what `sync` adds.
 
-`check.py` verifies that labels resolve, that each node's `kind` matches the environment it
+`check.py` verifies that labels resolve, that each node's `kind` matches the directive it
 labels, that the DAG is acyclic, and that provenance has the right shape. It does **not**
-verify that the `.tex` prose, the ledger `summary:`, and the dossier theorem say the same
+verify that the manuscript prose, the ledger `summary:`, and the dossier theorem say the same
 thing. That gap is this lens's entire job — everything mechanical is already red or green
 before you start.
 
@@ -18,7 +18,7 @@ before you start.
 
 For each node in scope:
 
-1. Read the `\label`ed environment in full and compare it against the ledger `summary:` —
+1. Read the labelled `prf:` directive in full and compare it against the ledger `summary:` —
    same quantifiers, same constants, same hypotheses, same direction of inequality. The
    manuscript is canonical and the summary is a gloss: a disagreement is a defect in the
    summary unless the mathematics says otherwise.

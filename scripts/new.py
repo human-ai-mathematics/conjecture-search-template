@@ -10,7 +10,7 @@ nobody can trust twice.
     python3 scripts/new.py checkpoint first-attempt --node conj:main
     python3 scripts/new.py dossier lem:key
     python3 scripts/new.py module 01-reductions --node lem:key --kind lemma
-    python3 scripts/new.py node lem:key --kind lemma --file 01-reductions.tex
+    python3 scripts/new.py node lem:key --kind lemma --file 01-reductions.md
     python3 scripts/new.py role numerics                    # installs a capability pack
     python3 scripts/new.py agents                           # regenerate agent files
 
@@ -117,26 +117,27 @@ def cmd_checkpoint(args: argparse.Namespace) -> int:
 def cmd_dossier(args: argparse.Namespace) -> int:
     file_id = args.node.replace(":", "-")
     return write(
-        args.root, f"solutions/{file_id}.tex",
-        render(args.root, "solution.tex", {"NODE": args.node, "FILE_ID": file_id}),
-        f"prove it, compile it (cd solutions && latexmk -pdf -outdir=../build "
-        f"{file_id}.tex), then ask an orchestrator for a proofs[] "
+        args.root, f"solutions/{file_id}.md",
+        render(args.root, "solution.md",
+               {"NODE": args.node, "FILE_ID": file_id, "DATE": today(False)}),
+        "prove it, build it standalone ('npx myst build --pdf' writes "
+        f"_build/exports/{file_id}.pdf), then ask an orchestrator for a proofs[] "
         "record. Certification is the ledger's, never this file's",
     )
 
 
 def cmd_module(args: argparse.Namespace) -> int:
     return write(
-        args.root, f"modules/{args.slug}.tex",
-        render(args.root, "module.tex", {
+        args.root, f"modules/{args.slug}.md",
+        render(args.root, "module.md", {
             "SLUG": args.slug,
             "TITLE": args.title or args.slug.replace("-", " ").capitalize(),
             "NODE": args.node,
             "KIND": args.kind,
         }),
-        f"add it to main.tex with \\subfile{{modules/{args.slug}}}, then run "
-        f"'python3 scripts/new.py node {args.node} --kind {args.kind} "
-        f"--file {args.slug}.tex' and paste the result into the ledger",
+        f"run 'python3 scripts/new.py node {args.node} --kind {args.kind} "
+        f"--file {args.slug}.md' and paste the result into the ledger. myst.yml "
+        "already includes every file under modules/",
     )
 
 
@@ -268,7 +269,7 @@ def build_parser() -> argparse.ArgumentParser:
     node_cmd = sub.add_parser("node", help="print a ledger node (writes nothing)")
     node_cmd.add_argument("node")
     node_cmd.add_argument("--kind", required=True, choices=KINDS)
-    node_cmd.add_argument("--file", default="00-overview.tex",
+    node_cmd.add_argument("--file", default="00-overview.md",
                           help="the file under modules/ holding its label")
     node_cmd.set_defaults(handler=cmd_node)
 

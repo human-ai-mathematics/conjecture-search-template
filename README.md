@@ -4,9 +4,10 @@
      question it is organized around, and what a reader should expect to find proved
      versus open. Keep it honest — the ledger, not this file, is the source of truth. -->
 
-This repository contains a LaTeX manuscript together with a harness for **sustained conjecture
-search**: proving or refuting one hard statement, over many sessions and several agents, while
-keeping track of what is claimed, what the search is doing, and why.
+This repository contains a MyST Markdown manuscript, with its mathematics in LaTeX, together
+with a harness for **sustained conjecture search**: proving or refuting one hard statement, over
+many sessions and several agents, while keeping track of what is claimed, what the search is
+doing, and why.
 
 Template releases and migration-relevant changes are tracked in [`CHANGELOG.md`](CHANGELOG.md)
 and use matching semantic-version Git tags.
@@ -32,9 +33,9 @@ Said as one rule:
 The coupling [`scripts/check.py`](scripts/check.py) enforces, and the reason a statement cannot
 drift from its recorded status without something going red:
 
-> Every claim-bearing theorem-environment `\label` in `modules/` is exactly one ledger node,
-> whose `kind` is that environment. A `\section` or equation label is structural and is not a
-> node.
+> Every labelled claim directive (`prf:theorem`, `prf:conjecture`, …) in `modules/` is exactly
+> one ledger node, whose `kind` is that directive. A heading or equation label is structural
+> and is not a node.
 
 A statement that has not earned a node yet is a *candidate*, and it lives in the front matter
 of the checkpoint that proposed it — never in a registry of its own ([`CLAUDE.md`](CLAUDE.md)
@@ -55,7 +56,7 @@ is a fixture to copy from, not this repository's history, and the live search st
 
 ```bash
 ./scripts/check.sh                        # everything available, fastest failure first
-./scripts/check.sh --fast                 # skip the LaTeX build
+./scripts/check.sh --fast                 # skip the PDF build
 ./scripts/check.sh --strict               # a missing tool is a failure, not a skip
 
 python3 scripts/check.py                  # 0 errors required after any ledger edit
@@ -67,20 +68,26 @@ python3 scripts/check.py portfolio        # the live search
 python3 scripts/check.py checkpoints      # current heads of durable memory
 python3 scripts/check.py node <id>        # one node: deps, consumers, fences
 python3 scripts/check.py candidates       # statements proposed but not yet nodes
-python3 scripts/check.py dossiers         # active dossiers, for the standalone LaTeX build
 python3 scripts/check.py --root example   # the worked example, kept green as a fixture
 python3 scripts/new.py agents             # restamp roles from agents/profiles.yaml
 ```
 
-`check.py` only reads. Writing is [`scripts/new.py`](templates/README.md): its scaffolds never
-overwrite hand-authored files, while `new.py agents` deliberately replaces generated role
-frontmatter and adapters. It never touches the ledger.
+`check.py` writes nothing the repository tracks: it reads the manuscript by running `myst
+build --site`, whose output lands in the gitignored `_build/`. Writing is
+[`scripts/new.py`](templates/README.md): its scaffolds never overwrite hand-authored files,
+while `new.py agents` deliberately replaces generated role frontmatter and adapters. It never
+touches the ledger.
 
-Only PyYAML is needed, declared in [`pyproject.toml`](pyproject.toml):
+Two toolchains are needed: PyYAML, declared in [`pyproject.toml`](pyproject.toml), and MyST,
+pinned in [`package.json`](package.json) (Node.js 18 or later, with npm):
 
 ```bash
 pip install pyyaml                 # or let check.sh use 'uv run', which reads the manifest
+npm ci                             # MyST, at the pinned version, with its patch applied
 ```
+
+The first `check.py` run in a fresh clone downloads MyST's site theme into `_build/`; later
+runs work offline.
 
 A *lane* is a partition of the checker, not one of the three domains above and not one of
 `CLAUDE.md`'s gates. Nothing lines the three up.
@@ -91,14 +98,18 @@ instantiated — a fresh clone is correctly green and correctly *not ready*.
 
 ## Build
 
-Requires a TeX Live install with `latexmk`, `biber`, `subfiles`, `biblatex`.
+The manuscript and the dossiers are MyST Markdown, configured by [`myst.yml`](myst.yml). The PDF
+goes through LaTeX (a TeX Live install with `latexmk` and `pdflatex`) and the local template in
+[`templates/latex/`](templates/latex/template.yml):
 
 ```bash
-latexmk -pdf -outdir=build main.tex          # the whole document → build/main.pdf
+npx myst start                 # read the manuscript and the dossiers, live, in a browser
+npx myst build --pdf           # _build/exports/manuscript.pdf, and one PDF per dossier
+npx myst build --html          # the static site the `site` workflow publishes
 ```
 
-Individual modules and solution dossiers also compile standalone; unresolved cross-references to
-other modules are expected in standalone builds.
+Each dossier also builds as a standalone PDF; a cross-reference from it into `modules/` prints
+`??` there, which is expected, and resolves on the site.
 
 ---
 
@@ -116,12 +127,12 @@ control directory in every repository built from this template.
 list whatever is still outstanding.
 
 1. **Name the program and state the target.** Write the question this repository is organized
-   around in [`modules/`](modules/), inside the theorem environment matching its kind, under a
-   `\label`. Then give it a ledger node and name the program:
+   around in [`modules/`](modules/), inside the `prf:` directive matching its kind, under a
+   `:label:`. Then give it a ledger node and name the program:
 
    ```bash
-   python3 scripts/new.py module 00-overview --node conj:main --kind conjecture
-   python3 scripts/new.py node conj:main --kind conjecture      # prints; you paste it
+   python3 scripts/new.py module 01-target --node conj:main --kind conjecture
+   python3 scripts/new.py node conj:main --kind conjecture --file 01-target.md   # prints; you paste it
    ```
 
    Paste the node under `nodes:` in
@@ -164,8 +175,9 @@ list whatever is still outstanding.
 5. **Repoint the contribution links.** `.github/ISSUE_TEMPLATE/config.yml` names this
    template repository by URL, and is the only file that does. Nothing else depends on it.
 
-6. **Name the repository and the manuscript.** Replace `{{REPO_TITLE}}` above and the
-   placeholders in [`main.tex`](main.tex) (title, subtitle, author, abstract), then delete
+6. **Name the repository and the manuscript.** Replace `{{REPO_TITLE}}` above, the
+   placeholders in [`myst.yml`](myst.yml) (title, subtitle, author) and the abstract at the top
+   of [`modules/00-overview.md`](modules/00-overview.md), then delete
    this section. `python3 scripts/check.py publish-ready` is the checklist for exactly this
    step — and it is deliberately *not* part of `ready`, because none of it blocks an attack
    on the target. A repository can be deep into a search and still owe an abstract.
@@ -187,7 +199,7 @@ indefinitely; it is checked separately and touches nothing.
 
 These ship as skeletons on purpose — a wrong entry is worse than an empty table:
 
-- [`preamble.tex`](preamble.tex) — add macros to the *program macros* block; the
+- [`myst.yml`](myst.yml) — add macros under `math:`, below the *program macros* comment; the
   core block above it stays diffable against the template. A macro standing for a fixed
   normalization needs a `kind: definition` node, not just a macro.
 - [`references.bib`](references.bib) — empty. A node with `provenance: literature` needs keys here

@@ -15,7 +15,7 @@ the validator needs no configuration to find it. The program's *name* is `meta.p
 |---|---|
 | Which node is the target, and what would finish it? | `brief.md` — gated; [scaffold](../../templates/brief.md), [worked](../../example/research/program/brief.md) |
 | What does a filled-in one of any of these look like? | [`../../example/`](../../example/README.md) |
-| What exactly does the target say? | [`../../modules/`](../../modules/), at its `\label` |
+| What exactly does the target say? | [`../../modules/`](../../modules/), at its `:label:` |
 | What is each claim's status? | [`ledger.yaml`](ledger.yaml) |
 | What ledger fields are valid? | [`ledger-schema.md`](ledger-schema.md) |
 | Which routes are alive, blocked, duplicated, saturated? | `portfolio.yaml` — gated; [scaffold](../../templates/portfolio.yaml), [worked](../../example/research/program/portfolio.yaml) |
@@ -34,14 +34,14 @@ between them runs one way: a portfolio requires a brief, because several coordin
 
 A fixed normalization — a sign, a scaling, a log base, which constant absorbs what — is a node
 like any other: `kind: definition`, `status: defined`, stated in `../../modules/` under its
-`\label`, with every claim that rests on it naming it in `depends_on`. `status: defined` is not
+`:label:`, with every claim that rests on it naming it in `depends_on`. `status: defined` is not
 an unresolved premise; what it buys is that `check.py node <id>` *derives* which claims a
 convention holds up. Do not keep a second list of conventions anywhere — changing one is a
 mathematical edit, and the ledger is where that is visible.
 
 A statement enters the ledger when it is precise, stable, and worth reusing or tracking on the
 frontier. Until then it is a candidate: it lives in the `candidates:` front matter of the
-checkpoint that proposed it, has no `\label`, no status and no certification, and is listed by
+checkpoint that proposed it, has no `:label:`, no status and no certification, and is listed by
 `python3 scripts/check.py candidates` (`CLAUDE.md` constraint 7). Promotion gives it a
 manuscript statement and a node here — nothing is copied from one registry to another, because
 there is no other registry — and it is a single act: the checkpoint recording it through

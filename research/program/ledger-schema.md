@@ -23,30 +23,43 @@ lives in `portfolio.yaml` (gated; see [`portfolio-schema.md`](portfolio-schema.m
 
 | field | values / meaning |
 |---|---|
-| `id` | Stable id. It **is** the manuscript anchor: `\label{<id>}` in `modules/`. |
+| `id` | Stable id. It **is** the manuscript anchor: `:label: <id>` in `modules/`. |
 | `kind` | `theorem`, `proposition`, `lemma`, `corollary`, `conjecture`, `assumption`, `definition`, or `example`. Mathematical form only: an open question is a `conjecture` in the direction the search tries to establish, and an obstruction is whichever form it has, cited as a fence through `bounded_by` or `heuristic_barriers`. |
 | `status` | `open`, `proved`, `refuted`, or `defined`. `defined` is valid exactly for definitions. |
 | `provenance` | `internal` or `literature`. This is independent of logical status. |
-| `file` | The file under `modules/` holding that `\label`. |
+| `file` | The `.md` file under `modules/` holding that label. |
 | `summary` | One line glossing the statement, for the derived views. **Not canonical.** |
 
 ### The anchor invariant
 
-> Every claim-bearing theorem-environment label in `modules/` corresponds to exactly one
-> ledger node, whose `kind` is that environment. Structural labels do not.
+> Every labelled claim directive in `modules/` corresponds to exactly one ledger node, whose
+> `kind` is that directive. Structural labels do not.
 
+`scripts/check.py` does not parse the manuscript; it builds it with MyST (`myst build
+--site`) and reads the tree MyST produces, so a claim is exactly what MyST says it is.
 Concretely, and all of it checked:
 
-- `\label{<id>}` appears in `modules/`, inside a claim environment whose name equals the
-  node's `kind`. The eight claim environments are the eight `kind` values, declared in
-  `preamble.tex`; `remark` is deliberately not among them.
-- A `\label` on a `\section`, an equation, or a `remark` is structural: it needs no node,
-  and a node may not claim it. This holds however deeply the object is nested: a numbered
-  `equation`, `align`, `figure` or `table` owns the label it contains even inside a claim,
-  so a display inside a theorem stays structural. Only a *neutral* wrapper is transparent —
-  a label in a `proof` or an `itemize` inside a theorem still belongs to the theorem.
-- A claim-environment label with no node is an error. So is the same label twice anywhere
-  under `modules/`.
+- The node's statement is a `prf:<kind>` directive in `modules/*.md` carrying `:label: <id>`,
+  and `<kind>` equals the node's `kind`. The eight claim directives are the eight `kind`
+  values, all native to MyST; `prf:remark` is deliberately not among them.
+
+  ```markdown
+  :::{prf:conjecture}
+  :label: conj:main
+  The precise quantified statement.
+  :::
+  ```
+
+- A label on a heading (`(sec:x)=`), an equation, a figure, a table or a `prf:remark` is
+  structural: it needs no node, and a node may not claim it. MyST gives each labelled object
+  its own node, so an equation inside a theorem stays structural, and a `prf:proof` nested in
+  a theorem carries no label of its own.
+- A claim label with no node is an error. So is the same label twice anywhere in the MyST
+  project, and so are two labels MyST turns into the same HTML anchor — the anchor of
+  `conj:main` is `#conj-main`, so `a:b-c` and `a-b:c` collide.
+- An unknown directive (`prf:question` is not one), an unresolved cross-reference, and any
+  error MyST itself reports are errors too: each is a statement or a link that silently went
+  missing.
 - `file` is confined to `modules/` and must be the file that actually holds the label.
 - There is no `label:` override. It made "the id is the anchor" untrue and had no second
   reader; it is rejected by name.
@@ -54,7 +67,7 @@ Concretely, and all of it checked:
 ### `summary` is a gloss, not a home
 
 The statement lives in `modules/` and nowhere else (`CLAUDE.md` constraint 7). `summary`
-exists so `check.py status` and `check.py node` are readable without opening LaTeX, and the
+exists so `check.py status` and `check.py node` are readable without opening the manuscript, and the
 `reviewer`'s `sync` lens treats any disagreement as a defect in the summary. The field was
 called `statement`, which invited exactly the drift it was supposed to survive; that name is
 now rejected.
@@ -89,7 +102,7 @@ A refuted node names its refuters in `refuted_by` and stops there. It does **not
 in `depends_on`: that field is the graph of facts a proof used, and a refuted statement has no
 proof. Each refuter must itself be `proved`, which is the whole of the provenance
 (`CLAUDE.md` constraint 10). The refuter is an ordinary node with an ordinary dossier — the
-worked instance is `example/solutions/prop-example-refuter.tex`.
+worked instance is `example/solutions/prop-example-refuter.md`.
 
 ## Proof records
 
@@ -97,16 +110,16 @@ An internally proved node requires one or more independently certified proofs:
 
 ```yaml
 proofs:
-  - artifact: solutions/thm-example.tex
+  - artifact: solutions/thm-example.md
     mode: agent
     review: research/reviews/2026-09-02-example-proof-review.md
-  - artifact: solutions/thm-example-second-proof.tex
+  - artifact: solutions/thm-example-second-proof.md
     mode: human
     accepted_by: <human identity>
 ```
 
-`artifact` is a standalone `.tex` dossier under `solutions/`. Its header is parsed, not
-searched, and exactly one field is checked: `ledger-node` must name this node. Certification
+`artifact` is a standalone MyST dossier under `solutions/`. Its header is its YAML front
+matter, and exactly one field is checked: `ledger-node` must name this node. Certification
 lives here and only here — `checked_by` in a dossier header is rejected by name. `mode: agent`
 requires a passing proof review by a distinct agent; `mode: human` requires `accepted_by`.
 

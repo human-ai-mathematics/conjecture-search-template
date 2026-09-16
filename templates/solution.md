@@ -4,7 +4,7 @@ ledger-node: {{NODE}}
 refines: []
 bounded_by: []
 author: <agent or name>
-date: "YYYY-MM-DD"
+date: "{{DATE}}"
 exports:
   - format: pdf+tex
     template: ../templates/latex

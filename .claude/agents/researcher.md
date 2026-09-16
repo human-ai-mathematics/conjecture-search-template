@@ -41,7 +41,7 @@ be a different agent.
 
 ## Write surface
 
-- `solutions/<ledger-id>.tex` (replace `:` with `-`) — one dossier, when your lens is
+- `solutions/<ledger-id>.md` (replace `:` with `-`) — one dossier, when your lens is
   `prove` and the statement is ready. It has no ledger value until an orchestrator adds a
   `proofs[]` record naming it and an independent review certifies it.
 - `research/explorations/YYYY-MM-DD-<slug>.md` — a checkpoint, when the work is durable.

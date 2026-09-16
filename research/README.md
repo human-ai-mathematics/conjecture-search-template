@@ -53,7 +53,7 @@ portfolio holds none of those: a route is not a claim.
 2. Do the work. Put numerical work through `numerics`.
 3. Record a checkpoint when the result is durable, with its validated front matter. A tentative
    statement stays there as a `cand:` candidate until it is precise, stable, and worth tracking
-   (`CLAUDE.md` constraint 7). Promoting one is a single act: manuscript `\label`, ledger node,
+   (`CLAUDE.md` constraint 7). Promoting one is a single act: manuscript `:label:`, ledger node,
    `promotes:` in a checkpoint, and any portfolio blocker repointed at the node.
 4. Return a `portfolio_delta` in the handoff; the `synthesizer` applies it.
 5. Send accepted statement and ledger changes through the orchestrator.

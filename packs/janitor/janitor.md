@@ -37,13 +37,13 @@ orchestrator reviews and applies your list.
 
 ## What to sweep
 
-1. Broken relative links in `*.md` and broken `\input`/`\subfile` paths in `*.tex`.
+1. Broken relative links in `*.md`, including cross-references MyST cannot resolve.
 2. Pointers to files that no longer exist (check `git log --diff-filter=D` before calling one a
    mistake — it may be a live deletion the orchestrator is mid-way through).
 3. Documents whose "Layout"/"Files" tables no longer match the tree.
 4. Orphans: files nothing links to and no ledger node references.
 5. Contradictions between two documents describing the same rule.
-6. Build residue outside `build/`, and untracked files that look like they should be tracked or
+6. Build residue outside `_build/`, and untracked files that look like they should be tracked or
    ignored.
 
 ## Report
@@ -56,6 +56,7 @@ orchestrator reviews and applies your list.
 - **Rationale and compatibility**: why the change is needed, its migration boundary, and the
   validation to run.
 - The validation commands the orchestrator should run after applying
-  (`python3 scripts/check.py`, the unittest suite, a `latexmk` build if `.tex` changed).
+  (`python3 scripts/check.py`, the unittest suite, `npx myst build --pdf` if a module or
+  dossier changed).
 - Finish with the shared handoff envelope, with `next_role: orchestrator` and the exact proposed
   patch list in `next_prompt`.

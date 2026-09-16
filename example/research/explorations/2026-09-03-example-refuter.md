@@ -36,12 +36,12 @@ The five steps `solutions/README.md` lays out for a refutation, in order:
 1. **The witness is a candidate.** Already done, and it stops there — a witness is not a
    refutation.
 2. **The statement it establishes becomes a node.** `prop:example-refuter`, with its own
-   manuscript statement at `\label{prop:example-refuter}` in
-   [`../../modules/00-overview.tex`](../../modules/00-overview.tex). Note the shape: the
+   manuscript statement at `:label: prop:example-refuter` in
+   [`../../modules/00-overview.md`](../../modules/00-overview.md). Note the shape: the
    node asserts that the specific vector $(1,1)$ has centred sum of squares $0$ and half
    sum of squares $1$ — an ordinary provable claim — and only then concludes that
    `conj:example` is false.
-3. **It gets an ordinary dossier.** `solutions/prop-example-refuter.tex`. Nothing about it
+3. **It gets an ordinary dossier.** `solutions/prop-example-refuter.md`. Nothing about it
    is special: it is the same file genre a proof of anything else would use.
 4. **That dossier is independently certified.** `mode: agent`, with the persisted report
    [`../reviews/2026-09-03-prop-example-refuter-proof-review.md`](../reviews/2026-09-03-prop-example-refuter-proof-review.md)
@@ -51,7 +51,7 @@ The five steps `solutions/README.md` lays out for a refutation, in order:
    facts a proof used, and a refuted statement has no proof.
 
 Promotion itself is one act, not a node addition with paperwork to follow: the manuscript
-`\label`, the ledger node, the `promotes:` entry above — which is what ends the candidate —
+`:label:`, the ledger node, the `promotes:` entry above — which is what ends the candidate —
 and every portfolio blocker repointed. `python3 scripts/check.py candidates` shows
 `cand:example-constant-witness` as promoted rather than live, and
 `cand:example-identity-stability` as the one still open.

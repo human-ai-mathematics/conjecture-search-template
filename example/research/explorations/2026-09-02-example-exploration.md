@@ -67,7 +67,7 @@ near-equality reported by a run cannot be told apart from a violation. That is
 
 Neither has a manuscript statement, nothing depends on either, and nobody has proved
 either. A candidate is a statement worth not losing, which is all it ever is (`CLAUDE.md`
-constraint 7). `cand:example-constant-witness` is about to earn a `\label`, a node and a
+constraint 7). `cand:example-constant-witness` is about to earn a `:label:`, a node and a
 dossier — see [`2026-09-03-example-refuter.md`](2026-09-03-example-refuter.md), which
 promotes it. `cand:example-identity-stability` is still live, and this file stays exactly
 as it is either way.

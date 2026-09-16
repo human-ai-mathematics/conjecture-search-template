@@ -48,7 +48,7 @@ the initial families, the blocked/reopen criteria, and a budget policy that perm
 honest unresolved outcome.
 
 The brief does **not** own the target. The canonical quantified statement lives in
-`modules/` under the node's `\label`; the brief names the node, may quote that statement
+`modules/` under the node's `:label:`; the brief names the node, may quote that statement
 verbatim as a marked copy, and never sharpens it in place.
 
 ## `portfolio.yaml`

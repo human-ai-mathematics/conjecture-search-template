@@ -32,14 +32,14 @@ A sustained search opens with a target precise enough to be a ledger node, becau
 brief and the portfolio both name one and must resolve to it.
 
 ```bash
-python3 scripts/new.py module 00-overview --node conj:main --kind conjecture
-python3 scripts/new.py node conj:main --kind conjecture      # prints; you paste it
+python3 scripts/new.py module 01-target --node conj:main --kind conjecture
+python3 scripts/new.py node conj:main --kind conjecture --file 01-target.md   # prints; you paste it
 python3 scripts/new.py brief --target conj:main
 python3 scripts/check.py ready                               # the checklist, executable
 ```
 
-State the conjecture in `modules/` inside the environment matching its kind, under
-`\label{conj:main}`. Paste the printed node under `nodes:` in
+State the conjecture in `modules/` inside the `prf:` directive matching its kind, under
+`:label: conj:main`. Paste the printed node under `nodes:` in
 `research/program/ledger.yaml` — the scaffolder deliberately does not write that file, which
 has exactly one writer (constraint 1).
 
@@ -127,11 +127,11 @@ condition.
 Proving and refuting take the same channel, and neither skips the gate.
 
 ```bash
-python3 scripts/new.py dossier lem:key      # a standalone .tex under solutions/
-cd solutions && latexmk -pdf -outdir=../build lem-key.tex
+python3 scripts/new.py dossier lem:key      # solutions/lem-key.md, a standalone dossier
+npx myst build --pdf                        # builds it on its own: _build/exports/lem-key.pdf
 ```
 
-1. **Dossier.** A standalone `.tex` that an independent reviewer can pick up. It records no
+1. **Dossier.** A standalone MyST file that an independent reviewer can pick up. It records no
    certification — a dossier that no `proofs[]` record names is a draft, and that absence is
    the whole signal.
 2. **Independent review.** A distinct agent, on the `certify` lens, leaves a persisted

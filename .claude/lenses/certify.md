@@ -11,7 +11,7 @@ contract; everything below is what `certify` adds.
 ## What you must actually check
 
 1. **Statement agreement.** The dossier theorem, the ledger `summary:`, and the manuscript
-   statement at the `\label` the node `refines` must agree mathematically — not merely
+   statement at the `:label:` the node `refines` must agree mathematically — not merely
    resolve. This is precisely what `check.py` cannot do (`CLAUDE.md` constraint 4).
 2. **Barriers.** The proof must respect every hard `bounded_by` fence. Check advisory
    `heuristic_barriers` without treating them as established facts.
@@ -25,7 +25,7 @@ contract; everything below is what `certify` adds.
    part and hand an exact verification request to `literature-scout`; do not infer a pass.
 6. **The steps.** Go through the argument line by line. Constants, quantifier order, domains,
    boundary conventions, and limit interchanges are where these proofs fail.
-7. **Standalone build.** `cd solutions && latexmk -pdf -outdir=../build <id>.tex`.
+7. **Standalone build.** `npx myst build --pdf` builds `_build/exports/<id>.pdf` without error.
 
 ## Certifying a refutation
 

@@ -133,7 +133,7 @@ section, numbered `P1, P2, …`, so that a fork can drop them without disturbing
    tracking on the research frontier, promote it, at which point it is subject to every
    constraint above.
    Promotion is **one act**, not a node addition with paperwork to follow: the manuscript
-   `\label`, the ledger node, a `promotes:` entry in a checkpoint — which is what ends the
+   `:label:`, the ledger node, a `promotes:` entry in a checkpoint — which is what ends the
    candidate — and every portfolio blocker repointed at the node. Skipping the third step
    leaves the candidate live forever, which is one statement in two homes, which is what this
    constraint exists to prevent.

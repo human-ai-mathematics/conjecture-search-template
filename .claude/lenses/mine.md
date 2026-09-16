@@ -9,7 +9,7 @@ You were assigned this lens and no other. Read `.claude/agents/researcher.md` fo
 contract; everything below is what `mine` adds.
 
 A proved node states one thing; its proof usually establishes more, or less, than the
-statement admits. Mine `solutions/*.tex`, manuscript proofs in `modules/`, the "could not
+statement admits. Mine `solutions/*.md`, manuscript proofs in `modules/`, the "could not
 verify" lists in `research/reviews/`, and archived checkpoints.
 
 ## Method

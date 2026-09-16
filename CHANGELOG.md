@@ -24,6 +24,17 @@ contract is intended to remain stable; from that point onward, use standard sema
 
 ### Removed
 
+- **Breaking:** remove the LaTeX source of the manuscript: `main.tex`, `preamble.tex`,
+  `.latexmkrc`, `modules/*.tex`, the dossier and module scaffolds `templates/*.tex`, and the
+  editor's LaTeX output setting in `.vscode/settings.json`. `new.py module` and `new.py
+  dossier` write `.md`, and `new.py node --file` defaults to `00-overview.md`. **Migrating a
+  fork:** convert each module and dossier to MyST by hand — a claim environment becomes a
+  `prf:<kind>` directive with `:label: <id>`, `\ref{<id>}` becomes `[](#<id>)`, a dossier's
+  comment header becomes front matter — move your macros from `preamble.tex` to `math:` in
+  `myst.yml`, point every ledger `file:` and `proofs[].artifact` at the `.md` path, and run
+  `npm ci`. `myst build <file>.tex --md` is no shortcut: it drops every theorem environment.
+  Checkpoints and reviews already written keep their `.tex` paths; they are append-only, the
+  `docs` lane exempts them, and a review's `.tex` scope still covers the converted dossier.
 - **Breaking:** remove the derived website: `site/`, `scripts/site.py`, the `site` Pages
   workflow and `docs/PUBLISHING-THE-SITE.md`. The manuscript becomes MyST Markdown in this
   release, and its rendering replaces the site; ledger and portfolio views may return on top

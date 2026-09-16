@@ -33,7 +33,7 @@ body:
       description: >
         The dossier under `solutions/` you are reading, if the claim has more than one
         proof record.
-      placeholder: "solutions/prop-example.tex"
+      placeholder: "solutions/prop-example.md"
 
   - type: textarea
     id: step

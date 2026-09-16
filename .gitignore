@@ -201,8 +201,6 @@ cython_debug/
 #   and can be added to the global gitignore or merged into this file. However, if you prefer, 
 #   you could uncomment the following to ignore the entire vscode folder
 .vscode/*
-# ...but the shared LaTeX out-dir setting belongs to the project, not the developer.
-!.vscode/settings.json
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 

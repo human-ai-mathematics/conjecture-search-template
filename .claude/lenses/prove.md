@@ -13,15 +13,15 @@ contract; everything below is what `prove` adds.
 1. Read the node, its manuscript statement, its `depends_on` closure, and every `bounded_by`
    and `heuristic_barriers` node in full. Hard fences must be respected; advisory barriers
    must be addressed or explicitly set aside.
-2. Run `python3 scripts/new.py dossier <ledger-id>`, or copy `templates/solution.tex`
-   yourself. Fill the header: `ledger-node` naming what this discharges, `refines`,
+2. Run `python3 scripts/new.py dossier <ledger-id>`, or copy `templates/solution.md`
+   yourself. Fill the front-matter header: `ledger-node` naming what this discharges, `refines`,
    `bounded_by`, author identity, date. The header carries no certification, no reviewer and
    no review path — the ledger's `proofs[]` record owns the mode and the path, and the
    report's front matter owns the identities. You are not the reviewer.
-3. State the refined theorem, then prove it. `\ref`/`\cite` freely; `??` standalone is
-   expected.
-4. Compile: `cd solutions && latexmk -pdf -outdir=../build <id>.tex`.
-5. Mark every step you could not close with an explicit `\begin{remark}` naming exactly what
+3. State the refined theorem in a `prf:theorem`, then prove it in a `prf:proof`.
+   Cross-reference (`[](#<label>)`) and cite freely; `??` in the standalone PDF is expected.
+4. Build: `npx myst build --pdf`, which writes `_build/exports/<id>.pdf`.
+5. Mark every step you could not close with an explicit `prf:remark` naming exactly what
    remains. A gap you flag is a contribution; a gap you paper over is the failure mode this
    repository exists to catch.
 

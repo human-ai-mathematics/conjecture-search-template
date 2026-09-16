@@ -28,12 +28,12 @@ python3 scripts/check.py --root example      # kept green by scripts/check.sh
 
 | genre | file |
 |---|---|
-| manuscript module | [`modules/00-overview.tex`](modules/00-overview.tex) |
+| manuscript module | [`modules/00-overview.md`](modules/00-overview.md) |
 | claim graph | [`research/program/ledger.yaml`](research/program/ledger.yaml) |
 | problem brief | [`research/program/brief.md`](research/program/brief.md) |
 | search portfolio | [`research/program/portfolio.yaml`](research/program/portfolio.yaml) |
-| proof dossier | [`solutions/prop-example.tex`](solutions/prop-example.tex) |
-| refutation dossier | [`solutions/prop-example-refuter.tex`](solutions/prop-example-refuter.tex) |
+| proof dossier | [`solutions/prop-example.md`](solutions/prop-example.md) |
+| refutation dossier | [`solutions/prop-example-refuter.md`](solutions/prop-example-refuter.md) |
 | proof reviews | [`research/reviews/`](research/reviews/) |
 | checkpoints | [`research/explorations/`](research/explorations/) |
 | run artifact | [`research/runs/`](research/runs/) |
@@ -48,7 +48,7 @@ $\sum_i (a_i - \bar a)^2 \ge \tfrac12 \sum_i a_i^2$. It is false.
 
 | # | what | where |
 |---|---|---|
-| 1 | the target is stated and gets a node | `modules/00-overview.tex`, `ledger.yaml` |
+| 1 | the target is stated and gets a node | `modules/00-overview.md`, `ledger.yaml` |
 | 2 | the brief fixes the exact negation and what would finish it | [`research/program/brief.md`](research/program/brief.md) |
 | 3 | the portfolio seeds one family and three routes | [`research/program/portfolio.yaml`](research/program/portfolio.yaml) |
 | 4 | a numerical run is spent; it does **not** test the target, and two candidates come out | [`…/2026-09-02-example-exploration.md`](research/explorations/2026-09-02-example-exploration.md) |
@@ -72,9 +72,10 @@ purpose: a repository does not empty out when its conjecture falls.
 - **It must stay a top-level sibling** of `research/` and `modules/`. Nested inside either,
   its ledger would trip the one-ledger rule and its checkpoints and run artifact would be
   swept into the live repository state.
-- **Its `.tex` files name `../../main.tex`** as the `subfiles` master, not the `../main.tex`
-  that [`../templates/solution.tex`](../templates/solution.tex) teaches, because they sit one
-  level deeper. Use `../main.tex` in a real repository.
+- **It is its own MyST project.** [`myst.yml`](myst.yml) here is what `check.py --root
+  example` builds, and its dossiers point their PDF export at `../../templates/latex` rather
+  than the `../templates/latex` that [`../templates/solution.md`](../templates/solution.md)
+  teaches, because they sit one level deeper. Use `../templates/latex` in a real repository.
 
 `experiments/numerics/targets/example.py` deliberately stayed at the repository root: it is
 reference code the numerics test suite exercises, not a research record. Running

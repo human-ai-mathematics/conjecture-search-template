@@ -29,8 +29,8 @@ facts, not opinions about how to proceed. Many scouts run in parallel; each is c
 2. Resolve the node in `research/program/ledger.yaml` and read
    `python3 scripts/check.py node <id>` for its derived consumers and the approaches blocked
    on it.
-3. Open the manuscript anchor: the node `id` **is** its LaTeX `\label`, inside the claim
-   environment matching its `kind`, in the file the node's `file` names under `modules/`.
+3. Open the manuscript anchor: the node `id` **is** its MyST `:label:`, on the `prf:`
+   directive matching its `kind`, in the file the node's `file` names under `modules/`.
 4. Follow `depends_on`, and separately record `assumes`, `implies`, and `refines`.
 5. Read every hard `bounded_by` and advisory `heuristic_barriers` fence in full.
 6. Read `python3 scripts/check.py portfolio`: which families are active, which routes are

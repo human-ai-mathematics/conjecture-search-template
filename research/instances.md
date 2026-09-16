@@ -11,7 +11,7 @@ survives. Reject instances that only serve one agent's happy path.
 Passing a finite battery changes no claim or proof status, however large the battery
 (`conj:finite-battery` in the worked example's ledger is exactly this fence).
 
-An instance is not mathematics: it has no truth value, no proof, and no `\label`. That is why it
+An instance is not mathematics: it has no truth value, no proof, and no `:label:`. That is why it
 lives here as prose rather than as a ledger node — a lemma or a fence, by contrast, belongs
 in `modules/` under a label with a node of its own. It shares that status with
 `program/portfolio.yaml`, which records what the search is doing rather

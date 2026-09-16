@@ -20,7 +20,7 @@ key), and it owns none of the mathematics. Three things, three homes:
 
 | what | where |
 |---|---|
-| the canonical quantified target | `modules/`, under the target node's `\label` |
+| the canonical quantified target | `modules/`, under the target node's `:label:` |
 | its identity, status, provenance and relations | [`ledger.yaml`](ledger.yaml) |
 | its negation, completion criteria, edge cases, traps and search policy | this file |
 
@@ -31,8 +31,8 @@ manuscript is right and the copy is a defect, which is what the `reviewer`'s `sy
 checks (`CLAUDE.md` constraint 7). Never sharpen the statement here — sharpen it in
 `modules/` and re-copy.
 
-> **Target** `conj:example`, stated at `\label{conj:example}` in
-> [`../../modules/00-overview.tex`](../../modules/00-overview.tex):
+> **Target** `conj:example`, stated at `:label: conj:example` in
+> [`../../modules/00-overview.md`](../../modules/00-overview.md):
 >
 > For all real $a_1,\dots,a_n$ with $n \ge 2$,
 > $\sum_{i=1}^n (a_i - \bar a)^2 \ge \tfrac{1}{2}\sum_{i=1}^n a_i^2$.

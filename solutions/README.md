@@ -1,7 +1,7 @@
 # solutions/ — proof dossiers
 
 Where the `researcher` writes **proofs** of the open targets: self-contained,
-standalone-compilable, human-checkable `.tex` files — **separate from the manuscript**
+standalone-buildable, human-checkable MyST Markdown files — **separate from the manuscript**
 (`../modules/`). This is the analytic-proof channel paired with the refinement and
 stress-testing work in `research/`.
 
@@ -21,8 +21,9 @@ classified according to their actual role. Reclassification is not proof certifi
   a diff against the whole book.
 - **Clear provenance.** Agent-authored, dated, revertible; lifting a checked solution into the
   manuscript remains an explicit project-owner decision.
-- **Liftable.** Each file is a `subfiles` document, so once accepted it drops into `main.tex`
-  with a single `\subfile{solutions/<id>}` line — no rewrite.
+- **Same project, own PDF.** Each dossier is a page of the MyST project in
+  [`../myst.yml`](../myst.yml), so its cross-references into `modules/` resolve on the site,
+  and its own `exports` entry builds it as a standalone PDF.
 
 ## Certification modes
 
@@ -55,11 +56,14 @@ Human certification requires `proofs[].accepted_by`. A proved implication remain
 
 ## The dossier header
 
-The parser reads fields only inside the complete block opened by `% === SOLUTION HEADER ...`
-and closed by its `% ===...` divider; both delimiters are mandatory. Exactly one field is
-checked semantically: `ledger-node`, which must name the node whose `proofs[]` record points
-here. A value ends at the first run of two or more spaces, so the gloss to its right is ignored.
-The rest of the header — `refines`, `bounded_by`, author, date — is for a human reader.
+The header is the dossier's YAML front matter, the same envelope every other record in this
+repository carries. Its vocabulary is `ledger-node`, `refines`, `bounded_by`, `author` and
+`date`, plus the MyST fields a page needs to render and export itself (`title`, `subtitle`,
+`short_title`, `label`, `exports`, `numbering`); anything else is an error. Exactly one field
+is checked semantically: `ledger-node`, a node id or a list of them, which must name the node
+whose `proofs[]` record points here. The rest — `refines`, `bounded_by`, `author`, `date` — is
+for a human reader. MyST reports that it ignores `ledger-node`, `refines` and `bounded_by`;
+that warning is expected.
 
 The header carries no certification and no reviewer identity. `checked_by`, `reviewer` and
 `review` are rejected by name: the ledger's `proofs[]` record owns the mode and the review
@@ -83,7 +87,7 @@ The refuter does not appear in the target's `depends_on`: that field records fac
 used, and a refuted statement has no proof. A single witness discharges a universal claim;
 a dimension-free or uniform constant generally needs a certified family with the relevant
 divergence (constraint 10). The worked instance is
-[`../example/solutions/prop-example-refuter.tex`](../example/solutions/prop-example-refuter.tex).
+[`../example/solutions/prop-example-refuter.md`](../example/solutions/prop-example-refuter.md).
 
 Numerics never appear on this ladder: they may guide intuition or suggest a counterexample, but
 they do not validate a claim, justify a proof step, or certify a dossier. Every proof must stand
@@ -92,24 +96,25 @@ independently of numerical outcomes, as required by [`../CLAUDE.md`](../CLAUDE.m
 ## Writing a solution
 
 1. Run `python3 scripts/new.py dossier <ledger-id>`, or copy
-   [`../templates/solution.tex`](../templates/solution.tex) to `solutions/<ledger-id>.tex`
+   [`../templates/solution.md`](../templates/solution.md) to `solutions/<ledger-id>.md`
    yourself (replace `:` with `-`). Closely coupled nodes may share one target-level dossier
-   if its header and theorem labels enumerate every covered ledger id explicitly.
-2. Fill the header (`ledger-node`, `refines`, `bounded_by`, author, and date). Certification
-   is not among them — it belongs to the ledger.
-3. State the **refined** theorem and prove it. Use `\ref`/
-   `\cite` freely — they resolve when lifted into `main.tex` and show `??` standalone (expected).
-4. Compile standalone:
+   if its `ledger-node` list and theorem labels enumerate every covered ledger id explicitly.
+2. Fill the header (`ledger-node`, `refines`, `bounded_by`, `author`, and `date`).
+   Certification is not among them — it belongs to the ledger.
+3. State the **refined** theorem in a `prf:theorem` directive and prove it in a `prf:proof`.
+   Cross-reference manuscript statements with `[](#<label>)` and cite freely: both resolve
+   on the site, and a cross-reference into `modules/` prints `??` in the standalone PDF
+   (expected).
+4. Build it standalone, from the repository root:
    ```bash
-   cd solutions
-   latexmk -pdf -outdir=../build <id>.tex
+   npx myst build --pdf      # writes _build/exports/<id>.pdf, and the manuscript's
    ```
 5. Propose a ledger `proofs` record naming the artifact and `mode: agent|human`. For an agent
    audit add `review`; for human acceptance add `accepted_by`. Only the orchestrator applies it.
 
 ## Definition of done (a proof contribution)
 
-1. `solutions/<id>.tex` exists, compiles standalone, audit header complete.
+1. `solutions/<id>.md` exists, builds standalone, header complete.
 2. The theorem matches the manuscript statement(s) it `refines`, and
    respects every `bounded_by` fence.
 3. The ledger node has a complete `proofs:` record; `python3 scripts/check.py`

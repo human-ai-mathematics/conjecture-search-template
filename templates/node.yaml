@@ -7,8 +7,8 @@
 # relation below is optional and may be deleted.
 
   # kind: theorem|lemma|proposition|corollary|conjecture|definition|example|
-  #       assumption  — and it must match the LaTeX environment
-  #       the statement is written in.
+  #       assumption  — and it must match the prf: directive the statement is
+  #       written in.
   # status: open|proved|refuted|defined ('defined' only for a definition).
   # provenance: internal|literature (literature also needs import_class + references).
   - id: {{NODE}}
@@ -16,7 +16,7 @@
     status: {{STATUS}}
     provenance: internal
     file: modules/{{FILE}}
-    summary: "One line, a gloss for the derived views. The statement itself lives in modules/ under \\label{{{NODE}}} and nowhere else."
+    summary: "One line, a gloss for the derived views. The statement itself lives in modules/ under :label: {{NODE}} and nowhere else."
 
     # depends_on: []         # facts a proof of this node used — the acyclic proof DAG
     # assumes: []            # antecedents of an implication, never proof dependencies
