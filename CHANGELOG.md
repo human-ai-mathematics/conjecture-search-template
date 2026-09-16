@@ -23,7 +23,8 @@ Every fork has to migrate: see *Migrating a fork* below.
   and `templates/solution.md`, and the local, `pdflatex`-based export template
   `templates/latex/`. `package.json` pins `mystmd` 1.10.1 and `npm ci` applies
   `patches/mystmd+1.10.1.patch`, without which MyST's LaTeX export silently drops every
-  `prf:assumption`.
+  `prf:assumption`. The patch is the fix proposed upstream in jupyter-book/mystmd#3031; drop
+  it once a release carries that fix.
 - Add `scripts/checks/manuscript.py`, which builds the MyST site content and reads its tree.
   Every MyST error, unknown directive or role, unresolved cross-reference, duplicate label,
   and pair of labels colliding on one HTML anchor (`a:b-c` and `a-b:c`) is a `core` error.
