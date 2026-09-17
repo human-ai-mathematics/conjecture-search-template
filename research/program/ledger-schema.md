@@ -15,7 +15,7 @@ nodes:
   - ...
 ```
 
-The repository has exactly one ledger (`CLAUDE.md` constraint 1), and `meta` carries nothing but
+The repository has exactly one ledger and `meta` carries nothing but
 the program's identity and scope. Which agent or route owns a node is coordination state and
 lives in `portfolio.yaml` (gated; see [`portfolio-schema.md`](portfolio-schema.md)).
 

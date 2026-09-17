@@ -44,7 +44,8 @@ be a different agent.
 - `solutions/<ledger-id>.md` (replace `:` with `-`) — one dossier, when your lens is
   `prove` and the statement is ready. It has no ledger value until an orchestrator adds a
   `proofs[]` record naming it and an independent review certifies it.
-- `research/explorations/YYYY-MM-DD-<slug>.md` — a checkpoint, when the work is durable.
+- `research/explorations/YYYY-MM-DD-<role>-<scope>-<run-id>.md` — a checkpoint, when the
+  work is durable. The run id comes from the orchestrator (`.claude/agents/README.md`).
 
 Record a checkpoint when the work creates or retires a candidate, identifies a reusable dead
 end or an exact blocker, changes the state of a portfolio approach, produces a run artifact

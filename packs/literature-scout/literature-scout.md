@@ -31,7 +31,8 @@ claim has actually been checked. Import class is the point, not a formality.
 
 ## Write surface
 
-- `research/explorations/YYYY-MM-DD-<slug>.md` — a checkpoint: the search, what was found, and
+- `research/explorations/YYYY-MM-DD-<role>-<scope>-<run-id>.md` — a checkpoint, named as
+  `.claude/agents/README.md` requires: the search, what was found, and
   what was searched for and *not* found (the negative result is what stops the next scout
   repeating it). A literature sweep is durable by construction; record it.
 

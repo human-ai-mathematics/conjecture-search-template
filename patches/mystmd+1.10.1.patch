@@ -1,5 +1,5 @@
 diff --git a/node_modules/mystmd/dist/myst.cjs b/node_modules/mystmd/dist/myst.cjs
-index 2478ab1..c6166ac 100755
+index 2478ab1..10dc53d 100755
 --- a/node_modules/mystmd/dist/myst.cjs
 +++ b/node_modules/mystmd/dist/myst.cjs
 @@ -309295,6 +309295,8 @@ function kindToEnvironment(kind) {
@@ -21,3 +21,14 @@ index 2478ab1..c6166ac 100755
      ];
      const block5 = writeTexLabelledComment("theorem", definitions2, _TexProofSerializer.COMMENT_LENGTH);
      const percents = "".padEnd(_TexProofSerializer.COMMENT_LENGTH, "%");
+@@ -309651,7 +309654,9 @@ var handlers3 = {
+       end = "\n\\end{minted}";
+     }
+     state.write(start);
+-    state.text(node3.value, true);
++    // A code block is verbatim: escaping it as math spaced every hyphen and trimmed
++    // the first line's indentation.
++    state.write(node3.value);
+     state.write(end);
+     state.closeBlock(node3);
+   },

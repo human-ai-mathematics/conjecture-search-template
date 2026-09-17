@@ -22,9 +22,17 @@ Every fork has to migrate: see *Migrating a fork* below.
   under `modules/*.md`, dossiers under `solutions/*.md`, the scaffolds `templates/module.md`
   and `templates/solution.md`, and the local, `pdflatex`-based export template
   `templates/latex/`. `package.json` pins `mystmd` 1.10.1 and `npm ci` applies
-  `patches/mystmd+1.10.1.patch`, without which MyST's LaTeX export silently drops every
-  `prf:assumption`. The patch is the fix proposed upstream in jupyter-book/mystmd#3031; drop
-  it once a release carries that fix.
+  `patches/mystmd+1.10.1.patch`, which fixes two LaTeX export bugs. Without it MyST silently
+  drops every `prf:assumption`, the fix proposed upstream in jupyter-book/mystmd#3031. It
+  also escapes a code block as mathematics, which puts a space before every hyphen
+  (`2026 -09 -03`) and strips the first line's indentation; the patch writes the block
+  verbatim, and no upstream fix is proposed yet. Drop each hunk once a release carries its
+  fix.
+- Add `docs/SPECIFICATION.md`, a descriptive technical specification of the whole harness
+  for human readers: domains, file genres and their fields, roles and permissions,
+  workflows, and what every checker lane enforces, with excerpts from the worked example.
+  It is not contract, and each section names the file that owns its rules. It is its own
+  MyST project (`docs/myst.yml`): `cd docs && npx myst build --pdf`.
 - Add `scripts/checks/manuscript.py`, which builds the MyST site content and reads its tree.
   Every MyST error, unknown directive or role, unresolved cross-reference, duplicate label,
   and pair of labels colliding on one HTML anchor (`a:b-c` and `a-b:c`) is a `core` error.
@@ -70,6 +78,18 @@ Every fork has to migrate: see *Migrating a fork* below.
   `docs/PUBLISHING-THE-SITE.md`. The MyST site replaces it; ledger and portfolio views may
   return on top of it later. The issue forms stay, as the public inbox constraint 12 fences.
 - The `question` and `obstruction` ledger kinds, and their LaTeX environments.
+
+### Fixed
+
+- The `researcher`, `synthesizer`, `numerics` and `literature-scout` write surfaces name a
+  checkpoint `YYYY-MM-DD-<role>-<scope>-<run-id>.md`, as `.claude/agents/README.md` requires,
+  instead of `YYYY-MM-DD-<slug>.md`. Regenerate the Codex adapters with
+  `python3 scripts/new.py agents`.
+- Stale LaTeX-era wording: the proof-review example in `research/reviews/README.md` names a
+  `.md` dossier, and promotion in `research/explorations/README.md` puts a `:label:` on a
+  `prf:<kind>` directive rather than a `\label` in an environment.
+- The `templates/solution.md` header comment lists every MyST page field the checker accepts,
+  and a `roles.py` comment no longer claims the `heavy` tier is `max` on Claude.
 
 ### Migrating a fork
 

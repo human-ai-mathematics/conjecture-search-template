@@ -145,7 +145,7 @@ Promote a candidate when it is precise, stable, and useful enough to reuse or tr
 frontier. Promotion is four things done together, not a node addition with paperwork to
 follow:
 
-1. the statement gets a `\label` in `modules/`, inside the claim environment matching its
+1. the statement gets a `:label:` in `modules/`, on the `prf:<kind>` directive matching its
    kind;
 2. it gets a ledger node with that id (proved internal nodes additionally require a
    certified dossier);

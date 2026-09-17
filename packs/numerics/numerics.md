@@ -36,7 +36,8 @@ Every other agent must route computation through you.
 
 - `experiments/numerics/**` — new or extended target, observable, oracle test.
 - `research/runs/*.jsonl` — only as emitted by the tool, never hand-edited.
-- `research/explorations/YYYY-MM-DD-<slug>.md` — a checkpoint: what was asked, what was run,
+- `research/explorations/YYYY-MM-DD-<role>-<scope>-<run-id>.md` — a checkpoint, named as
+  `.claude/agents/README.md` requires: what was asked, what was run,
   what came back. A run artifact future work may reuse is a durable event, so a run that
   lands in `research/runs/` earns one.
 

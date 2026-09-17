@@ -8,10 +8,12 @@ contracts — the [ledger](research/program/ledger-schema.md) and
 [lenses](.claude/lenses/README.md) those roles load — may add narrower requirements and never
 override this file.
 
-Two documents are not contract and are worth reading once:
+Three documents are not contract and are worth reading once:
 [`docs/RUNNING-A-SEARCH.md`](docs/RUNNING-A-SEARCH.md) is the operational path end to end,
-and [`example/`](example/README.md) is one complete search of that shape. Use
-[`research/README.md`](research/README.md) to locate each domain's source of truth.
+[`example/`](example/README.md) is one complete search of that shape, and
+[`docs/SPECIFICATION.md`](docs/SPECIFICATION.md) describes the whole harness in one place
+for a human reader. Use [`research/README.md`](research/README.md) to locate each domain's
+source of truth.
 
 Three words, three meanings, kept apart on purpose. A **domain** is one of the three things
 the repository is organized into — mathematical state, search state, durable evidence; the

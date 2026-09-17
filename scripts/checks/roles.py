@@ -62,8 +62,8 @@ REQUIRED_FRONTMATTER = ("name", "description", "tools", "model")
 REQUIRED_LENS_FRONTMATTER = ("name", "role")
 
 #: Claude Code's effort scale, and Codex's, which extends it by one rung. The two are
-#: validated separately and deliberately differ: `heavy` is `max` on Claude because that
-#: is Claude's ceiling, and `ultra` on Codex because that is Codex's.
+#: validated separately and deliberately differ: Claude's ceiling is `max`, while Codex
+#: has `ultra` above it, so one tier may resolve to different effort names per client.
 CLAUDE_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 CODEX_EFFORTS = CLAUDE_EFFORTS + ("ultra",)
 

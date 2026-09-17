@@ -13,7 +13,8 @@ exports:
 % solutions/{{FILE_ID}}.md — a standalone proof dossier.
 %
 % The front matter above is the dossier header, and scripts/check.py accepts only these
-% fields in it besides MyST's own `title` and `exports`:
+% fields in it besides the MyST page fields `title`, `subtitle`, `short_title`, `label`,
+% `exports` and `numbering`:
 %   ledger-node  research/program/ledger.yaml id(s) this discharges — checked
 %   refines      statement(s) sharpened
 %   bounded_by   proved node(s) fencing the statement

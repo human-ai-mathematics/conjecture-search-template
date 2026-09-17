@@ -12,6 +12,10 @@ doing, and why.
 Template releases and migration-relevant changes are tracked in [`CHANGELOG.md`](CHANGELOG.md)
 and use matching semantic-version Git tags.
 
+New to the harness? [`docs/SPECIFICATION.md`](docs/SPECIFICATION.md) describes all of it in
+one document — domains, file genres, roles, workflows and checks — and names the file that
+owns each rule. It builds as a PDF with `cd docs && npx myst build --pdf`.
+
 ## The shape of the repository
 
 Three domains. Everything else is a detail of one of them:
@@ -38,8 +42,7 @@ drift from its recorded status without something going red:
 > and is not a node.
 
 A statement that has not earned a node yet is a *candidate*, and it lives in the front matter
-of the checkpoint that proposed it — never in a registry of its own ([`CLAUDE.md`](CLAUDE.md)
-constraint 7).
+of the checkpoint that proposed it — never in a registry of its own.
 
 Gates activate structurally, not by a mode flag: a repository with no portfolio has no
 portfolio rules, and the checker validates only what exists. The gates are listed in

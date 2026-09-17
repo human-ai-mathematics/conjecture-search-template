@@ -24,7 +24,7 @@ reviewer: /root/independent_reviewer
 nodes:
   - thm:example
 solutions:
-  - solutions/thm-example.tex
+  - solutions/thm-example.md
 ---
 ```
 

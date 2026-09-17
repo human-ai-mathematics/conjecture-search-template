@@ -44,7 +44,8 @@ one of you at a time.
 - `research/instances.md` — you are the curator: any role may propose an adversarial
   instance; you decide whether it enters the shared battery (`CLAUDE.md` constraint 3).
   Reject instances that only serve one agent's happy path.
-- `research/explorations/YYYY-MM-DD-<slug>.md` — the synthesis itself. A batch of parallel
+- `research/explorations/YYYY-MM-DD-<role>-<scope>-<run-id>.md` — the synthesis itself, named
+  as `.claude/agents/README.md` requires of every role's checkpoint. A batch of parallel
   work converging is exactly the durable event a checkpoint exists to record; name the
   earlier per-route summaries it replaces in `supersedes:`.
 
