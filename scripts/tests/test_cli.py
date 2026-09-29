@@ -65,7 +65,21 @@ class CommandLineTests(CheckerFixture):
         self.assertIn("stamped site/p.md", stamped.stdout)
         result = self.cli("--site-strict")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("site: 1 page(s), 0 stale warning(s)", result.stdout)
+        self.assertIn("site: 1 page(s), 0 warning(s)", result.stdout)
+
+    def test_an_unfinished_page_warns_and_fails_a_publication(self):
+        self.page("p", "Replace this page.\n")
+        result = self.cli()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("WARN site/p.md:5: unfinished: 'Replace this'", result.stdout)
+        self.assertEqual(self.cli("--site-strict").returncode, 1)
+
+    def test_drafts_lists_the_dossiers_no_proof_record_names(self):
+        self.ledger([node("thm:a")])
+        self.solution("draft", "thm:a")
+        result = self.cli("--drafts")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, "solutions/draft.md\n")
 
 
 if __name__ == "__main__":

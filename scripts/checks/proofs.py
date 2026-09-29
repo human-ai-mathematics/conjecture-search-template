@@ -182,7 +182,11 @@ def check(root: Path, nodes: dict[str, dict], labels: dict[str, dict] | None,
         for ref in refuters:
             if isinstance(ref, str) and ref in nodes and nodes[ref].get("status") != "proved":
                 errors.append(f"{nid}.refuted_by: '{ref}' is not proved")
+    return [path for path in dossiers(root) if path not in named]
+
+
+def dossiers(root: Path) -> list[str]:
+    """Every dossier under ``solutions/``, repo-relative."""
     solutions = root / SOLUTIONS
-    drafts = sorted(repo_relative(root, path) for path in solutions.glob("*.md")) \
+    return sorted(repo_relative(root, path) for path in solutions.glob("*.md")) \
         if solutions.is_dir() else []
-    return [path for path in drafts if path not in named]

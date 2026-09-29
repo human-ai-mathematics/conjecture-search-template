@@ -172,7 +172,7 @@ As long as the result, no longer. A small advance is a few lines.
 - What you learned, marked *established*, *observed* or *intuition*; what resists; the next
   step you propose and what it would decide.
 - Your lens's additions, where they apply.
-- A route delta, only if the route changed — against the portfolio if one exists and the
-  brief's *Routes* otherwise: its new state, its exact blocker (`cand:` or node id) and
-  `reopen_if` if blocked, its new `next` test, and any route you found yourself duplicating.
+- A route delta against the portfolio, only if the route changed: its new state, its exact
+  blocker (`cand:` or node id) and `reopen_if` if blocked, its new `next` test, and any
+  route you found yourself duplicating.
 - The handoff from `SPECIFICATION.md`; leave out the fields you have nothing for.

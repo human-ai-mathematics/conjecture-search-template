@@ -20,7 +20,9 @@ def analyze(root: Path | None = None, labels: dict[str, dict] | None = None, *,
     "approaches", "candidates", "proposed", "mentions", "latest", "pages", "unmentioned",
     "fast"}``.
 
-    ``warnings`` are the stale pages of the reader's site: they never fail a check, and
+    ``drafts`` are the dossiers no proof record names; they are left out of the published
+    site. ``warnings`` are the stale and unfinished pages of the reader's site: they never
+    fail a check, and
     ``check.py --site-strict`` turns them into errors. ``unmentioned`` lists the proved and
     refuted nodes no site page rests on, once there is a site: a reminder, not a warning.
 
@@ -37,8 +39,9 @@ def analyze(root: Path | None = None, labels: dict[str, dict] | None = None, *,
     drafts = proofs.check(root, nodes, labels, errors)
     state = search.check(root, nodes, errors)
     warnings: list[str] = []
+    certified = [path for path in proofs.dossiers(root) if path not in drafts]
     count, mentioned = site.check(root, site.current(nodes, labels, state["proposed"]),
-                                  errors, warnings)
+                                  certified, errors, warnings)
     return {"errors": errors, "warnings": warnings, "nodes": nodes, "drafts": drafts,
             "pages": count, "unmentioned": site.unmentioned(nodes, mentioned) if count else [],
             "fast": labels is None, **state}
@@ -76,8 +79,9 @@ def fingerprint(root: Path | None, dossiers: list[str]) -> tuple[dict[str, str],
 
 
 def stamp(root: Path | None, pages: list[str], today: date | None = None) -> tuple[list[str], list[str]]:
-    """Stamp ``pages`` of the reader's site against the research record as it stands:
-    the pages written, and the reasons any was not. Defects elsewhere do not count."""
+    """Stamp ``pages`` of the reader's site against the research record as it stands, and
+    rewrite the lists of the index pages among them: the pages written, and the reasons any
+    was not. Defects elsewhere do not count."""
     root = Path(root) if root is not None else ROOT
     errors: list[str] = []
     labels = manuscript.manuscript_labels(root, errors)
@@ -86,7 +90,9 @@ def stamp(root: Path | None, pages: list[str], today: date | None = None) -> tup
     ignored: list[str] = []
     nodes = ledger.load(root, ignored)
     proposed, _ = search.read_checkpoints(root, nodes, ignored)
+    drafts = proofs.check(root, nodes, labels, ignored)
+    certified = [path for path in proofs.dossiers(root) if path not in drafts]
     errors = []
-    written = site.stamp(root, pages, site.current(nodes, labels, proposed),
+    written = site.stamp(root, pages, site.current(nodes, labels, proposed), certified,
                          today or date.today(), errors)
     return written, errors

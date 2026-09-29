@@ -1,7 +1,8 @@
-# Publish the manuscript and its dossiers to GitHub Pages, on manual dispatch only.
-# The checker runs first, so a structurally invalid revision publishes nothing, and neither
-# does a site page that misstates a status (--site-strict). Before the first run, enable
-# Settings → Pages → Source: GitHub Actions.
+# Publish the reader's site, the certified dossiers and the manuscript to GitHub Pages, on
+# manual dispatch only. The draft dossiers are removed first; then the checker runs, so a
+# structurally invalid revision publishes nothing, and neither does a site page that
+# misstates a status or still carries a template placeholder (--site-strict). Before the
+# first run, enable Settings → Pages → Source: GitHub Actions.
 
 name: site
 
@@ -30,6 +31,13 @@ jobs:
 
       - name: Install MyST
         run: npm ci
+
+      # A draft dossier — one no proof record names — is not published. Removing it from
+      # this checkout before the check means a page that still links to it fails the build.
+      - name: Leave out the draft dossiers
+        run: |
+          set -o pipefail
+          uv run scripts/check.py --drafts | xargs -r rm -v --
 
       - name: Validate the repository
         run: uv run scripts/check.py --site-strict

@@ -16,7 +16,7 @@ repository by reading it.
 | path | holds |
 |---|---|
 | [`modules/`](modules/) | the manuscript: every claim, as a labelled `prf:` directive |
-| [`research/program/`](research/program/) | the ledger; the brief once a search runs, the portfolio once routes run in parallel |
+| [`research/program/`](research/program/) | the ledger; the brief once a search runs, the portfolio of routes from the first route |
 | [`research/explorations/`](research/explorations/) | dated checkpoints and candidate statements |
 | [`research/reviews/`](research/reviews/) | independent proof reviews |
 | [`research/runs/`](research/runs/) | computation scripts and their output |
@@ -37,13 +37,15 @@ npm ci
 uv run scripts/check.py         # full check; 0 errors required before any status change
 uv run scripts/check.py --fast  # research state only, no MyST build
 uv run scripts/check.py --stamp site/results.md   # after rereading a site page
+uv run scripts/check.py --drafts                  # the draft dossiers, never published
 npx myst start                   # read the site, the dossiers and the manuscript in a browser
 ```
 
-The first check in a fresh clone downloads MyST's site theme into `_build/`. A green check
-establishes structure only; a stale site page is a warning. The `site` workflow publishes
-the HTML site to GitHub Pages when dispatched by hand, and only if no site page is stale
-(`check.py --site-strict`).
+The first check in a fresh clone downloads MyST's site theme into `_build/`, and warns on
+every template placeholder still to fill in. A green check establishes structure only; a
+stale or unfinished site page is a warning. The `site` workflow publishes the HTML site to
+GitHub Pages when dispatched by hand: it leaves out the draft dossiers, and publishes only
+if no site page is stale or unfinished (`check.py --site-strict`).
 
 ---
 
@@ -65,9 +67,10 @@ the HTML site to GitHub Pages when dispatched by hand, and only if no site page 
    [`site/problem.md`](site/problem.md) for a reader, put the contact address in
    [`site/about.md`](site/about.md) and
    [`.github/ISSUE_TEMPLATE/config.yml`](.github/ISSUE_TEMPLATE/config.yml), and stamp the
-   pages (`uv run scripts/check.py --stamp site/*.md`); then delete this section.
+   pages (`uv run scripts/check.py --stamp site/*.md`). The check warns on any placeholder
+   left; then delete this section.
 
 Create `research/program/portfolio.yaml` from
-[`templates/portfolio.yaml`](templates/portfolio.yaml) once several routes run at once. Add
+[`templates/portfolio.yaml`](templates/portfolio.yaml) with the first route. Add
 macros to `myst.yml` under `math:`, and BibTeX entries to `references.bib` before any
 node cites them in `references:`.

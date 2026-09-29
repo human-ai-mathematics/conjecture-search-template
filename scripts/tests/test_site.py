@@ -7,7 +7,7 @@ from datetime import date
 
 from fixtures import CheckerFixture, node
 
-from checks import analyze, site
+from checks import analyze, proofs, site
 from checks.common import text_fingerprint
 
 TODAY = date(2026, 9, 29)
@@ -22,8 +22,10 @@ class SiteTests(CheckerFixture):
     def stamp(self, *pages: str) -> list[str]:
         report = self.check()
         errors: list[str] = []
+        certified = [path for path in proofs.dossiers(self.root)
+                     if path not in report["drafts"]]
         site.stamp(self.root, list(pages), site.current(
-            report["nodes"], self.anchors, report["proposed"]), TODAY, errors)
+            report["nodes"], self.anchors, report["proposed"]), certified, TODAY, errors)
         return errors
 
     def warnings(self) -> str:
@@ -54,8 +56,21 @@ class SiteTests(CheckerFixture):
     def test_an_unstamped_page_is_stale(self):
         self.page("p", **{"relies-on": ["conj:a"]})
         self.assertIn("never stamped", self.warnings())
-        self.page("q")
+        self.page("q", **{"relies-on": {"conj:a": {"status": "open"}}})
         self.assertIn("site/q.md: stale: no 'checked' date", self.warnings())
+
+    def test_a_page_that_rests_on_nothing_needs_no_stamp_and_shows_none(self):
+        page = self.page("p")
+        self.assertEqual(self.check()["warnings"], [])
+        self.write(page, (self.root / page).read_text().replace(
+            "---\n\n", "checked: 2026-01-01\n---\n\n" + "\n".join(
+                [site.BEGIN, "*Last checked: 2026-01-01.*", site.END]) + "\n\n", 1))
+        self.assertIn("stamp block is missing, out of date", self.warnings())
+        self.assertEqual(self.stamp(page), [])
+        text = (self.root / page).read_text()
+        self.assertNotIn("checked", text)
+        self.assertNotIn(site.BEGIN, text)
+        self.assertEqual(self.check()["warnings"], [])
 
     def test_a_status_change_makes_the_page_stale(self):
         self.stamped()
@@ -94,7 +109,7 @@ class SiteTests(CheckerFixture):
     def test_a_hand_edited_block_makes_the_page_stale(self):
         page = self.root / self.stamped()
         page.write_text(page.read_text().replace("Last checked", "Checked"))
-        self.assertIn("stamp block is missing or was edited by hand", self.warnings())
+        self.assertIn("stamp block is missing, out of date or edited by hand", self.warnings())
 
     def test_a_problem_card_shows_the_status_of_its_problem(self):
         page = self.write("site/open/a.md", "---\nproblem: conj:a\nrelies-on: [conj:a]\n---\n")
@@ -122,6 +137,52 @@ class SiteTests(CheckerFixture):
         before = (self.root / page).read_text()
         self.assertIn("unknown id(s) conj:nope", "\n".join(self.stamp(page)))
         self.assertEqual((self.root / page).read_text(), before)
+
+    def test_the_open_problems_page_lists_every_card_with_its_status(self):
+        index = self.page("open", "Each problem below.\n")
+        self.assertIn("site/open.md: stale: its list is missing", self.warnings())
+        self.assertEqual(self.stamp(index), [])
+        text = (self.root / index).read_text()
+        self.assertIn("*No problem is published yet.*", text)
+        self.assertLess(text.index("Each problem below."), text.index(site.LIST_BEGIN))
+        self.assertEqual(self.check()["warnings"], [])
+        for name, number in (("b", 10), ("a", 2)):
+            self.write(f"site/open/{name}.md", f"---\ntitle: Problem {number} — {name}\n"
+                                                "problem: conj:a\nrelies-on: [conj:a]\n---\n")
+            self.assertEqual(self.stamp(f"site/open/{name}.md"), [])
+        self.assertIn("site/open.md: stale: its list is missing, out of date", self.warnings())
+        self.assertEqual(self.stamp(index), [])
+        text = (self.root / index).read_text()
+        self.assertIn("- [Problem 2 — a](open/a.md) — open.\n"
+                      "- [Problem 10 — b](open/b.md) — open.", text)
+        self.assertEqual(self.stamp(index), [])
+        self.assertEqual((self.root / index).read_text(), text)
+        self.assertEqual(self.check()["warnings"], [])
+
+    def test_the_full_proofs_page_lists_the_certified_dossiers_and_no_draft(self):
+        self.solution("draft", "conj:a")
+        index = self.page("proofs")
+        self.assertEqual(self.stamp(index), [])
+        text = (self.root / index).read_text()
+        self.assertIn("- [Dossier](../solutions/fixture-thm-b.md), for [](#thm:b).", text)
+        self.assertNotIn("draft", text)
+        self.assertEqual(self.check()["warnings"], [])
+
+    def test_a_template_placeholder_left_on_a_page_is_unfinished(self):
+        self.page("p", "Write to `<contact email>`.\nReplace this page.\n")
+        warnings = self.warnings()
+        self.assertIn("site/p.md:5: unfinished: '<contact email>'", warnings)
+        self.assertIn("site/p.md:6: unfinished: 'Replace this'", warnings)
+        self.write("myst.yml", (self.root / "myst.yml").read_text()
+                   + "# <a comment>\nextra: <author>\n")
+        self.assertIn("myst.yml:10: unfinished: '<author>'", self.warnings())
+        self.assertNotIn("<a comment>", self.warnings())
+
+    def test_math_comments_links_and_html_are_not_placeholders(self):
+        self.assertEqual(site.unfinished(
+            "$a<b$ and $c>d$\n$$\nx < y,\\quad z > w\n$$\n% <a hint>\n<!-- <x y> -->\n"
+            "<https://example.org> <me@example.org> <br> <span class=\"x\">\n"), [])
+        self.assertEqual(site.unfinished("Problem <n>\n"), [(1, "<n>")])
 
     def test_stamping_refuses_a_file_outside_the_site(self):
         self.assertIn("not a page under site/", "\n".join(self.stamp("modules/test.md")))

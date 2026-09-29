@@ -34,7 +34,9 @@ project:
     # --- program macros
   # The reader's site comes first; the dossiers and the manuscript close the table of
   # contents. A pattern that matches nothing is an error, so each group's pattern also
-  # matches its introduction page. Add any other site/ page when it exists, not before.
+  # matches its introduction page: '{site/proofs,solutions/*}.md' reads "site/proofs.md,
+  # then every dossier". Drafts are listed here for local reading; the site workflow
+  # removes them before it publishes. Add any other site/ page when it exists, not before.
   toc:
     - file: site/index.md
     - file: site/problem.md

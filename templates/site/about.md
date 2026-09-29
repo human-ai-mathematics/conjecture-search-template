@@ -18,15 +18,19 @@ or a correction. Each problem card says where to start.
 
 ## How results are checked
 
-Every result on this site has a complete written proof, listed under *Full proofs*. A
-result is called proved only once a reviewer other than its author has checked that proof
-against the precise statement, and the check is recorded. If a statement is edited
+Every result on this site has a complete written proof, listed under
+[Full proofs](proofs.md). A result is called proved only once a reviewer other than its
+author has checked that proof against the precise statement, and the check is recorded;
+a proof still being written or checked is not published. If a statement is edited
 afterwards, its proof counts as unchecked until it is reviewed again.
 
 The pages you are reading are an exposition: they may simplify or state things
-informally. The statements that count are those under *Precise statements*. Each page
-says when it was last checked against them, and a page that has fallen out of date cannot
-be published.
+informally. The statements that count are those under *Precise statements*. A page that
+gives the status of a result names the precise statements it rests on and says when it
+was last checked against them; the site is not published while one of them has changed
+since. That check covers what a page declares, not how it tells it: whether an informal
+account is faithful is the authors' responsibility, and a person rereads the site before
+each publication.
 
 Computations can suggest where to look, but they never count as proof. Where a page
 reports one, it says so.

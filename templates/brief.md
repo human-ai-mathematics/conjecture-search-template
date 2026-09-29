@@ -51,14 +51,6 @@ target stays closed; a corrected version is a new statement with a new id.
 
 - `conj:special-case` — why settling it would inform the target.
 
-## Routes
-
-One line per route while one agent works at a time; move them to
-`research/program/portfolio.yaml` and delete this section once several run at once.
-
-- `ap:main-route` — active. One sentence saying what this route tries.
-- `ap:other-route` — blocked on `cand:slug`. What it would try once unblocked.
-
 ## Budget policy
 
 The honest outcome — unresolved, with certified advances and exact remaining gaps — is

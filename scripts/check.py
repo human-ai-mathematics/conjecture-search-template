@@ -7,9 +7,10 @@
     uv run scripts/check.py --fingerprint solutions/thm-main.md   # for a review or acceptance
     uv run scripts/check.py --stamp site/results.md   # after rereading a site page
     uv run scripts/check.py --site-strict    # before publishing: a stale page is an error
+    uv run scripts/check.py --drafts         # the draft dossiers, which are not published
 
-Exit 0 = clean, 1 = errors. A stale site page is a warning (WARN) unless --site-strict. A green run establishes structure only, never that a proof
-is correct. Reading the manuscript runs 'myst build --site', whose output lands in the
+Exit 0 = clean, 1 = errors. A stale or unfinished site page is a warning (WARN) unless
+--site-strict. A green run establishes structure only, never that a proof is correct. Reading the manuscript runs 'myst build --site', whose output lands in the
 gitignored _build/; --fast skips it, and with it the manuscript anchors and the statement
 fingerprints. Needs MyST ('npm ci') unless --fast; uv provides PyYAML from pyproject.toml.
 """
@@ -49,7 +50,7 @@ def summary(report: dict) -> None:
     if report["latest"]:
         print(f"latest checkpoint: {report['latest']}")
     if report["pages"]:
-        print(f"site: {report['pages']} page(s), {len(report['warnings'])} stale warning(s)")
+        print(f"site: {report['pages']} page(s), {len(report['warnings'])} warning(s)")
         if report["unmentioned"]:
             print(f"site: no page rests on {', '.join(report['unmentioned'])}")
     if report["fast"]:
@@ -69,8 +70,16 @@ def main(argv: list[str] | None = None) -> int:
                         help="record in these site pages the current status and fingerprint "
                              "of what they rest on, date them today, and check nothing else")
     parser.add_argument("--site-strict", action="store_true",
-                        help="a stale site page is an error, not a warning: for publishing")
+                        help="a stale or unfinished site page is an error, not a warning: "
+                             "for publishing")
+    parser.add_argument("--drafts", action="store_true",
+                        help="print the draft dossiers, one per line, and check nothing else: "
+                             "the site workflow removes them before it publishes")
     args = parser.parse_args(argv)
+    if args.drafts:
+        for path in analyze(args.root, fast=True)["drafts"]:
+            print(path)
+        return 0
     if args.stamp:
         written, errors = stamp(args.root, args.stamp)
         for error in errors:
