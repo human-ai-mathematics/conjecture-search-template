@@ -1,43 +1,47 @@
 """The manuscript as MyST parses it: every labelled target, and what MyST could not resolve.
 
-The manuscript is MyST Markdown, so this module does not parse it. It runs ``myst build
---site`` in the repository root and reads the abstract syntax tree MyST writes under
-``_build/site/content/``. A claim is then exactly what MyST says it is: a ``proof`` node
-whose ``kind`` is one of the ledger's kinds (``prf:theorem``, ``prf:conjecture``, …),
-carrying a ``label``. Every other labelled node — a heading, an equation, a figure, a
-``prf:remark`` — is structural.
+This module runs ``myst build --site`` and reads the tree MyST writes under
+``_build/site/content/``. A claim is a ``proof`` node whose ``kind`` is one of ``KIND``
+(``prf:theorem``, ``prf:conjecture``, …) carrying a ``label``; every other label is
+structural. Every MyST error is an error here, and so are three things MyST only warns
+about, because each silently breaks the node/label correspondence: an unknown directive
+or role, an unresolved cross-reference, and a duplicate label.
 
-The build writes only under ``_build/``, which is gitignored: ``check.py`` writes nothing
-the repository tracks. Its first run in a fresh clone downloads MyST's site theme into the
-same directory; later runs work offline.
-
-Every error MyST reports (its ``⛔️`` lines) is an error here: a directive MyST dropped —
-a ``prf:lemma`` with no body, say — is absent from the tree, so the tree alone would not
-say so. Beyond those, three things MyST only warns about and this repository refuses,
-because each one silently breaks the anchor invariant:
-
-* an unknown directive or role, left in the tree unprocessed — a ``prf:question`` is not a
-  claim MyST knows, so it is not a claim at all;
-* a cross-reference that resolves to nothing;
-* two targets that share a label, or whose HTML anchors collide once MyST normalizes them
-  (``a:b-c`` and ``a-b:c`` both become ``#a-b-c``).
+Each claim also gets a *fingerprint*: the SHA-256 of its statement as MyST parsed it, blind
+to what does not change the mathematics — line wrapping, source positions, numbering, the
+text a cross-reference renders to, a proof nested in the claim. A certification records
+the fingerprints of the statements it checked, so an edited statement is detected.
 """
 from __future__ import annotations
 
+import contextlib
+import hashlib
 import json
 import re
 import shutil
 import subprocess
 from pathlib import Path
 
-from .ledger import KIND
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - Windows: builds are not serialized
+    fcntl = None
 
-#: The checker's own repository. Its ``node_modules`` holds the pinned, patched MyST, and a
+#: The directives that make a labelled statement a claim, and so a ledger node.
+KIND = {
+    "theorem", "lemma", "proposition", "corollary", "conjecture", "definition",
+    "example", "assumption",
+}
+
+#: The checker's own repository. Its ``node_modules`` holds the pinned MyST, and a
 #: tree validated with ``--root`` — ``example/``, a test fixture — uses that one too.
 REPO = Path(__file__).resolve().parents[2]
 
 CONFIG = "myst.yml"
 CONTENT = Path("_build/site/content")
+#: Held for a whole build-and-read, so concurrent checks of one tree never read a half-built
+#: or deleted content directory.
+LOCK = Path("_build/.check.lock")
 MODULES = "modules"
 
 #: How long a site build may take before the checker gives up on it.
@@ -64,14 +68,6 @@ def myst_command(root: Path) -> list[str] | None:
             return [str(candidate)]
     found = shutil.which("myst")
     return [found] if found else None
-
-
-def html_id(label: str) -> str:
-    """The anchor MyST derives from a label; mirrors ``createHtmlId`` in myst-common."""
-    anchor = re.sub(r"[^a-z0-9-]", "-", label.lower())
-    anchor = re.sub(r"^([0-9-])", r"id-\1", anchor)
-    anchor = re.sub(r"-{2,}", "-", anchor)
-    return anchor.strip("-")
 
 
 def build(root: Path, errors: list[str]) -> Path | None:
@@ -108,6 +104,35 @@ def build(root: Path, errors: list[str]) -> Path | None:
     return content
 
 
+#: The node fields that carry the mathematics; everything else is layout or rendering.
+STATEMENT_FIELDS = ("type", "kind", "name", "value", "identifier", "url", "lang")
+#: Nodes that point elsewhere: their identifier matters, their rendered text does not.
+POINTERS = frozenset({"crossReference", "cite", "footnoteReference"})
+WHITESPACE = re.compile(r"\s+")
+
+
+def _statement(node: dict) -> dict:
+    kept: dict = {}
+    for field in STATEMENT_FIELDS:
+        value = node.get(field)
+        if isinstance(value, str):
+            kept[field] = WHITESPACE.sub(" ", value).strip()
+    if node.get("type") not in POINTERS:
+        kept["children"] = [
+            _statement(child) for child in node.get("children") or []
+            if isinstance(child, dict)
+            and not (child.get("type") == "proof" and child.get("kind") == "proof")
+        ]
+    return kept
+
+
+def fingerprint(claim: dict) -> str:
+    """The SHA-256 of a claim's statement: its kind and its content, not its label."""
+    canonical = {"kind": claim.get("kind"), "children": _statement(claim)["children"]}
+    text = json.dumps(canonical, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 def _walk(node: object):
     if isinstance(node, dict):
         yield node
@@ -123,15 +148,14 @@ def _line(node: dict) -> str:
 def read(content: Path, errors: list[str]) -> dict[str, dict]:
     """Every labelled target under ``modules/``, from the AST MyST wrote to ``content``.
 
-    Returns ``{label: {"kind": <ledger kind or None>, "file": "modules/…md"}}``: ``kind``
-    is set only for a claim, and ``None`` marks a structural label. Targets outside
-    ``modules/`` — a theorem restated in a dossier, the index page — are not manuscript
-    anchors and are left out, but they still take part in the duplicate and anchor
-    collision checks, because MyST resolves labels across the whole project.
+    Returns ``{label: {"kind": <claim kind or None>, "file": "modules/…md"}}``: ``kind``
+    is set only for a claim, and ``None`` marks a structural label; a claim also carries
+    its ``fingerprint``. Targets outside ``modules/`` — a theorem restated in a dossier,
+    the index page — are not manuscript anchors and are left out, but they still take
+    part in the duplicate check, because MyST resolves labels across the whole project.
     """
     labels: dict[str, dict] = {}
     seen: dict[str, str] = {}
-    anchors: dict[str, str] = {}
     for path in sorted(content.glob("*.json")):
         try:
             page = json.loads(path.read_text(encoding="utf-8"))
@@ -175,19 +199,13 @@ def read(content: Path, errors: list[str]) -> dict[str, dict]:
                 )
                 continue
             seen[label] = relative
-            anchor = html_id(label)
-            if anchor in anchors:
-                errors.append(
-                    f"{relative}: label '{label}' and label '{anchors[anchor]}' share the "
-                    f"HTML anchor '#{anchor}'; rename one"
-                )
-            else:
-                anchors[anchor] = label
 
             if relative.startswith(f"{MODULES}/"):
                 claim = kind == "proof" and node.get("kind") in KIND
                 labels[label] = {"kind": node.get("kind") if claim else None,
                                  "file": relative}
+                if claim:
+                    labels[label]["fingerprint"] = fingerprint(node)
     return labels
 
 
@@ -195,8 +213,23 @@ def manuscript_labels(root: Path, errors: list[str]) -> dict[str, dict]:
     """Build the manuscript and read its labels; a tree with no ``myst.yml`` has none."""
     if not (root / CONFIG).is_file():
         return {}
-    content = build(root, errors)
-    if content is None:
-        return {}
-    return read(content, errors)
+    with _locked(root):
+        content = build(root, errors)
+        return {} if content is None else read(content, errors)
+
+
+@contextlib.contextmanager
+def _locked(root: Path):
+    """Serialize builds of one tree: each deletes and rewrites the directory it reads."""
+    if fcntl is None:
+        yield
+        return
+    path = root / LOCK
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w") as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle, fcntl.LOCK_UN)
 

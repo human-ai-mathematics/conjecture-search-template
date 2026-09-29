@@ -1,0 +1,3 @@
+{"provenance": {"seed": 20260902, "n": 2000, "grid": 2, "width": 4, "git_commit": "29898a3640fc93a45e8c9ce801fb934d147a94e5", "dirty": true, "python": "3.13.12", "versions": {}}}
+{"kind": "calibration", "claim": "prop:example on one Gaussian sample", "left": 1879.9291354425134, "right": 1879.9291354425134, "rel_err": 0.0}
+{"kind": "search", "claim": "prop:example on every integer vector in [-2,2]^4", "searched": 625, "witness": null}

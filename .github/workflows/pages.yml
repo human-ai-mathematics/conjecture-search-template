@@ -1,15 +1,6 @@
-# Publish the manuscript and its proof dossiers to GitHub Pages, as MyST renders them.
-#
-# Validate, then build, then deploy: a structurally invalid revision is not this
-# repository's research state, so the checker runs first and a red one publishes nothing.
-#
-# This workflow runs only when a human asks for it. Publishing is a deliberate act: the
-# site is a snapshot a reader is invited to cite, not a mirror of whatever was pushed last.
-# The structural checks still run on their own, on pull requests, in `check.yml`.
-#
-# Before the first run, a human has to enable Pages for this repository with
-# **Settings → Pages → Build and deployment → Source: GitHub Actions**. Until then the
-# deploy step fails with a 404.
+# Publish the manuscript and its dossiers to GitHub Pages, on manual dispatch only.
+# The checker runs first, so a structurally invalid revision publishes nothing. Before the
+# first run, enable Settings → Pages → Source: GitHub Actions.
 
 name: site
 
@@ -29,12 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install PyYAML
-        run: pip install pyyaml
+      - uses: astral-sh/setup-uv@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -45,7 +31,7 @@ jobs:
         run: npm ci
 
       - name: Validate the repository
-        run: python3 scripts/check.py
+        run: uv run scripts/check.py
 
       # A project site is served under /<repository>/, and MyST has to know it.
       - name: Build the site
@@ -58,8 +44,7 @@ jobs:
           path: _build/html
 
   deploy:
-    # Only the default branch publishes. Dispatching from any other branch builds the site
-    # and stops there, which is how you check that a revision *can* be published.
+    # Only the default branch publishes; other branches build and stop.
     if: github.ref_name == github.event.repository.default_branch
     needs: build
     runs-on: ubuntu-latest

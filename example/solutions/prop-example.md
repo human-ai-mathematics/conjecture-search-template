@@ -1,18 +1,10 @@
 ---
 title: "Solution: the centred sum of squares"
 ledger-node: prop:example
-refines: [prop:example]
-bounded_by: []
-author: /root/template_author
-date: "2026-09-01"
-exports:
-  - format: pdf+tex
-    template: ../../templates/latex
 ---
 
-% The worked example's proof dossier. The front matter above is its header: scripts/check.py
-% reads `ledger-node`, `refines`, `bounded_by`, `author` and `date`, and nothing else of
-% the harness's belongs there. The `exports` entry makes the dossier build standalone.
+% The worked example's proof dossier. scripts/check.py reads only `ledger-node` from the
+% front matter above; the other fields are for the reader.
 
 **Refined statement.** This is the statement of [](#prop:example) verbatim; nothing is
 strengthened. A real dossier states the sharp current form and says which fence shapes it.
@@ -41,6 +33,4 @@ the claim. Every step is an identity in $\R$; no hypothesis beyond $n \ge 1$ is 
 none is used implicitly.
 :::
 
-**Fences respected.** None apply: the statement is a finite algebraic identity, and
-[](#conj:finite-battery) fences universal claims argued from finite batteries, which this
-proof does not do.
+**Fences respected.** None apply: [](#prop:example) has no `bounded_by`.

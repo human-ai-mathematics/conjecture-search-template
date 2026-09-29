@@ -1,35 +1,24 @@
-# The manuscript's MyST project: modules/ and solutions/ are its source, and this file
-# is what main.tex and preamble.tex used to be.
+# The manuscript's MyST project: modules/ and solutions/ are its source.
 #
 #   npx myst start           # read it locally, live
-#   npx myst build --pdf     # the manuscript and every dossier, through templates/latex
-#   npx myst build --html    # the static site, as the `site` workflow publishes it
+#   npx myst build --html    # the static site, as pages.yml publishes it
 #
-# `python3 scripts/check.py` builds the site content (never the PDF) and reads its AST:
-# every labelled claim directive under modules/ is a ledger node whose `kind` is the
-# directive's name. Build output lands in _build/, which is gitignored.
-#
-# The title, the subtitle and the author below are placeholders
-# `python3 scripts/check.py publish-ready` looks for; the abstract is the `abstract`
-# part at the top of modules/00-overview.md.
+# `uv run scripts/check.py` builds the site content and reads its AST: every labelled
+# claim directive under modules/ is a ledger node with the same id.
+# Replace the title, subtitle and author placeholders below.
 version: 1
 project:
-  title: &title <Document title>
+  title: <Document title>
   subtitle: <one-line subtitle naming the object and the question>
   authors:
     - name:
         literal: <author>
-  # The single shared bibliography: every module and dossier cites into it. A ledger node
-  # with `provenance: literature` carries an `import_class` and lists keys from this file
-  # in `references:`, and scripts/check.py resolves each one here, so add the entry before
-  # the node. An unreviewed preprint cannot support a proved node. The file ships empty
-  # because a .bib holding only comments is one MyST refuses to read.
+  # The shared bibliography. A literature node's `references:` keys must
+  # exist here. It ships empty: MyST refuses a .bib holding only comments.
   bibliography:
     - references.bib
-  # The LaTeX macros every module and dossier may use. Keep the core block diffable
-  # against the template and add this program's own notation below it. A macro that
-  # stands for a fixed normalization records that convention in the ledger, not here:
-  # state it in a prf:definition under a :label: with a `kind: definition` node.
+  # Macros for every module and dossier. A fixed normalization is a `definition` node,
+  # not only a macro.
   math:
     # --- core macros (domain-neutral)
     '\R': '\mathbb{R}'
@@ -45,14 +34,5 @@ project:
   toc:
     - file: index.md
     - pattern: '{modules,solutions}/!(README).md'
-  exports:
-    - id: manuscript
-      format: pdf+tex
-      template: templates/latex
-      title: *title
-      output: _build/exports/manuscript.pdf
-      toc:
-        - file: index.md
-        - pattern: modules/*.md
 site:
   template: book-theme

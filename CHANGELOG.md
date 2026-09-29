@@ -1,146 +1,92 @@
 # Changelog
 
-All notable changes to the conjecture-search template are recorded here. Each released section
-corresponds to the Git tag with the same version.
-
-The template is pre-stable. Until `v1.0.0`, increment the minor version for a feature or a change
-that requires forks to migrate, and increment the patch version for a backward-compatible fix.
-Batch related breaking changes into one minor release. Publish `v1.0.0` only when the template
-contract is intended to remain stable; from that point onward, use standard semantic versioning.
+Notable changes to the conjecture-search template. The template is pre-stable: every
+release below `v1.0.0` may require forks to migrate.
 
 ## [Unreleased]
 
-This release makes MyST Markdown the source of the manuscript and of the proof dossiers.
-Mathematics stays LaTeX, the PDF is still built by LaTeX, and `references.bib` stays; what
-changes is that a claim is a typed node MyST parses rather than a `\label` a regular
-expression finds. It also reduces the ledger kinds to eight and removes the old website.
-Every fork has to migrate: see *Migrating a fork* below.
-
-### Added
-
-- Add the MyST project: `myst.yml` and `index.md` at the root and in `example/`, modules
-  under `modules/*.md`, dossiers under `solutions/*.md`, the scaffolds `templates/module.md`
-  and `templates/solution.md`, and the local, `pdflatex`-based export template
-  `templates/latex/`. `package.json` pins `mystmd` 1.10.1 and `npm ci` applies
-  `patches/mystmd+1.10.1.patch`, which fixes two LaTeX export bugs. Without it MyST silently
-  drops every `prf:assumption`, the fix proposed upstream in jupyter-book/mystmd#3031. It
-  also escapes a code block as mathematics, which puts a space before every hyphen
-  (`2026 -09 -03`) and strips the first line's indentation; the patch writes the block
-  verbatim, and no upstream fix is proposed yet. Drop each hunk once a release carries its
-  fix.
-- Add `docs/SPECIFICATION.md`, a descriptive technical specification of the whole harness
-  for human readers: domains, file genres and their fields, roles and permissions,
-  workflows, and what every checker lane enforces, with excerpts from the worked example.
-  It is not contract, and each section names the file that owns its rules. It is its own
-  MyST project (`docs/myst.yml`): `cd docs && npx myst build --pdf`.
-- Add `scripts/checks/manuscript.py`, which builds the MyST site content and reads its tree.
-  Every MyST error, unknown directive or role, unresolved cross-reference, duplicate label,
-  and pair of labels colliding on one HTML anchor (`a:b-c` and `a-b:c`) is a `core` error.
-- `./scripts/check.sh` builds the PDF of the manuscript and of every dossier, in the
-  repository and in `example/`, and fails on a LaTeX error or on a claim missing from the
-  exported manuscript — two failures `myst build --pdf` does not report. It installs MyST
-  with `npm ci` when it can and fails when it cannot.
-- Add a `check` workflow that installs MyST and validates the repository, the worked example
-  and the checker's test suite on pull requests into the default branch.
-- Add a minimal `site` workflow that, on manual dispatch only, validates the repository and
-  publishes `myst build --html` to GitHub Pages.
+The manuscript moves to MyST Markdown, and the harness is cut down to what protects the
+status of a result.
 
 ### Changed
 
-- **Breaking:** `scripts/check.py` reads the manuscript through MyST. A node's anchor is a
-  `:label:` on the `prf:<kind>` directive in `modules/*.md` matching its `kind`; `file:` names
-  a `.md` file. MyST is required, and the checker now writes MyST's gitignored `_build/` —
-  still nothing the repository tracks.
-- **Breaking:** a dossier is `solutions/<id>.md`, and its header is YAML front matter —
-  `ledger-node` (an id or a list), `refines`, `bounded_by`, `author`, `date`, plus the MyST
-  fields `title`, `subtitle`, `short_title`, `label`, `exports` and `numbering` — instead of
-  the `% === SOLUTION HEADER` comment block. A review written before this release that names
-  `solutions/<id>.tex` still covers `solutions/<id>.md`, so no immutable review needs
-  rewriting.
-- **Breaking:** reduce the ledger `kind` vocabulary from ten to eight: `theorem`, `lemma`,
-  `proposition`, `corollary`, `conjecture`, `definition`, `example`, `assumption`. Being an
-  obstruction is a role carried by the edges, not a form: `bounded_by` may name any proved
-  node, `heuristic_barriers` any open node, and a brief or portfolio may not target a node
-  another node cites in either. Constraint 5 changes in wording only.
-- **Breaking:** `check.py publish-ready` looks for its placeholders in `myst.yml` and in the
-  abstract at the top of `modules/00-overview.md`. `new.py module` and `new.py dossier` write
-  MyST, and `new.py node --file` defaults to `00-overview.md`.
-- `references.bib` ships empty, because MyST refuses a bibliography holding only comments; its
-  guidance moved to `myst.yml`.
+- **Breaking:** the manuscript (`modules/*.md`) and the dossiers (`solutions/*.md`) are MyST
+  Markdown. A claim is a `prf:<kind>` directive whose `:label:` is its ledger id; the checker
+  reads it through `myst build --site`. The ledger has eight kinds.
+- **Breaking:** `SPECIFICATION.md` is the single contract. The per-directory READMEs, the
+  ledger and portfolio schemas and `templates/README.md` are merged into it. The numbered
+  hard and program constraints give way to six principles; each precise rule sits in the
+  format it governs, and a program-specific rule goes under the brief's traps.
+- **Breaking:** two roles, `researcher` and `reviewer`, with their lenses folded into their
+  files. The orchestrator takes over the `synthesizer`'s portfolio work.
+- **Breaking:** the ledger drops `meta`: it is `nodes:` alone. A ledger node is `id`,
+  `status` and its edges. `kind`, `file` and `summary` are read from, or live in, the
+  manuscript; `provenance` and `import_class` give way to `references` (a recent preprint
+  is proved through a dossier and a review, like any result); `heuristic_barriers` merges
+  into `bounded_by`; `implies` and `refines` are removed.
+- **Breaking:** a proof record drops `mode`: it carries `review` or `accepted_by`. A review
+  drops `nodes` (its dossier names them); a dossier's front matter is `title` and
+  `ledger-node`. A refutation needs no prior candidate.
+- **Breaking:** a certification is pinned to the versions it saw. A review's
+  `fingerprints` map the dossier to its SHA-256 and each statement the proof is checked
+  against — the node's own, its `depends_on` and `assumes`, the target it refutes — to a
+  fingerprint of the claim as MyST parsed it, blind to wrapping, spacing and numbering. A
+  human acceptance (`accepted_by`) carries the same `fingerprints`. Editing the dossier,
+  the node's statement or a premise's statement lifts the certification until a new review
+  or acceptance; `check.py --fingerprint <dossier>` prints the block to record. Reviews,
+  checkpoints and the brief lose `type`, and reviews and checkpoints lose `date`: the
+  filename carries it.
+- **Breaking:** checkpoints lose `outcome`, `retires`, `promotes`, `nodes` and `approach`; a candidate is ended
+  by `closes:`. The portfolio loses `target` (the brief owns it) and its states are
+  `active | blocked | closed`; `reopen_if` is optional, and the checker flags a route
+  whose blocker is settled. The brief no longer copies the target or lists routes.
+- **Breaking:** the handoff has three fields, `files`, `deltas` and `next`; `outcome`,
+  `next_role` and `portfolio_delta` are gone (a portfolio change is an ordinary delta).
+- The workflow gives the orchestrator's session loop. The brief lists the routes in a
+  *Routes* section while one agent works at a time; the portfolio is for parallel routes.
+- A reviewer's independence is a fresh context, not a different name; `authors` and
+  `reviewer` name a human, or an agent's role, model and date.
+- `templates/run.py`: a PEP 723 run script whose `provenance()` writes the seed, the
+  commit, the dirty flag and the versions as the first line of its `.jsonl` output.
+- The worked example's fences are mathematics: the proved `prop:upper-constant` bounds the
+  target and tells the brief where it is weakest, and the open `conj:weighted-upper`
+  bounds `conj:weighted-example`. `conj:finite-battery` is removed.
+- **Breaking:** `scripts/check.py` has no subcommands and no lanes: it validates and prints
+  a summary. `scripts/new.py` is removed; copy from `templates/`.
+- `check.py --fast` validates the research state without a MyST build, leaving the
+  manuscript anchors and statement fingerprints unchecked; the full check, which CI runs,
+  is required before a status change. Concurrent full checks of one tree take turns on
+  `_build/` instead of deleting each other's output.
+- The summary is what a resumed session starts from: each route's `next` test (a new
+  optional portfolio field) and the latest checkpoint naming it, the draft dossiers no
+  proof record names, and the latest checkpoint.
+- Exploration is lighter. Throwaway computation is allowed; only a result something
+  durable rests on must come from a committed run. An exact witness checked by hand goes
+  straight to a manuscript claim, without a candidate stage. Reports and handoffs are as
+  long as their result, and every handoff field is optional.
+- A researcher works a mission — a question and its expected result — from a starting
+  lens it may leave, saying why. Its file gains guiding questions (tools, not a checklist)
+  and an early critique of unfinished ideas, distinct from review. A special case, a
+  reduction or an identified hypothesis counts as a result.
+- A checkpoint records what was learned: *Question examined*, *What we learned* (each item
+  *established*, *observed* or *intuition*; an established result is not certified),
+  *What resists*, *Proposed next step*. An observation need not become a candidate.
+- The orchestrator decides which route to pursue, set aside or reformulate, and may
+  synthesize several explorations in one checkpoint. The brief gains a *Neighbourhood* of
+  statements near the target; a corrected version of a refuted target is a new id.
 
 ### Removed
 
-- **Breaking:** the LaTeX source: `main.tex`, `preamble.tex`, `.latexmkrc`, `modules/*.tex`,
-  `templates/module.tex`, `templates/solution.tex`, and the LaTeX output setting in
-  `.vscode/settings.json`.
-- **Breaking:** `check.py dossiers`, which existed to feed the old LaTeX build.
-- **Breaking:** the derived website: `site/`, `scripts/site.py`, its Pages workflow and
-  `docs/PUBLISHING-THE-SITE.md`. The MyST site replaces it; ledger and portfolio views may
-  return on top of it later. The issue forms stay, as the public inbox constraint 12 fences.
-- The `question` and `obstruction` ledger kinds, and their LaTeX environments.
+- PDF export: the LaTeX template, the `mystmd` patch and `check.sh --pdf`.
+- `experiments/` and the `numerics` role: a computation is a seeded script under
+  `research/runs/`, run with `uv run`, whose output header flags a dirty tree. Dependencies
+  grow from none, to PEP 723 inline metadata, to a `research/lib/` package once scripts
+  share code.
+- The `synthesizer` and `literature-scout` roles, `packs/`, `research/instances.md`, the
+  issue forms, the concurrency-key table, and the Markdown link checker.
 
 ### Fixed
 
-- The `researcher`, `synthesizer`, `numerics` and `literature-scout` write surfaces name a
-  checkpoint `YYYY-MM-DD-<role>-<scope>-<run-id>.md`, as `.claude/agents/README.md` requires,
-  instead of `YYYY-MM-DD-<slug>.md`. Regenerate the Codex adapters with
-  `python3 scripts/new.py agents`.
-- Stale LaTeX-era wording: the proof-review example in `research/reviews/README.md` names a
-  `.md` dossier, and promotion in `research/explorations/README.md` puts a `:label:` on a
-  `prf:<kind>` directive rather than a `\label` in an environment.
-- The `templates/solution.md` header comment lists every MyST page field the checker accepts,
-  and a `roles.py` comment no longer claims the `heavy` tier is `max` on Claude.
-
-### Migrating a fork
-
-1. **Kinds.** Rewrite each `question` node as a `conjecture` stated in the direction the search
-   tries to establish, and each `obstruction` node as the form it has: `theorem`,
-   `proposition` or `lemma` when proved, `conjecture` when open. Id prefixes are conventions
-   and need not change.
-2. **Toolchain.** Copy `package.json`, `package-lock.json`, `patches/`, `myst.yml`, `index.md`
-   and `templates/latex/` from the template, add `_build/` and `node_modules/` to
-   `.gitignore`, and run `npm ci`. Move the macros from `preamble.tex` to `math:` in
-   `myst.yml`, and the title, subtitle and author from `main.tex` to its `project:`.
-3. **Modules.** Convert each `modules/*.tex` to `modules/*.md` by hand: a claim environment
-   becomes a `prf:<kind>` directive with `:label: <id>`, `\ref{<id>}` becomes `[](#<id>)`,
-   `\section` becomes a heading, and the abstract becomes a `+++ {"part": "abstract"}` block in
-   the first module. `myst build <file>.tex --md` is not a shortcut: it drops every theorem
-   environment. Point each ledger `file:` at the `.md`.
-4. **Dossiers.** Convert each `solutions/*.tex` the same way, turn its comment header into
-   front matter, and point each `proofs[].artifact` at the `.md`. Leave the reviews alone.
-5. **Records.** Checkpoints and reviews already written keep their `.tex` paths: they are
-   append-only, and the `docs` lane exempts them.
-6. Delete `main.tex`, `preamble.tex` and `.latexmkrc`, then run `./scripts/check.sh`.
-
-## [0.1.0] - 2026-09-04
-
-### Added
-
-- Require explicitly delimited metadata blocks in proof and refutation dossiers, so narrative
-  comments cannot be interpreted as header fields.
-- Treat numbered equations, alignments, figures, and tables nested inside claims as structural
-  labels owned by those environments.
-
-### Changed
-
-- Replace control-plane decision records with this package-level changelog and Git tags.
-- Keep the documentation link checker focused on live documentation while exempting immutable
-  search checkpoints and proof reviews.
-- Make capability-pack installation tests independent of which packs are installed in the host
-  repository.
-- Validate numerical `instance` observations at artifact write time.
-- Correct live role and lens references to the current universal constraint order.
-
-### Removed
-
-- Remove the constraint-citation index and its `check.py constraints` command.
-- Remove the `decisions/` control-plane archive and its contribution workflow.
-
-### Fixed
-
-- Keep installed capability-pack roles synchronized with their pack sources.
-- Remove the synthesizer's stale reference to the retired decisions archive.
-- Verify the byte-preserved source and checksum declared by migrated numerical artifacts.
-
-[Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/releases/tag/v0.1.0
+- A checkpoint can close only a candidate an earlier checkpoint proposed; the checker used
+  to accept one proposed in the same or a later checkpoint.
+- A non-string entry in a node's `references` is reported instead of crashing the checker.

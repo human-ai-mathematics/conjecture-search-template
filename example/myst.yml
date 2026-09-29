@@ -1,7 +1,7 @@
 # The worked example's MyST project. Same shape as the root myst.yml; see that file.
 version: 1
 project:
-  title: &title Worked example
+  title: Worked example
   authors:
     - name: Template author
   math:
@@ -9,14 +9,5 @@ project:
   toc:
     - file: index.md
     - pattern: '{modules,solutions}/!(README).md'
-  exports:
-    - id: manuscript
-      format: pdf+tex
-      template: ../templates/latex
-      title: *title
-      output: _build/exports/manuscript.pdf
-      toc:
-        - file: index.md
-        - pattern: modules/*.md
 site:
   template: book-theme

@@ -1,13 +1,6 @@
 ---
 title: "Refutation: the centred sum of squares can vanish"
 ledger-node: prop:example-refuter
-refines: [prop:example-refuter]
-bounded_by: []
-author: /root/template_author
-date: "2026-09-03"
-exports:
-  - format: pdf+tex
-    template: ../../templates/latex
 ---
 
 % The worked example's refutation dossier. A refuter is an ordinary proved node with an
@@ -17,7 +10,7 @@ exports:
 **What is being negated.** [](#conj:example) asserts, for *every* finite real sequence with
 $n \ge 2$, that $\sum_i (a_i - \bar a)^2 \ge \tfrac12 \sum_i a_i^2$. The statement is
 universally quantified over sequences, so a single admissible instance on which it fails
-negates it exactly (`CLAUDE.md` constraint 10). No family and no limiting argument is
+negates it exactly. No family and no limiting argument is
 required, because the claimed inequality is not uniform in any parameter beyond the
 sequence itself.
 
@@ -41,6 +34,8 @@ $\sum_i (a_i - \bar a)^2 = \sum_i a_i^2 - n\bar a^2 = 2 - 2 = 0$; the direct com
 above is recorded so the dossier stands alone.
 :::
 
-**Fences respected.** None apply. [](#conj:finite-battery) fences establishing a *universal*
-statement from a finite battery; it explicitly leaves refutation open, which is the
-direction taken here, and the witness is exact rather than sampled.
+**Fences respected.** [](#prop:example-refuter) has no `bounded_by`, but its target's fence
+[](#prop:upper-constant) must hold at the witness, and does: $0 \le 2$. The fence's gap
+$n\bar a^2$ here equals $\sum_i a_i^2 = 2$, its largest possible value — by
+[](#prop:example) the gap never exceeds $\sum_i a_i^2$, with equality exactly on constant
+vectors. The witness sits where the fence says the target is weakest.

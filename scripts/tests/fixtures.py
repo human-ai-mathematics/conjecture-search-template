@@ -1,21 +1,12 @@
-"""Shared fixture tree for the lane checkers.
+"""A throwaway repository tree for the checker tests.
 
-Every test builds a throwaway repository in a temporary directory, so nothing here can
-touch the real ledger, the append-only checkpoints, or the immutable run artifacts.
-
-The fixtures deliberately omit ``configured_ledger``: production pins exactly one ledger
-path, while a fixture tree may hold several so that the one-ledger rule is itself
-testable.
-
-Each fixture is also a real MyST project — ``myst.yml``, a module under ``modules/`` — so
-that ``cli()`` runs the checker exactly as production does, MyST build included. The
-in-process ``check()`` skips that build and passes the anchors ``add_ledger`` wrote
-straight to ``analyze``: the lane rules never read prose, and a hundred MyST builds would
-test nothing more. How MyST's tree becomes those anchors is ``test_manuscript.py``'s job.
+``check()`` runs the checker in process and passes the anchors ``ledger()`` wrote
+straight to ``analyze``, so no MyST build is needed; ``cli()`` runs the real command,
+MyST build included. How MyST's tree becomes anchors is ``test_manuscript.py``'s job.
 """
 from __future__ import annotations
 
-import json
+import hashlib
 import subprocess
 import sys
 import tempfile
@@ -27,14 +18,13 @@ import yaml
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "scripts"))
 
-from checks import analyze, failures  # noqa: E402
-from checks.common import LANES  # noqa: E402
-from checks.ledger import KIND  # noqa: E402
+from checks import analyze  # noqa: E402
+from checks.manuscript import KIND  # noqa: E402
+from checks.proofs import relied_on  # noqa: E402
 
 CHECK = REPO / "scripts/check.py"
 
-#: A fixture's MyST configuration. The site template is a local stub, so a fixture build
-#: never downloads MyST's theme.
+#: The site template is a local stub, so a fixture build never downloads MyST's theme.
 MYST_CONFIG = """version: 1
 project:
   title: Fixture
@@ -55,231 +45,120 @@ def write_myst_project(root: Path) -> None:
     (template / "template.yml").write_text("jtex: v1\ntitle: fixture stub\n")
 
 
-def dossier_text(node_ids: tuple[str, ...] | list[str], body: str) -> str:
-    """A dossier whose front matter names the nodes it discharges."""
-    header = {"title": "Fixture dossier", "ledger-node": list(node_ids)}
-    return "---\n" + yaml.safe_dump(header, sort_keys=False) + "---\n\n" + body
+def front_matter(metadata: dict, body: str = "fixture\n") -> str:
+    return "---\n" + yaml.safe_dump(metadata, sort_keys=False) + "---\n\n" + body
 
 
-def node(node_id: str, *, status: str = "proved", kind: str = "theorem", **fields):
-    result = {
-        "id": node_id,
-        "kind": kind,
-        "status": status,
-        "provenance": "internal",
-        "file": "modules/test.md",
-        "summary": f"fixture summary for {node_id}",
-    }
-    result.update(fields)
-    return result
+def statement(node_id: str, text: str = "fixture") -> str:
+    """The fingerprint the fixture's manuscript gives ``node_id``; ``text`` edits it."""
+    return hashlib.sha256(f"{node_id}: {text}".encode()).hexdigest()
+
+
+def node(node_id: str, *, status: str = "proved", kind: str = "theorem", **fields) -> dict:
+    """A ledger node; ``kind`` is not a ledger field but the directive ``ledger()`` labels."""
+    return {"id": node_id, "kind": kind, "status": status, **fields}
 
 
 class CheckerFixture(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()
         self.root = Path(self.tempdir.name)
-        self.research = self.root / "research"
-        self.research.mkdir(parents=True)
-        modules = self.root / "modules"
-        modules.mkdir()
-        self.module = modules / "test.md"
+        (self.root / "modules").mkdir()
+        self.module = self.root / "modules/test.md"
         self.module.write_text("# Fixture module\n")
         write_myst_project(self.root)
-        #: What MyST would report for the module: ``{label: {"kind", "file"}}``.
+        (self.root / "references.bib").write_text("@article{Known,\n  title = {Known}\n}\n")
+        #: What MyST would report for the module: ``{label: {"kind", "file"}}``, plus a
+        #: claim's ``fingerprint``.
         self.anchors: dict[str, dict] = {}
-        (self.root / "references.bib").write_text(
-            "@article{FixtureReference,\n"
-            "  title = {Fixture reference},\n"
-            "  year = {2026}\n"
-            "}\n"
-        )
+        self.ledger([])
 
     def tearDown(self):
         self.tempdir.cleanup()
 
-    # --- building a fixture repository -------------------------------------------------
-
-    def add_ledger(self, relative: str, program: str, nodes: list[dict], *,
-                   meta_fields: dict | None = None,
-                   certify_fixture_proofs: bool = True) -> Path:
-        path = self.research / relative / "ledger.yaml"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        meta = {"program": program}
-        if meta_fields:
-            meta.update(meta_fields)
-        fixture_nodes = [dict(item) for item in nodes]
-        # Anchor each node the way the manuscript must: inside the claim directive named by
-        # its own `kind`, so the fixture tree satisfies the same invariant a real modules/
-        # does. A kind that is not a claim kind gets a structural heading label instead,
-        # which is what the manuscript lane would find for it.
-        anchors = [
-            (item["id"], str(item.get("kind") or "theorem"))
-            for item in fixture_nodes
-            if isinstance(item.get("id"), str) and item["id"].strip()
-        ]
-        if anchors:
-            with self.module.open("a", encoding="utf-8") as stream:
-                for label, kind in anchors:
-                    if kind in KIND:
-                        stream.write(f"\n:::{{prf:{kind}}}\n:label: {label}\nfixture\n:::\n")
-                    else:
-                        stream.write(f"\n({label})=\n## Fixture {label}\n")
-                    self.anchors[label] = {
-                        "kind": kind if kind in KIND else None,
-                        "file": self.module.relative_to(self.root).as_posix(),
-                    }
-        if certify_fixture_proofs:
-            bare_proved = [
-                item for item in fixture_nodes
-                if item.get("status") == "proved"
-                and item.get("provenance") == "internal"
-                and "proofs" not in item
-            ]
-            if bare_proved:
-                solution = f"solutions/fixture-{relative.replace('/', '-')}.md"
-                solution_path = self.root / solution
-                solution_path.parent.mkdir(parents=True, exist_ok=True)
-                covered = [str(item.get("id")) for item in bare_proved]
-                solution_path.write_text(dossier_text(covered, "standalone fixture proofs\n"))
-                for item in bare_proved:
-                    item["proofs"] = [{
-                        "artifact": solution,
-                        "mode": "human",
-                        "accepted_by": "fixture human",
-                    }]
-        path.write_text(yaml.safe_dump({"meta": meta, "nodes": fixture_nodes}, sort_keys=False))
-        return path
-
-    def add_solution(self, name: str, *, node_ids: tuple[str, ...] = ()) -> str:
-        relative = f"solutions/{name}.md"
+    def write(self, relative: str, text: str) -> str:
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(dossier_text(node_ids, "standalone proof fixture\n"))
+        path.write_text(text)
         return relative
 
-    def add_review(self, name: str, *, verdict: str = "pass",
-                   node_ids: tuple[str, ...] = (), reviewer: str = "/root/reviewer",
-                   authors: tuple[str, ...] = ("/root/researcher",),
-                   solutions: tuple[str, ...] = (), report_type: str = "proof-review",
-                   date: str = "2026-08-25", supersedes: tuple[str, ...] = (),
-                   body: str = "fixture review\n") -> str:
-        relative = f"research/reviews/{date[:10]}-{name}.md"
+    def ledger(self, nodes: list[dict], *, anchor: bool = True, certify: bool = True) -> None:
+        """Write the ledger. Each node gets a manuscript label of its ``kind`` and, when
+        proved with neither ``references`` nor ``proofs``, a human-accepted fixture dossier
+        fingerprinted as it stands now."""
+        nodes = [dict(item) if isinstance(item, dict) else item for item in nodes]
+        with self.module.open("a") as stream:
+            for item in filter(lambda item: isinstance(item, dict), nodes):
+                nid, kind = item.get("id"), item.get("kind")
+                if not anchor or not isinstance(nid, str) or nid in self.anchors:
+                    continue
+                if kind in KIND:
+                    stream.write(f"\n:::{{prf:{kind}}}\n:label: {nid}\nfixture\n:::\n")
+                self.anchors[nid] = {"kind": kind if kind in KIND else None,
+                                     "file": "modules/test.md"}
+                if kind in KIND:
+                    self.anchors[nid]["fingerprint"] = statement(nid)
+        for item in filter(lambda item: isinstance(item, dict), nodes):
+            item.pop("kind", None)
+        graph = {item["id"]: item for item in nodes
+                 if isinstance(item, dict) and isinstance(item.get("id"), str)}
+        for item in filter(lambda item: isinstance(item, dict), nodes):
+            if (certify and item.get("status") == "proved"
+                    and "references" not in item and "proofs" not in item):
+                artifact = self.solution(f"fixture-{item['id'].replace(':', '-')}", item["id"])
+                item["proofs"] = [{"artifact": artifact, "accepted_by": "fixture human",
+                                   "fingerprints": self.fingerprints(
+                                       [artifact], relied_on(item["id"], graph))}]
+        self.write("research/program/ledger.yaml",
+                   yaml.safe_dump({"nodes": nodes},
+                                  sort_keys=False))
+
+    def solution(self, name: str, *node_ids: str) -> str:
+        return self.write(f"solutions/{name}.md",
+                          front_matter({"title": "Dossier", "ledger-node": list(node_ids)}))
+
+    def review(self, name: str, *, solutions=(), statements=(), verdict: str = "pass",
+               reviewer: str = "reviewer", authors=("researcher",), **extra) -> str:
+        """A review of ``solutions`` checked against ``statements``, each fingerprinted as
+        it stands now."""
+        return self.write(f"research/reviews/2026-08-25-{name}.md", front_matter({
+            "verdict": verdict, "authors": list(authors), "reviewer": reviewer,
+            "fingerprints": self.fingerprints(solutions, statements), **extra,
+        }))
+
+    def fingerprints(self, solutions=(), statements=()) -> dict[str, str]:
+        """Dossiers and statements as they stand now; zeros for what does not exist."""
+        return {**{path: self.digest(path) for path in solutions},
+                **{nid: self.anchors.get(nid, {}).get("fingerprint", "0" * 64)
+                   for nid in statements}}
+
+    def digest(self, relative: str) -> str:
         path = self.root / relative
-        path.parent.mkdir(parents=True, exist_ok=True)
-        metadata: dict = {"type": report_type, "date": date}
-        if report_type == "proof-review":
-            metadata.update({
-                "verdict": verdict,
-                "authors": list(authors),
-                "reviewer": reviewer,
-                "nodes": list(node_ids),
-                "solutions": list(solutions),
-            })
-        elif supersedes:
-            metadata["supersedes"] = list(supersedes)
-        path.write_text(
-            "---\n" + yaml.safe_dump(metadata, sort_keys=False) + "---\n\n" + body
-        )
-        return relative
+        return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else "0" * 64
 
-    def add_run(self, name: str, *, target: str = "fixture", records: int = 1,
-                header: dict | None = None, lines: list[str] | None = None) -> str:
-        relative = f"research/runs/{name}"
-        path = self.root / relative
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if lines is not None:
-            path.write_text("".join(f"{line}\n" for line in lines))
-            return relative
-        provenance = {
-            "schema_version": 1,
-            "date": "2026-08-26",
-            "target": target,
-            "profile": "standard",
-            "stochastic": False,
-            "config": {"seed": 1},
-            "git_commit": "0" * 40,
-            "git_dirty": False,
-            "git_diff_sha256": None,
-            "environment": {"python": "3.13.0"},
-        }
-        if header is not None:
-            provenance.update(header)
-        body = [json.dumps({"_provenance": provenance})]
-        body += [json.dumps({"kind": "observation", "index": index})
-                 for index in range(records)]
-        path.write_text("".join(f"{line}\n" for line in body))
-        return relative
+    def checkpoint(self, name: str, *, date: str = "2026-08-26", **fields) -> str:
+        return self.write(f"research/explorations/{date}-{name}.md", front_matter(fields))
 
-    def add_checkpoint(self, name: str, *, date: str = "2026-08-26",
-                       outcome: str = "dead-end", nodes: tuple[str, ...] = (),
-                       artifacts: tuple[str, ...] = (),
-                       candidates: tuple[dict, ...] = (),
-                       retires: tuple[str, ...] = (),
-                       promotes: tuple[dict, ...] = (),
-                       approach: str | None = None,
-                       supersedes: tuple[str, ...] = (),
-                       front_matter: dict | None = None,
-                       body: str = "fixture checkpoint\n") -> str:
-        relative = f"research/explorations/{date[:10]}-{name}.md"
-        path = self.root / relative
-        path.parent.mkdir(parents=True, exist_ok=True)
-        metadata: dict = {"type": "exploration", "date": date, "outcome": outcome}
-        if approach is not None:
-            metadata["approach"] = approach
-        for field, value in (("nodes", nodes), ("artifacts", artifacts),
-                             ("candidates", candidates), ("retires", retires),
-                             ("promotes", promotes), ("supersedes", supersedes)):
-            if value:
-                metadata[field] = [dict(item) if isinstance(item, dict) else item
-                                   for item in value]
-        if front_matter:
-            metadata.update(front_matter)
-        path.write_text(
-            "---\n" + yaml.safe_dump(metadata, sort_keys=False) + "---\n\n" + body
-        )
-        return relative
+    def brief(self, target: str) -> None:
+        self.write("research/program/brief.md", front_matter({"target": target}))
 
-    def add_portfolio(self, document: dict, *, brief: bool = True) -> Path:
-        """Write a portfolio, filling in what every well-formed one carries.
+    def portfolio(self, *approaches: dict) -> None:
+        routes = [{"objective": f"try {item.get('id')}", **item} for item in approaches]
+        self.write("research/program/portfolio.yaml", yaml.safe_dump({"approaches": routes}))
 
-        Each approach gets an ``objective`` unless the test supplies one, and a matching
-        brief is written unless the test is exercising the portfolio-implies-brief rule.
-        """
-        document = dict(document)
-        approaches = [dict(item) for item in document.get("approaches") or []]
-        for item in approaches:
-            item.setdefault("objective", f"fixture objective for {item.get('id')}")
-        if approaches:
-            document["approaches"] = approaches
-        path = self.root / "research/program/portfolio.yaml"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(yaml.safe_dump(document, sort_keys=False))
-        if brief and not (self.root / "research/program/brief.md").is_file():
-            target = document.get("target")
-            if isinstance(target, str):
-                self.add_brief(target)
-        return path
+    def check(self) -> dict:
+        return analyze(self.root, labels=self.anchors)
 
-    def add_brief(self, target: str, *, body: str = "fixture brief\n") -> Path:
-        path = self.root / "research/program/brief.md"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            "---\n" + yaml.safe_dump({"type": "brief", "target": target}, sort_keys=False)
-            + "---\n\n" + body
-        )
-        return path
+    def edit_statement(self, nid: str) -> None:
+        """What MyST would report once the manuscript statement of ``nid`` is edited."""
+        self.anchors[nid]["fingerprint"] = statement(nid, "edited")
 
-    # --- running the checker -----------------------------------------------------------
+    def errors(self) -> str:
+        return "\n".join(self.check()["errors"])
 
-    def check(self, **kwargs) -> dict:
-        kwargs.setdefault("labels", self.anchors)
-        return analyze(self.root, self.research, **kwargs)
-
-    def errors(self, lanes: tuple[str, ...] = LANES, **kwargs) -> str:
-        return "\n".join(failures(self.check(**kwargs), lanes))
+    def assertClean(self) -> None:
+        self.assertEqual(self.check()["errors"], [])
 
     def cli(self, *arguments: str) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(
-            [sys.executable, str(CHECK), "--root", str(self.root), *arguments],
-            cwd=self.root, capture_output=True, text=True, check=False,
-        )
+        return subprocess.run([sys.executable, str(CHECK), "--root", str(self.root), *arguments],
+                              cwd=self.root, capture_output=True, text=True, check=False)

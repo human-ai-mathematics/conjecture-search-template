@@ -1,539 +1,207 @@
-"""Proofs lane: dossiers, certification modes, and persisted review provenance."""
+"""Certification: proof records, dossiers, independent reviews, refutations."""
 from __future__ import annotations
 
-import sys
 import unittest
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from fixtures import CheckerFixture, node  # noqa: E402
+from fixtures import CheckerFixture, node
 
 
-class ProofsTests(CheckerFixture):
-    def test_independent_agent_certification_requires_provenance(self):
-        solution = self.add_solution(
-            "agent-proof",
-            node_ids=(
-                "thm:agent-pass",
-                "thm:agent-self-review",
-                "thm:agent-missing-review",
-            ),
-        )
-        review = self.add_review(
-            "agent-proof-audit",
-            node_ids=("thm:agent-pass",),
-            solutions=(solution,),
-        )
-        self_review = self.add_review(
-            "agent-self-review-audit",
-            node_ids=("thm:agent-self-review",),
-            reviewer="/root/same",
-            authors=("/root/same",),
-            solutions=(solution,),
-        )
-        nodes = [
-            node(
-                "thm:agent-pass",
-                proofs=[{"artifact": solution, "mode": "agent", "review": review}],
-            ),
-            node(
-                "thm:agent-self-review",
-                proofs=[{"artifact": solution, "mode": "agent", "review": self_review}],
-            ),
-            node(
-                "thm:agent-missing-review",
-                proofs=[{
-                    "artifact": solution,
-                    "mode": "agent",
-                    "review": "research/reviews/missing.md",
-                }],
-            ),
-        ]
-        self.add_ledger("main", "program", nodes)
+class ProofTests(CheckerFixture):
+    def agent_proof(self, nid: str = "thm:a", **review) -> dict:
+        """A reviewed proof of ``nid``; its statement is fingerprinted once ``ledger()`` has
+        labelled it, so write the ledger first and call this through ``certify``."""
+        artifact = self.solution("a", nid)
+        report = self.review("a", **{"solutions": [artifact], "statements": [nid], **review})
+        return {"artifact": artifact, "review": report}
 
+    def certify(self, nid: str = "thm:a", **review) -> None:
+        """Label ``nid`` in the manuscript, then write its reviewed proof."""
+        self.ledger([node(nid, proofs=[])], certify=False)
+        self.ledger([node(nid, proofs=[self.agent_proof(nid, **review)])])
+
+    def test_a_passing_independent_review_certifies(self):
+        self.certify()
+        self.assertClean()
+
+    def test_a_proved_node_without_references_needs_a_proof_record(self):
+        self.ledger([node("thm:a")], certify=False)
+        self.assertIn("thm:a: a proved node without references needs a proof record", self.errors())
+
+    def test_the_author_never_certifies_their_own_proof(self):
+        self.certify(reviewer="researcher")
+        self.assertIn("reviewer: must not be one of the authors", self.errors())
+
+    def test_a_revise_verdict_cannot_certify(self):
+        self.certify(verdict="revise")
+        self.assertIn("verdict 'revise' cannot certify", self.errors())
+
+    def test_the_review_fingerprints_the_dossier_and_the_statement(self):
+        self.certify(solutions=["solutions/x.md"], statements=[])
         errors = self.errors()
+        self.assertIn("2026-08-25-a.md does not fingerprint 'solutions/a.md'", errors)
+        self.assertIn("does not fingerprint the statement of 'thm:a'", errors)
 
-        self.assertNotIn("thm:agent-pass", errors)
-        self.assertIn(
-            "agent-self-review-audit.md.reviewer: must be distinct from every proof author",
-            errors,
-        )
-        self.assertIn("review 'research/reviews/missing.md': report does not exist", errors)
-
-    def test_agent_certification_rejects_partial_or_out_of_scope_review(self):
-        solution = self.add_solution(
-            "agent-proof",
-            node_ids=("thm:partial", "thm:wrong-scope", "thm:wrong-reviewer"),
-        )
-        partial = self.add_review(
-            "partial-audit",
-            verdict="changes-requested",
-            node_ids=("thm:partial",),
-            solutions=(solution,),
-        )
-        wrong_scope = self.add_review(
-            "wrong-scope-audit",
-            node_ids=("thm:wrong-scope-extra",),
-            solutions=(solution,),
-            body="## Explicit exclusions\n\nThis report does not certify `thm:wrong-scope`.\n",
-        )
-        wrong_reviewer = self.add_review(
-            "wrong-reviewer-audit",
-            node_ids=("thm:wrong-reviewer",),
-            reviewer="/root/reviewer-extra",
-            solutions=(solution,),
-        )
-        self.add_ledger(
-            "main",
-            "program",
-            [
-                node(
-                    "thm:partial",
-                    proofs=[{"artifact": solution, "mode": "agent", "review": partial}],
-                ),
-                node(
-                    "thm:wrong-scope",
-                    proofs=[{"artifact": solution, "mode": "agent", "review": wrong_scope}],
-                ),
-                node(
-                    "thm:wrong-reviewer",
-                    proofs=[{"artifact": solution, "mode": "agent", "review": wrong_reviewer}],
-                ),
-            ],
-        )
-
+    def test_the_review_exists_under_research_reviews(self):
+        artifact = self.solution("a", "thm:a")
+        self.ledger([node("thm:a", proofs=[
+            {"artifact": artifact, "review": "research/reviews/missing.md"},
+            {"artifact": artifact, "review": "solutions/a.md"},
+            {"artifact": artifact, "review": ""},
+        ])])
         errors = self.errors()
+        self.assertIn("'research/reviews/missing.md' does not exist", errors)
+        self.assertIn("'solutions/a.md' must be under research/reviews/", errors)
+        self.assertIn("proofs[2].review: want a repo-relative path", errors)
 
-        self.assertIn("partial-audit.md.verdict: a proof-review must have", errors)
-        self.assertIn(
-            "wrong-scope-audit.md'.nodes: active [program] certification 'thm:wrong-scope'",
-            errors,
-        )
-        self.assertNotIn("wrong-reviewer-audit.md'.reviewer", errors)
-
-    def test_agent_review_owns_identity_and_may_retain_historical_scope(self):
-        solution = self.add_solution("agent-proof", node_ids=("thm:contract",))
-        review = self.add_review(
-            "wrong-contract-audit",
-            node_ids=("thm:contract", "thm:unwired"),
-            authors=("/root/not-the-author",),
-            solutions=("solutions/not-the-dossier.tex",),
-        )
-        self.add_ledger(
-            "main",
-            "program",
-            [node(
-                "thm:contract",
-                proofs=[{"artifact": solution, "mode": "agent", "review": review}],
-            )],
-        )
-
+    def test_a_review_header_is_validated_even_when_unused(self):
+        self.review("orphan", verdict="maybe", authors=[], extra_field=1)
+        self.write("research/reviews/2026-08-25-list.md",
+                   "---\nverdict: pass\nauthors: [a]\nreviewer: b\n"
+                   "fingerprints: [solutions/a.md]\n---\n")
+        self.review("keys", fingerprints={"notes/a.md": "0" * 64, "thm:ghost": "0" * 64,
+                                          "solutions/a.md": "ABC"})
         errors = self.errors()
-
-        self.assertIn(
-            "wrong-contract-audit.md'.solutions: active [program] certification 'thm:contract'",
-            errors,
-        )
-        self.assertNotIn("wrong-contract-audit.md'.nodes", errors)
-        self.assertNotIn("wrong-contract-audit.md'.authors", errors)
-
-    def test_audit_pass_prose_cannot_certify_and_review_path_is_confined(self):
-        solution = self.add_solution(
-            "agent-proof",
-            node_ids=("thm:audit", "thm:outside"),
-        )
-        audit = self.add_review(
-            "non-certifying-audit",
-            report_type="audit",
-            body="- **Verdict:** pass for `thm:audit` by `/root/reviewer`\n",
-        )
-        outside = "docs/outside-review.md"
-        outside_path = self.root / outside
-        outside_path.parent.mkdir(parents=True)
-        outside_path.write_text(
-            "---\n"
-            "type: proof-review\n"
-            "date: '2026-08-25'\n"
-            "verdict: pass\n"
-            "authors: [/root/researcher]\n"
-            "reviewer: /root/reviewer\n"
-            "nodes: [thm:outside]\n"
-            f"solutions: [{solution}]\n"
-            "---\n"
-        )
-        self.add_ledger(
-            "main",
-            "program",
-            [
-                node(
-                    "thm:audit",
-                    proofs=[{"artifact": solution, "mode": "agent", "review": audit}],
-                ),
-                node(
-                    "thm:outside",
-                    proofs=[{"artifact": solution, "mode": "agent", "review": outside}],
-                ),
-            ],
-        )
-
-        errors = self.errors()
-
-        self.assertIn("type 'audit' cannot certify a proof", errors)
-        self.assertIn("agent review reports must be under research/reviews/", errors)
-
-    def test_review_archive_allows_historical_orphans_but_validates_envelopes(self):
-        self.add_review(
-            "orphaned-proof-review",
-            node_ids=("thm:orphan",),
-            solutions=("solutions/orphan.tex",),
-        )
-        malformed = self.root / "research/reviews/2026-08-25-malformed-audit.md"
-        malformed.write_text("# Missing front matter\n")
-        self.add_ledger("main", "program", [node("thm:fixture")])
-
-        errors = self.errors()
-
-        self.assertNotIn("orphaned-proof-review.md", errors)
-        self.assertIn("malformed-audit.md: review report must start with YAML front matter", errors)
-
-    def test_every_proved_node_requires_a_solution_and_no_other_signal_bypasses(self):
-        self.add_ledger(
-            "main",
-            "program",
-            [
-                node("thm:missing"),
-                node("thm:narrative-only", proof_provenance="inline manuscript argument"),
-                node(
-                    "thm:numerics-only",
-                    evidence="numerical-directional",
-                    evidence_run="research/runs/directional.jsonl",
-                    evidence_target="fixture",
-                ),
-            ],
-            certify_fixture_proofs=False,
-        )
-
-        errors = self.errors()
-
-        self.assertIn("thm:missing: internally proved node requires a certified proof", errors)
-        self.assertIn(
-            "thm:narrative-only: internally proved node requires a certified proof", errors
-        )
-        self.assertIn(
-            "thm:numerics-only: internally proved node requires a certified proof", errors
-        )
-        self.assertIn(
-            "thm:narrative-only: unknown field 'proof_provenance'",
-            errors,
-        )
-
-    def test_refuted_nodes_name_a_certified_refuter(self):
-        nodes = [
-            node("obs:proved-counterexample"),
-            node("conj:open-counterexample", status="open", kind="conjecture"),
-            node(
-                "conj:refuted",
-                status="refuted",
-                kind="conjecture",
-                refuted_by=["obs:proved-counterexample"],
-            ),
-            node("conj:missing-refuter", status="refuted", kind="conjecture"),
-            node(
-                "conj:open-refuter",
-                status="refuted",
-                kind="conjecture",
-                refuted_by=["conj:open-counterexample"],
-            ),
-        ]
-        self.add_ledger("main", "program", nodes)
-
-        errors = self.errors()
-
-        self.assertNotIn("conj:refuted.refuted_by", errors)
-        self.assertIn("conj:missing-refuter: refuted node requires refuted_by", errors)
-        self.assertIn("conj:open-refuter.refuted_by: 'conj:open-counterexample' is not proved", errors)
-
-    def test_a_refuter_is_not_a_proof_dependency_of_what_it_refutes(self):
-        """A refuted node has no proof, so depends_on has nothing to record."""
-        nodes = [
-            node("obs:proved-counterexample"),
-            node(
-                "conj:refuted",
-                status="refuted",
-                kind="conjecture",
-                refuted_by=["obs:proved-counterexample"],
-            ),
-        ]
-        self.add_ledger("main", "program", nodes)
-
-        self.assertEqual(self.errors(), "")
-
-    def test_human_certification_names_who_accepted_it(self):
-        human_solution = self.add_solution("human-proof", node_ids=("thm:human",))
-        self.add_ledger(
-            "main",
-            "program",
-            [
-                node(
-                    "thm:human",
-                    proofs=[{
-                        "artifact": human_solution,
-                        "mode": "human",
-                        "accepted_by": "",
-                    }],
-                ),
-            ],
-        )
-
-        errors = self.errors()
-        self.assertIn(
-            "thm:human.proofs[0].accepted_by: mode human requires a non-empty identity",
-            errors,
-        )
-
-    def test_a_dossier_header_must_say_what_it_proves(self):
-        """The header is parsed, not grepped: an id in the prose declares nothing."""
-        relative = "solutions/loose-header.md"
-        path = self.root / relative
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            "---\ntitle: A dossier that forgot its node\n---\n\n"
-            "ledger-node: thm:loose appears in the prose, which is not the header\n"
-        )
-        self.add_ledger(
-            "main", "program",
-            [node("thm:loose", proofs=[{
-                "artifact": relative, "mode": "human", "accepted_by": "fixture human",
-            }])],
-        )
-
-        errors = self.errors()
-
-        self.assertIn("dossier header has no 'ledger-node' field", errors)
-
-    def test_a_dossier_rejects_fields_outside_the_header_vocabulary(self):
-        relative = self.add_solution("unknown-header", node_ids=("thm:header",))
-        path = self.root / relative
-        path.write_text(path.read_text().replace(
-            "title: Fixture dossier\n", "title: Fixture dossier\nchecked_by: none\n",
-        ))
-        self.add_ledger(
-            "main", "program",
-            [node("thm:header", proofs=[{
-                "artifact": relative, "mode": "human", "accepted_by": "fixture human",
-            }])],
-        )
-
-        errors = self.errors()
-
-        self.assertIn("dossier header has unknown field 'checked_by'", errors)
-
-    def test_a_dossier_header_accepts_the_myst_fields_it_needs_to_render(self):
-        relative = "solutions/rendered.md"
-        path = self.root / relative
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            "---\n"
-            "title: Solution\n"
-            "ledger-node: thm:rendered\n"
-            "refines: [thm:rendered]\n"
-            "bounded_by: []\n"
-            "author: /root/researcher\n"
-            "date: '2026-09-01'\n"
-            "exports:\n  - format: pdf+tex\n    template: ../templates/latex\n"
-            "---\n\nproof\n"
-        )
-        self.add_ledger(
-            "main", "program",
-            [node("thm:rendered", proofs=[{
-                "artifact": relative, "mode": "human", "accepted_by": "fixture human",
-            }])],
-        )
-
-        self.assertEqual(self.errors(), "")
-
-    def test_a_dossier_without_front_matter_is_reported(self):
-        relative = "solutions/bare.md"
-        path = self.root / relative
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("ledger-node: thm:bare\n")
-        self.add_ledger(
-            "main", "program",
-            [node("thm:bare", proofs=[{
-                "artifact": relative, "mode": "human", "accepted_by": "fixture human",
-            }])],
-        )
-
-        self.assertIn("dossier must start with YAML front matter", self.errors())
-
-    def test_a_dossier_node_list_must_hold_ids(self):
-        relative = self.add_solution("mangled", node_ids=("thm:mangled",))
-        path = self.root / relative
-        path.write_text(path.read_text().replace(
-            "ledger-node:\n- thm:mangled\n", "ledger-node:\n  id: thm:mangled\n",
-        ))
-        self.add_ledger(
-            "main", "program",
-            [node("thm:mangled", proofs=[{
-                "artifact": relative, "mode": "human", "accepted_by": "fixture human",
-            }])],
-        )
-
-        self.assertIn("'ledger-node' must be a node id or a list of them", self.errors())
-
-    def test_an_unimplemented_machine_certification_mode_is_invalid(self):
-        lean_solution = self.add_solution("lean-proof", node_ids=("thm:lean",))
-        (self.root / lean_solution).with_suffix(".lean").write_text("-- fixture\n")
-        self.add_ledger(
-            "main",
-            "program",
-            [node("thm:lean", proofs=[{"artifact": lean_solution, "mode": "lean"}])],
-        )
-
-        errors = self.errors()
-
-        self.assertIn("thm:lean.proofs[0].mode: want one of ['agent', 'human'], got 'lean'", errors)
-
-    def test_solution_path_is_confined_to_solutions(self):
-        self.add_ledger(
-            "main",
-            "program",
-            [node(
-                "thm:outside",
-                proofs=[{
-                    "artifact": "modules/test.md",
-                    "mode": "human",
-                    "accepted_by": "fixture human",
-                }],
-            )],
-        )
-
-        errors = self.errors()
-        self.assertIn("thm:outside.proofs[].artifact: must stay under solutions/", errors)
-
-    def test_unknown_proof_exception_fields_are_forbidden(self):
-        for field in ("proof_exception", "proved_without_record"):
-            with self.subTest(field=field):
-                self.add_ledger(
-                    "main",
-                    "program",
-                    [node("thm:certified")],
-                    meta_fields={field: {}},
-                )
-
-                errors = self.errors()
-
-                self.assertIn(f"meta: unknown field '{field}'", errors)
-
-    def test_unknown_proof_fields_are_rejected(self):
-        self.add_ledger(
-            "main",
-            "program",
-            [
-                node("thm:proof-file", proof_file="modules/test.tex"),
-                node("thm:narrative", proof_provenance="inline proof"),
-            ],
-        )
-
-        errors = self.errors()
-
-        self.assertIn("thm:proof-file: unknown field 'proof_file'", errors)
-        self.assertIn("thm:narrative: unknown field 'proof_provenance'", errors)
-
-    def test_solution_header_must_enumerate_shared_dossier_node(self):
-        solution = self.add_solution(
-            "shared-proof", node_ids=("thm:missing-from-header-extra",)
-        )
-        self.add_ledger(
-            "main",
-            "program",
-            [node("thm:missing-from-header", proofs=[{
-                "artifact": solution,
-                "mode": "human",
-                "accepted_by": "fixture human",
-            }])],
-        )
-
-        errors = self.errors()
-
-        self.assertIn("dossier header declares ledger-node "
-                      "['thm:missing-from-header-extra'], not 'thm:missing-from-header'",
+        self.assertIn(".verdict: want one of ['pass', 'revise']", errors)
+        self.assertIn(".authors: must be a non-empty list", errors)
+        self.assertIn("unknown field 'extra_field'", errors)
+        self.assertIn("list.md.fingerprints: want a mapping", errors)
+        self.assertIn("'notes/a.md' is neither a dossier under solutions/ nor a ledger node",
                       errors)
+        self.assertIn("'thm:ghost' is neither a dossier", errors)
+        self.assertIn("'solutions/a.md' needs a lowercase hex SHA-256", errors)
 
-    def test_a_tex_dossier_is_no_longer_a_dossier(self):
-        relative = "solutions/legacy.tex"
-        (self.root / "solutions").mkdir(exist_ok=True)
-        (self.root / relative).write_text("% === SOLUTION HEADER ===\n")
-        self.add_ledger(
-            "main", "program",
-            [node("thm:legacy", proofs=[{
-                "artifact": relative, "mode": "human", "accepted_by": "fixture human",
-            }])],
-        )
+    def test_a_dossier_edited_after_its_review_is_no_longer_certified(self):
+        self.certify()
+        self.assertClean()
+        with (self.root / "solutions/a.md").open("a") as stream:
+            stream.write("An edit after the review.\n")
+        self.assertIn("solutions/a.md changed since research/reviews/2026-08-25-a.md "
+                      "fingerprinted it; it needs a new review", self.errors())
 
-        self.assertIn("'solutions/legacy.tex' must be a .md file", self.errors())
+    def test_a_statement_edited_after_its_review_is_no_longer_certified(self):
+        self.certify()
+        self.edit_statement("thm:a")
+        self.assertIn("the statement of 'thm:a' changed since research/reviews/2026-08-25-a.md "
+                      "fingerprinted it; it needs a new review", self.errors())
 
-    def test_a_review_of_the_tex_dossier_still_covers_its_markdown_conversion(self):
-        """Reviews are immutable; converting a dossier to MyST changed no proof."""
-        solution = self.add_solution("converted", node_ids=("thm:converted",))
-        review = self.add_review(
-            "converted-review",
-            node_ids=("thm:converted",),
-            solutions=("solutions/converted.tex",),
-        )
-        self.add_ledger(
-            "main", "program",
-            [node("thm:converted", proofs=[{
-                "artifact": solution, "mode": "agent", "review": review,
-            }])],
-        )
+    def test_a_fast_check_compares_dossiers_but_not_statements(self):
+        self.certify()
+        self.edit_statement("thm:a")
+        from checks import analyze
+        self.assertEqual(analyze(self.root, fast=True)["errors"], [])
+        with (self.root / "solutions/a.md").open("a") as stream:
+            stream.write("An edit after the review.\n")
+        self.assertIn("solutions/a.md changed since", "\n".join(
+            analyze(self.root, fast=True)["errors"]))
 
-        self.assertEqual(self.errors(), "")
+    def test_editing_a_premise_unsettles_every_proof_that_uses_it(self):
+        self.ledger([node("lem:base", kind="lemma"),
+                     node("def:norm", kind="definition", status="defined"),
+                     node("thm:user", depends_on=["lem:base"], assumes=["def:norm"])])
+        self.assertClean()
+        self.edit_statement("lem:base")
+        self.edit_statement("def:norm")
+        errors = self.errors()
+        self.assertIn("lem:base.proofs[0]: the statement of 'lem:base' changed since the "
+                      "acceptance by fixture human fingerprinted it; it needs a new acceptance",
+                      errors)
+        self.assertIn("thm:user.proofs[0]: the statement of 'lem:base' changed", errors)
+        self.assertIn("thm:user.proofs[0]: the statement of 'def:norm' changed", errors)
 
-    def test_multiple_independent_proofs_may_coexist(self):
-        first = self.add_solution("first-proof", node_ids=("thm:two-proofs",))
-        second = self.add_solution("second-proof", node_ids=("thm:two-proofs",))
-        self.add_ledger("main", "program", [node(
-            "thm:two-proofs",
-            proofs=[
-                {"artifact": first, "mode": "human", "accepted_by": "reader one"},
-                {"artifact": second, "mode": "human", "accepted_by": "reader two"},
-            ],
-        )])
+    def test_editing_a_refuted_target_unsettles_its_refuter(self):
+        self.ledger([node("conj:t", kind="conjecture", status="refuted", refuted_by=["prop:cx"]),
+                     node("prop:cx", kind="proposition")])
+        self.assertClean()
+        self.edit_statement("conj:t")
+        self.assertIn("prop:cx.proofs[0]: the statement of 'conj:t' changed", self.errors())
 
-        self.assertEqual(self.errors(), "")
+    def test_a_human_acceptance_is_fingerprinted_too(self):
+        self.ledger([node("thm:a", proofs=[])], certify=False)
+        artifact = self.solution("a", "thm:a")
+        self.ledger([node("thm:a", proofs=[
+            {"artifact": artifact, "accepted_by": "A. Referee"},
+            {"artifact": artifact, "accepted_by": "A. Referee",
+             "fingerprints": self.fingerprints([artifact], ["thm:a"])},
+            {"artifact": artifact, "review": "research/reviews/r.md",
+             "fingerprints": self.fingerprints([artifact], ["thm:a"])},
+        ])])
+        errors = self.errors()
+        self.assertIn("proofs[0].fingerprints: want a mapping", errors)
+        self.assertNotIn("proofs[1]", errors)
+        self.assertIn("proofs[2].fingerprints: a reviewed proof's fingerprints are its review's",
+                      errors)
+        with (self.root / artifact).open("a") as stream:
+            stream.write("An edit after the acceptance.\n")
+        self.assertIn("proofs[1]: solutions/a.md changed since the acceptance by A. Referee "
+                      "fingerprinted it; it needs a new acceptance", self.errors())
 
-    def test_certified_implication_and_heuristic_barrier_pass(self):
-        solution = self.add_solution("conditional-proof", node_ids=("thm:conditional",))
-        review = self.add_review(
-            "conditional-proof-review",
-            node_ids=("thm:conditional",),
-            solutions=(solution,),
-        )
-        nodes = [
-            node("ass:x", status="open", kind="assumption"),
-            node("obs:warning", status="open", kind="conjecture"),
-            node(
-                "thm:conditional",
-                assumes=["ass:x"],
-                implies=["conj:open"],
-                proofs=[{"artifact": solution, "mode": "agent", "review": review}],
-            ),
-            node(
-                "conj:open",
-                status="open",
-                kind="conjecture",
-                heuristic_barriers=["obs:warning"],
-            ),
-        ]
-        self.add_ledger(
-            "main",
-            "program",
-            nodes,
-        )
+    def test_a_record_is_either_reviewed_or_accepted_by_a_named_human(self):
+        self.ledger([node("thm:a", proofs=[])], certify=False)
+        artifact = self.solution("a", "thm:a")
+        self.ledger([node("thm:a", proofs=[
+            {"artifact": artifact, "accepted_by": "A. Referee",
+             "fingerprints": self.fingerprints([artifact], ["thm:a"])},
+            {"artifact": artifact},
+            {"artifact": artifact, "accepted_by": "B", "review": "research/reviews/r.md"},
+            {"artifact": artifact, "accepted_by": " "},
+            {"artifact": artifact, "accepted_by": "B", "mode": "human"},
+        ])])
+        errors = self.errors()
+        self.assertNotIn("proofs[0]", errors)
+        self.assertIn("proofs[1]: needs exactly one of review", errors)
+        self.assertIn("proofs[2]: needs exactly one of review", errors)
+        self.assertIn("proofs[3].accepted_by: must name who accepted", errors)
+        self.assertIn("proofs[4]: unknown field 'mode'", errors)
 
-        self.assertEqual(self.errors(), "")
+    def test_a_dossier_is_markdown_under_solutions_and_names_its_node(self):
+        self.write("notes/a.md", "---\nledger-node: thm:a\n---\n")
+        self.write("solutions/plain.md", "no front matter\n")
+        self.ledger([node("thm:a", proofs=[
+            {"artifact": "notes/a.md", "accepted_by": "X"},
+            {"artifact": self.solution("other", "thm:b"), "accepted_by": "X"},
+            {"artifact": "solutions/plain.md", "accepted_by": "X"},
+        ])])
+        errors = self.errors()
+        self.assertIn("'notes/a.md' must be under solutions/", errors)
+        self.assertIn("other.md: front matter 'ledger-node' must name 'thm:a'", errors)
+        self.assertIn("plain.md: dossier must start with a '---'", errors)
+
+    def test_one_dossier_may_prove_several_nodes_and_one_node_several_proofs(self):
+        self.ledger([node("thm:a", proofs=[]), node("thm:b", proofs=[])], certify=False)
+        shared = self.solution("shared", "thm:a", "thm:b")
+        second = self.solution("second", "thm:a")
+        both = self.fingerprints([shared, second], ["thm:a", "thm:b"])
+        self.ledger([
+            node("thm:a", proofs=[{"artifact": shared, "accepted_by": "X", "fingerprints": both},
+                                  {"artifact": second, "accepted_by": "Y", "fingerprints": both}]),
+            node("thm:b", proofs=[{"artifact": shared, "accepted_by": "X", "fingerprints": both}]),
+        ])
+        self.assertClean()
+
+    def test_a_dossier_no_proof_record_names_is_a_draft(self):
+        self.certify()
+        self.solution("draft", "thm:a")
+        self.assertEqual(self.check()["drafts"], ["solutions/draft.md"])
+
+    def test_proofs_only_on_a_proved_node(self):
+        self.ledger([node("conj:a", kind="conjecture", status="open",
+                          proofs=[self.agent_proof("conj:a")])])
+        self.assertIn("conj:a.proofs: only for status proved", self.errors())
+
+    def test_a_refuted_node_names_a_proved_refuter_and_never_depends_on_it(self):
+        self.ledger([
+            node("conj:false", kind="conjecture", status="refuted", refuted_by=["prop:cx"]),
+            node("prop:cx", kind="proposition"),
+            node("conj:bare", kind="conjecture", status="refuted"),
+            node("conj:weak", kind="conjecture", status="refuted", refuted_by=["conj:open"]),
+            node("conj:open", kind="conjecture", status="open", refuted_by=["prop:cx"]),
+        ])
+        errors = self.errors()
+        self.assertNotIn("conj:false", errors)
+        self.assertIn("conj:bare: a refuted node needs refuted_by", errors)
+        self.assertIn("conj:weak.refuted_by: 'conj:open' is not proved", errors)
+        self.assertIn("conj:open.refuted_by: only for status refuted", errors)
+
 
 if __name__ == "__main__":
     unittest.main()

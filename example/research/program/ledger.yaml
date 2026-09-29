@@ -1,81 +1,46 @@
-# The worked example's claim graph. This is a fixture, not this repository's
-# program: it exists so every artifact genre ships with one instance to copy, and
-# so `python3 scripts/check.py --root example` keeps that instance honest.
+# The worked example's claim graph: status and edges only. Each statement, its kind and
+# its file are the manuscript's (modules/00-overview.md, under :label: <id>). This is a
+# fixture, not this repository's program; the rules are the same as for the real ledger,
+# research/program/ledger.yaml, and the fields are in SPECIFICATION.md, Formats → Ledger.
 #
-# The real ledger is research/program/ledger.yaml and ships empty. The rules are
-# the same in both: what the *search* is doing lives in portfolio.yaml and never
-# here (CLAUDE.md constraint 11); statements live in modules/; the field-level
-# schema is research/program/ledger-schema.md.
-#
-# The nodes below are: an open barrier that fences the search, an open conjecture, a
-# proved statement with a certified dossier, and a conjecture refuted by a proved
-# refuter — so that proving and refuting each have a worked instance.
-#
-# conj:example is the target. brief.md and portfolio.yaml both resolve to it, and the
-# checkpoints in ../explorations/ record how it got from open to refuted.
-
-meta:
-  program: example
-  scope: >-
-    Finite real sequences and the elementary identities they satisfy — the scope of
-    a fixture, chosen so the mathematics never distracts from the structure.
+# There is a proved statement, a proved fence resting on it, an open conjecture under an
+# open fence, and a conjecture refuted by a proved refuter. conj:example is the target of
+# brief.md and portfolio.yaml; the checkpoints in ../explorations/ record how it became refuted.
 
 nodes:
 
-  # ---------------------------------------------------------------------------
-  # FENCES — ordinary nodes; being cited in heuristic_barriers is what makes one
-  # ---------------------------------------------------------------------------
-  - id: conj:finite-battery
-    kind: conjecture
+  # A fence is an ordinary node; being cited in bounded_by is what makes it one.
+  # This one is open, so it guides the work on conj:weighted-example and rules nothing out.
+  - id: conj:weighted-upper
     status: open
-    provenance: internal
-    file: modules/00-overview.md
-    summary: "A finite battery of instances cannot establish a universal statement; numerical agreement over the instances tried constrains nothing about the untried ones."
 
-  # ---------------------------------------------------------------------------
-  # OPEN TARGETS
-  # ---------------------------------------------------------------------------
   - id: conj:weighted-example
-    kind: conjecture
     status: open
-    provenance: internal
-    file: modules/00-overview.md
-    summary: "The centred sum-of-squares identity of prop:example still holds when the mean is replaced by a weighted mean with positive weights summing to one."
-    heuristic_barriers: [conj:finite-battery]
+    bounded_by: [conj:weighted-upper]
 
-  # ---------------------------------------------------------------------------
-  # ESTABLISHED
-  # ---------------------------------------------------------------------------
   - id: prop:example
-    kind: proposition
     status: proved
-    provenance: internal
-    file: modules/00-overview.md
-    summary: "For real a_1..a_n with mean abar, sum_i (a_i - abar)^2 = sum_i a_i^2 - n abar^2."
     proofs:
       - artifact: solutions/prop-example.md
-        mode: agent
         review: research/reviews/2026-09-01-prop-example-proof-review.md
 
-  # ---------------------------------------------------------------------------
-  # REFUTED — the other way a search ends, and it ends the same way: certified
-  # ---------------------------------------------------------------------------
+  # A proved fence: it binds conj:example, ruling out any constant above 1.
+  - id: prop:upper-constant
+    status: proved
+    depends_on: [prop:example]
+    proofs:
+      - artifact: solutions/prop-upper-constant.md
+        review: research/reviews/2026-09-01-prop-upper-constant-review.md
+
+  # Refuted: the other way a search ends, and it ends the same way — certified.
   - id: conj:example
-    kind: conjecture
     status: refuted
-    provenance: internal
-    file: modules/00-overview.md
-    summary: "Every finite real sequence with n >= 2 has centred sum of squares at least half its sum of squares."
+    bounded_by: [prop:upper-constant]
     refuted_by: [prop:example-refuter]
 
   - id: prop:example-refuter
-    kind: proposition
     status: proved
-    provenance: internal
-    file: modules/00-overview.md
-    summary: "The sequence (1,1) has centred sum of squares 0 and half sum of squares 1, so conj:example fails."
     depends_on: [prop:example]
     proofs:
       - artifact: solutions/prop-example-refuter.md
-        mode: agent
         review: research/reviews/2026-09-03-prop-example-refuter-proof-review.md

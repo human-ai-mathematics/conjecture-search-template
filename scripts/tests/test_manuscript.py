@@ -1,8 +1,8 @@
-"""The manuscript lane's reader: MyST's tree turned into anchors, and what it refuses.
+"""The manuscript reader: MyST's tree turned into anchors, and what it refuses.
 
 One real MyST project is built once for the whole class, holding every case at the same
-time — a MyST build is the slow part, and these assertions only read its result. The lane
-rules that consume the anchors are tested in ``test_core.py`` without a build.
+time — a MyST build is the slow part, and these assertions only read its result. The rules
+that consume the anchors are tested in ``test_ledger.py`` without a build.
 """
 from __future__ import annotations
 
@@ -86,6 +86,33 @@ The same anchor.
 :::{prf:corollary}
 :label: cor:bodiless
 :::
+
+:::{prf:lemma}
+:label: lem:twin-a
+For all $x \\ge 0$, see [](#prop:nested):
+$x^2 \\ge 0$.
+:::
+
+::::{prf:lemma} 
+:label: lem:twin-b
+For all   $x \\ge 0$, see [](#prop:nested): $x^2 \\ge 0$.
+
+:::{prf:proof}
+Obvious.
+:::
+::::
+
+:::{prf:lemma}
+:label: lem:edited
+For all $x \\ge 0$, see [](#prop:nested):
+$x^3 \\ge 0$.
+:::
+
+:::{prf:proposition}
+:label: prop:twin
+For all $x \\ge 0$, see [](#prop:nested):
+$x^2 \\ge 0$.
+:::
 """
 
 DOSSIER = """\
@@ -121,8 +148,10 @@ class ManuscriptTests(unittest.TestCase):
         cls.tempdir.cleanup()
 
     def test_a_claim_directive_label_is_a_claim_of_that_kind(self):
-        self.assertEqual(self.labels["lem:anchored"],
+        self.assertEqual({k: v for k, v in self.labels["lem:anchored"].items()
+                          if k != "fingerprint"},
                          {"kind": "lemma", "file": "modules/00-first.md"})
+        self.assertNotIn("fingerprint", self.labels["sec:orientation"])
         self.assertEqual(self.labels["prop:nested"]["kind"], "proposition")
 
     def test_headings_equations_tables_and_remarks_are_structural(self):
@@ -155,20 +184,19 @@ class ManuscriptTests(unittest.TestCase):
     def test_one_label_lives_in_one_place(self):
         self.assertIn("duplicate label 'lem:anchored'", self.text)
 
-    def test_labels_whose_html_anchors_collide_are_an_error(self):
-        self.assertIn("label 'a-b:c' and label 'a:b-c' share the HTML anchor '#a-b-c'",
-                      self.text)
+    def test_a_fingerprint_ignores_layout_and_catches_an_edit(self):
+        """Wrapping, spacing, numbering, a reference's rendered text and a nested proof
+        leave the statement as it was; a changed symbol or word does not."""
+        fingerprint = self.labels["lem:twin-a"]["fingerprint"]
+        self.assertEqual(self.labels["lem:twin-b"]["fingerprint"], fingerprint)
+        self.assertNotEqual(self.labels["lem:edited"]["fingerprint"], fingerprint)
+        self.assertNotEqual(self.labels["prop:twin"]["fingerprint"], fingerprint)
 
     def test_an_error_myst_reports_is_an_error_here(self):
         """A bodiless directive is dropped from the tree; only MyST's own output says so."""
         self.assertIn("MyST: modules/01-second.md:18 required body not provided for "
                       "directive: prf:corollary", self.text)
         self.assertNotIn("cor:bodiless", self.labels)
-
-    def test_the_html_anchor_mirrors_myst(self):
-        self.assertEqual(manuscript.html_id("conj:example"), "conj-example")
-        self.assertEqual(manuscript.html_id("Thm:A__b"), "thm-a-b")
-        self.assertEqual(manuscript.html_id("1:x"), "id-1-x")
 
 
 class ManuscriptAbsenceTests(unittest.TestCase):

@@ -1,245 +1,57 @@
-"""The command-line surface: lane selection and the derived views.
-
-These run the real ``scripts/check.py`` against a fixture tree through ``--root``, so
-the entry point, the lane filter, and the views are exercised as a user meets them.
-"""
+"""The command line, run for real: MyST build, exit codes, summary, fingerprints."""
 from __future__ import annotations
 
-import subprocess
-import sys
 import unittest
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import yaml
 
-from fixtures import CheckerFixture, node  # noqa: E402
-
-REPO = Path(__file__).resolve().parents[2]
-CHECK = REPO / "scripts/check.py"
+from fixtures import CheckerFixture, node
 
 
 class CommandLineTests(CheckerFixture):
-    def test_cli_reports_malformed_status_instead_of_crashing(self):
-        malformed = node("thm:bad")
-        malformed["status"] = []
-        self.add_ledger("program", "program", [malformed])
-
+    def test_a_clean_tree_exits_zero_and_summarises_the_search(self):
+        self.ledger([node("conj:main", kind="conjecture", status="open")])
+        self.brief("conj:main")
+        self.checkpoint("c", candidates=[{"id": "cand:a", "statement": "A holds.\nMore."}])
+        self.portfolio({"id": "ap:a", "state": "blocked", "blocker": "cand:a",
+                        "reopen_if": "A is proved"})
         result = self.cli()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("nodes: 1 (1 open)", result.stdout)
+        self.assertIn("target: conj:main (open)", result.stdout)
+        self.assertIn("route ap:a: blocked on cand:a", result.stdout)
+        self.assertIn("candidate cand:a: A holds.", result.stdout)
 
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("bad status '[]'", result.stdout)
+    def test_errors_exit_one_without_crashing_on_malformed_input(self):
+        self.ledger([node("thm:a", status=["proved"]), "not a mapping"])
+        result = self.cli()
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("FAIL thm:a: bad status", result.stdout)
         self.assertNotIn("Traceback", result.stderr)
 
-    def test_errors_are_tagged_with_the_lane_that_raised_them(self):
-        malformed = node("thm:bad")
-        malformed["status"] = []
-        self.add_ledger("program", "program", [malformed])
-        self.add_checkpoint("dangling", nodes=("conj:ghost",))
-
-        everything = self.cli()
-        core_only = self.cli("--lane", "core")
-
-        self.assertIn("FAIL [core]", everything.stdout)
-        self.assertIn("FAIL [checkpoints]", everything.stdout)
-        self.assertIn("FAIL [core]", core_only.stdout)
-        self.assertNotIn("FAIL [checkpoints]", core_only.stdout)
-
-    def test_a_lane_with_no_files_reports_nothing(self):
-        """Activation is structural: an absent lane has no rules to obey."""
-        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
-
-        for lane in ("portfolio", "numerics", "checkpoints", "roles"):
-            with self.subTest(lane=lane):
-                result = self.cli("--lane", lane)
-                self.assertEqual(result.returncode, 0, result.stdout)
-
-    def test_cli_status_and_node_views_are_derived(self):
-        self.add_ledger(
-            "program",
-            "program",
-            [
-                node("lem:base"),
-                node(
-                    "conj:frontier",
-                    status="open",
-                    kind="conjecture",
-                    depends_on=["lem:base"],
-                ),
-            ],
-        )
-
-        status = self.cli("status")
-        detail = self.cli("node", "conj:frontier")
-
-        self.assertEqual(status.returncode, 0)
-        self.assertIn("[program]", status.stdout)
-        self.assertIn("open (1): conj:frontier", status.stdout)
-        self.assertEqual(detail.returncode, 0)
-        self.assertIn("[program] conj:frontier", detail.stdout)
-        self.assertIn("depends_on:", detail.stdout)
-        self.assertIn("used_by: []", detail.stdout)
-
-    def test_cli_lists_live_candidate_statements(self):
-        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
-        self.add_checkpoint("propose", outcome="candidate",
-                            candidates=({"id": "cand:alpha",
-                                         "statement": "the candidate statement"},))
-
-        result = self.cli("candidates")
-
-        self.assertEqual(result.returncode, 0)
-        self.assertIn("cand:alpha", result.stdout)
-        self.assertIn("the candidate statement", result.stdout)
-
-    def test_cli_portfolio_view_shows_routes_blockers_and_relations(self):
-        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
-        why = self.add_checkpoint("blocked", nodes=("conj:open",), approach="ap:stuck")
-        self.add_portfolio({
-            "target": "conj:open",
-            "families": [{"id": "fam:one", "mechanism": "M", "state": "active"}],
-            "approaches": [
-                {"id": "ap:live", "family": "fam:one", "state": "active"},
-                {"id": "ap:stuck", "family": "fam:one", "state": "blocked",
-                 "blocker": "conj:open", "reopen_if": "a new mechanism appears",
-                 "checkpoints": [why]},
-            ],
-        })
-
-        result = self.cli("portfolio")
-
-        self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertIn("target: conj:open", result.stdout)
-        self.assertIn("[fam:one] active", result.stdout)
-        self.assertIn("ap:stuck [blocked]", result.stdout)
-        self.assertIn("blocked on: conj:open", result.stdout)
-        self.assertIn("reopen if: a new mechanism appears", result.stdout)
-
-    def test_cli_checkpoint_view_shows_heads_and_names_the_superseding_record(self):
-        """A current-memory view must say what to read instead, not just what is stale."""
-        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
-        old = self.add_checkpoint("first", nodes=("conj:open",))
-        self.add_checkpoint("second", date="2026-08-27", nodes=("conj:open",),
-                            supersedes=(old,))
-        stale = self.add_review("stale-audit", report_type="audit", date="2026-08-25")
-        self.add_review("current-audit", report_type="audit", date="2026-08-26",
-                        supersedes=(stale,))
-
-        result = self.cli("checkpoints")
-
-        self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertIn("1 current checkpoint(s), 1 superseded", result.stdout)
-        self.assertIn("2026-08-27-second.md", result.stdout)
-        self.assertIn("superseded  research/explorations/2026-08-26-first.md", result.stdout)
-        self.assertIn("read instead: research/explorations/2026-08-27-second.md",
-                      result.stdout)
-        self.assertIn("1 current audit(s), 1 superseded", result.stdout)
-        self.assertIn("read instead: research/reviews/2026-08-26-current-audit.md",
-                      result.stdout)
-
-    def test_unknown_flags_are_rejected_without_migration_aliases(self):
-        self.add_ledger("program", "program", [])
-        before = (self.root / "research/program/ledger.yaml").read_bytes()
-
-        for flag in ("--plane", "--write-agents", "--write-codex"):
-            with self.subTest(flag=flag):
-                result = self.cli(flag)
-                self.assertEqual(result.returncode, 2)
-                self.assertIn("unrecognized arguments", result.stderr)
-                self.assertNotIn("deprecated", result.stderr)
-                self.assertEqual(
-                    (self.root / "research/program/ledger.yaml").read_bytes(), before
-                )
-
-    def test_node_view_accepts_only_a_bare_node_id(self):
-        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
-
-        result = self.cli("node", "program/conj:open")
-
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("No ledger node matches 'program/conj:open'", result.stderr)
-
-    def test_a_scoped_run_summarises_only_the_lanes_it_was_asked_for(self):
-        """A green scoped run must not report an error count it also exits 0 on."""
-        self.add_ledger("program", "program", [node("conj:open", status="open", kind="conjecture")])
-        self.add_checkpoint("dangling", nodes=("conj:ghost",))
-
-        result = self.cli("--lane", "core")
-
-        self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertIn("0 error(s)", result.stdout)
-
-    def test_a_ledger_with_no_nodes_prints_no_dangling_separator(self):
-        self.add_ledger("program", "program", [])
-
+    def test_fingerprints_printed_for_a_review_certify_until_the_statement_changes(self):
+        self.ledger([node("thm:a", proofs=[])], certify=False)
+        artifact = self.solution("a", "thm:a")
+        printed = self.cli("--fingerprint", artifact)
+        self.assertEqual(printed.returncode, 0, printed.stdout + printed.stderr)
+        recorded = yaml.safe_load(printed.stdout)["fingerprints"]
+        self.assertEqual(sorted(recorded), ["solutions/a.md", "thm:a"])
+        review = self.review("a", fingerprints=recorded)
+        self.ledger([node("thm:a", proofs=[{"artifact": artifact, "review": review}])])
         result = self.cli()
-
-        self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertIn("[program] 0 nodes", result.stdout)
-        self.assertNotIn("0 nodes —", result.stdout)
-
-    def test_ready_fails_on_a_template_and_passes_on_an_instantiated_repository(self):
-        """A fresh clone is structurally correct and deliberately not ready."""
-        self.add_ledger("program", "program", [])
-
-        template = self.cli("ready")
-
-        self.assertEqual(template.returncode, 1)
-        self.assertIn("not ready", template.stdout)
-        self.assertIn("meta.program is still 'program'", template.stdout)
-        self.assertIn("no nodes", template.stdout)
-        self.assertIn("research/program/brief.md: absent", template.stdout)
-
-        self.add_ledger("program", "real-program",
-                        [node("conj:target", status="open", kind="conjecture")])
-        self.add_brief("conj:target", body="The negation, spelled out.\n")
-
-        instantiated = self.cli("ready")
-
-        self.assertEqual(instantiated.returncode, 0, instantiated.stdout)
-        self.assertIn("ready:", instantiated.stdout)
-
-    def test_readiness_asks_nothing_about_the_manuscript_front_matter(self):
-        """Publication metadata is independent of mathematical search readiness."""
-        self.add_ledger("program", "real-program",
-                        [node("conj:target", status="open", kind="conjecture")])
-        self.add_brief("conj:target", body="The negation, spelled out.\n")
-        config = self.root / "myst.yml"
-        config.write_text(config.read_text().replace(
-            "title: Fixture", "title: <Document title>\n  authors:\n    - name: <author>"
-        ))
-        (self.root / "modules/00-overview.md").write_text("# Orientation\n\nReplace this abstract.\n")
-        (self.root / "README.md").write_text("# {{REPO_TITLE}}\n")
-
-        ready = self.cli("ready")
-        publish = self.cli("publish-ready")
-
-        self.assertEqual(ready.returncode, 0, ready.stdout)
-        self.assertNotIn("myst.yml", ready.stdout)
-        self.assertEqual(publish.returncode, 1)
-        self.assertIn("set the manuscript title", publish.stdout)
-        self.assertIn("set the manuscript author", publish.stdout)
-        self.assertIn("write the abstract", publish.stdout)
-        self.assertIn("name the repository", publish.stdout)
-
-    def test_the_worked_example_is_an_instantiated_repository(self):
-        """example/ answers 'what does a finished one look like?', so it must be one."""
-        result = subprocess.run(
-            [sys.executable, str(CHECK), "--root", str(REPO / "example"), "ready"],
-            check=False, capture_output=True, text=True,
-        )
-
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("ready:", result.stdout)
+        self.module.write_text(self.module.read_text().replace("fixture", "edited"))
+        result = self.cli()
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("the statement of 'thm:a' changed since", result.stdout)
 
-    def test_a_view_refuses_to_render_over_a_broken_repository(self):
-        malformed = node("thm:bad")
-        malformed["status"] = []
-        self.add_ledger("program", "program", [malformed])
-
-        result = self.cli("status")
-
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("bad status '[]'", result.stdout)
+    def test_a_fast_check_runs_no_build_and_says_what_it_skipped(self):
+        self.ledger([node("conj:main", kind="conjecture", status="open")], anchor=False)
+        result = self.cli("--fast")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("fast: manuscript not read", result.stdout)
+        self.assertFalse((self.root / "_build/site").exists())
+        self.assertEqual(self.cli().returncode, 1)
 
 
 if __name__ == "__main__":

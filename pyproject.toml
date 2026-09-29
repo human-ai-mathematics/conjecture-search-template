@@ -1,20 +1,7 @@
-# The structural checker's Python dependency, declared so a fresh clone can install it.
-#
-# scripts/check.py needs PyYAML and, outside Python, MyST — pinned in package.json and
-# installed with 'npm ci' — to read the manuscript. Everything else it uses is in the
-# standard library. The numerics harness has its own manifest under experiments/.
-#
-#   uv run python scripts/check.py        # uv reads this file and provisions on the fly
-#   pip install pyyaml                    # or just install it
-#
-# ./scripts/check.sh does the first automatically when python3 cannot import yaml.
-#
-# The numerical harness is a separate project with its own lock file, because it pins
-# numpy and this does not: see experiments/pyproject.toml.
+# The checker's Python dependency; `uv run scripts/check.py` provisions it.
 [project]
 name = "conjecture-search-harness"
 version = "0"
-description = "Structural checker and scaffolds for a sustained conjecture search"
 requires-python = ">=3.11"
 dependencies = ["pyyaml>=6"]
 

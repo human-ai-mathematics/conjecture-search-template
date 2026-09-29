@@ -1,34 +1,37 @@
 ---
-type: exploration
-date: "{{DATE}}"
-outcome: directional
-{{ENGAGEMENT}}
+# artifacts:
+#   - research/runs/YYYY-MM-DD-slug.jsonl
+# candidates:
+#   - id: cand:slug
+#     statement: >-
+#       A precise statement someone could later prove or refute.
+# closes:
+#   - cand:earlier-slug
 ---
 
-# {{TITLE}}
+# Title
 
-<!-- Front-matter contract, and the six triggers that make a checkpoint required:
-     research/explorations/README.md.
+<!-- Copy to research/explorations/YYYY-MM-DD-<slug>.md; the filename is its date.
+     Format and triggers: SPECIFICATION.md, Formats → Checkpoint. -->
 
-     `outcome` is one of dead-end | directional | candidate | proposed, and the envelope
-     records what the work *engaged*, never what it concluded. Declare at least one of
-     `nodes:`, `approach:` or `candidates:`. Add `approach: ap:<slug>` when a portfolio
-     exists and this record explains a route's state change. `date:` accepts a plain
-     YYYY-MM-DD or a UTC timestamp; use the timestamp when two records on the same day
-     have to be ordered. -->
+## Question examined
 
-## What was tried
+What the work tried to understand — and the route or target it serves, by id. Enough that
+the next agent can tell whether their idea is this one in a new disguise. One checkpoint may
+cover several small explorations.
 
-The route, the instances, the tooling. Enough that the next agent can tell whether their
-idea is this one in a new disguise.
+## What we learned
 
-## What happened
+Each item marked *established* (an argument written out, not certified), *observed*
+(computation or examples, citing the run under `artifacts:` when a conclusion rests on it)
+or *intuition*. An observation stays an observation; a candidate goes in the front matter
+only once a statement precise enough to prove or refute has emerged.
 
-The result, stated so it is reusable. A dead end earns its file by saying *why* it died:
-which step failed, on which instance, and what would have to change for the route to
-reopen.
+## What resists
 
-## What it costs the next agent
+The precise obstacle, or the limit of the method — a `cand:` id or a ledger node id when it
+has one, never a restated claim. A dead end earns its file by saying *why* it died.
 
-The exact blocker, if there is one — a `cand:` id or a ledger node id, never a restated
-claim — and what would unblock it.
+## Proposed next step
+
+The next action, and what it would decide.
