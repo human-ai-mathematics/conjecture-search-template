@@ -1,0 +1,8 @@
+{
+  "name": "conjecture-search-manuscript",
+  "private": true,
+  "description": "MyST toolchain for the manuscript and proof dossiers; see README.md",
+  "devDependencies": {
+    "mystmd": "1.10.1"
+  }
+}

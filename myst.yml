@@ -1,0 +1,57 @@
+# The MyST project: the reader's site (site/), the dossiers (solutions/) and the
+# manuscript (modules/).
+#
+#   npx myst start           # read it locally, live
+#   npx myst build --html    # the static site, as pages.yml publishes it
+#
+# `uv run scripts/check.py` builds the site content and reads its AST: every labelled
+# claim directive under modules/ is a ledger node with the same id.
+# Replace the title, subtitle and author placeholders below.
+version: 1
+project:
+  title: <Document title>
+  subtitle: <one-line subtitle naming the object and the question>
+  authors:
+    - name:
+        literal: <author>
+  # The shared bibliography. A literature node's `references:` keys must
+  # exist here. It ships empty: MyST refuses a .bib holding only comments.
+  bibliography:
+    - references.bib
+  # Macros for every module and dossier. A fixed normalization is a `definition` node,
+  # not only a macro.
+  math:
+    # --- core macros (domain-neutral)
+    '\R': '\mathbb{R}'
+    '\E': '\mathbb{E}'
+    '\Prob': '\mathbb{P}'
+    '\one': '\mathbf{1}'
+    '\eps': '\varepsilon'
+    '\dd': '\,\mathrm{d}'
+    '\norm': '\left\lVert #1\right\rVert'
+    '\abs': '\left\lvert #1\right\rvert'
+    '\inner': '\left\langle #1,#2\right\rangle'
+    # --- program macros
+  # The reader's site comes first; the dossiers and the manuscript close the table of
+  # contents. A pattern that matches nothing is an error, so each group's pattern also
+  # matches its introduction page: '{site/proofs,solutions/*}.md' reads "site/proofs.md,
+  # then every dossier". Drafts are listed here for local reading; the site workflow
+  # removes them before it publishes. Add any other site/ page when it exists, not before.
+  toc:
+    - file: site/index.md
+    - file: site/problem.md
+    - file: site/results.md
+    - title: Open problems
+      children:
+        - pattern: 'site/open{,/*}.md'
+    - file: site/about.md
+    - title: Full proofs
+      children:
+        - pattern: '{site/proofs,solutions/*}.md'
+    - title: Precise statements
+      children:
+        - pattern: 'modules/!(README).md'
+site:
+  template: book-theme
+  options:
+    logo_text: <Document title>

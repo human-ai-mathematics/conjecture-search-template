@@ -1,21 +1,5 @@
-# The claim graph for this repository's program: what is mathematically claimed.
-# What the *search* is doing lives next door in portfolio.yaml and never here
-# (CLAUDE.md constraint 11). Statements live in modules/; the field-level schema
-# is research/program/ledger-schema.md and the workflow is research/program/README.md.
-#
-# One repository, one program, one ledger (CLAUDE.md constraint 1). Every edit
-# funnels through a single orchestrator, and `python3 scripts/check.py`
-# must return 0 errors afterwards.
-#
-# This ledger ships empty. A worked instance of every artifact genre — nodes, a
-# dossier, a review, checkpoints, a portfolio, a run artifact — lives in
-# `example/`, which is a fixture to copy from and not this program's history.
-# Add the first node when the first statement is precise, stable, and reusable.
-
-meta:
-  program: program        # rename to this program's id; it prefixes checker output
-  scope: >-
-    One sentence naming the class of objects this ledger's nodes range over, so a
-    reader can tell at a glance whether a statement belongs here.
+# The claim graph: what is mathematically claimed. Only the orchestrator writes this file,
+# and `uv run scripts/check.py` must return 0 errors afterwards. Fields: SPECIFICATION.md,
+# Formats → Ledger. A filled-in instance is example/research/program/ledger.yaml.
 
 nodes: []

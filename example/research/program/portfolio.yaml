@@ -1,67 +1,23 @@
-# What the search is doing — as against research/program/ledger.yaml, which records
-# what is mathematically claimed. Field contract: research/program/portfolio-schema.md.
-#
-# This file is optional and absent by default. Create it as soon as several routes,
-# agents, or sessions are in flight and somebody has to know which of them are still
-# alive; a portfolio then requires a brief, because several coordinated routes are a
-# sustained search. It is a single-writer file: the `synthesizer` holds the `portfolio`
-# concurrency key, and everyone else proposes changes through their handoff.
-#
-# It stores coordination state only. A blocker is named by its `cand:` id or ledger node
-# id and never restated here (CLAUDE.md constraint 11).
-#
-# This is the worked example's portfolio, and it is finished: conj:example is refuted, so
-# no route is left `active` or `queued` and the one family is closed with a reopening
-# condition. Each entry carries an `objective` — a family says what mechanism it tries, a
-# route says what it tries within that family, and neither is a claim.
-
-target: conj:example
-
-families:
-  - id: fam:example-numerical
-    mechanism: >-
-      Use the available numerical diagnostics to probe the target before committing to an
-      analytic route, first checking that each diagnostic actually evaluates the target
-      rather than a nearby identity.
-    state: saturated
-    closure_checkpoint: research/explorations/2026-09-03-example-refuter.md
-    reopen_if: >-
-      The target is restated with a constant that is allowed to depend on $n$, at which
-      point a numerical sweep would be measuring something the refuted version fixed.
+# The worked example's portfolio: what the search is doing, not what is claimed
+# The search is finished — conj:example is refuted —
+# so no route is left active.
 
 approaches:
   - id: ap:example-finite-battery
-    family: fam:example-numerical
     objective: >-
-      Run the available identity battery, decide whether it bears on conj:example, and
-      inspect its enumerated domain for candidate witnesses to the conjecture.
-    state: completed
-    checkpoints:
-      - research/explorations/2026-09-02-example-exploration.md
-      - research/explorations/2026-09-03-example-refuter.md
+      Run a numerical battery on the identity, decide whether it bears on conj:example,
+      and inspect its enumerated domain for candidate witnesses to the conjecture.
+    state: closed
 
   - id: ap:example-roundoff-bound
-    family: fam:example-numerical
     objective: >-
       Bound the floating-point discrepancy the battery measured, so that a near-equality
       reported by a run can be told apart from a genuine violation.
-    parent: ap:example-finite-battery
     state: blocked
     blocker: cand:example-identity-stability
     reopen_if: >-
       cand:example-identity-stability is proved, or someone supplies any explicit error
       bound for the identity evaluated in floating point.
-    checkpoints:
-      - research/explorations/2026-09-03-example-roundoff.md
-
-  - id: ap:example-exhaustive-search
-    family: fam:example-numerical
-    objective: >-
-      Widen the integer-vector enumeration already performed for the identity, hoping a
-      larger version of the same proxy will bear on conj:example.
-    state: duplicate
-    related:
-      - to: ap:example-finite-battery
-        relation: duplicates
-    checkpoints:
-      - research/explorations/2026-09-03-example-dedup.md
+    next: >-
+      Bound the rounding error of the mean alone, then check whether the two sums
+      inherit it termwise.

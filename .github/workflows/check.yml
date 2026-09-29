@@ -1,57 +1,18 @@
-# Validate the repository on every pull request into the default branch.
-#
-# This is the half of the old `site` workflow that is worth paying for automatically:
-# `scripts/check.py` needs one dependency and finishes in seconds, so a pull request
-# that breaks the ledger, the worked example, or the checker's own tests says so before
-# it is merged. The expensive half — TeX Live, `latexmk`, `make4ht`, and the deploy —
-# lives in `pages.yml` and runs only when a human dispatches it.
-#
-# A structurally invalid revision is not this repository's research state. That rule is
-# enforced twice: here, before a merge, and again in `pages.yml`, because `scripts/site.py`
-# refuses to publish one.
-#
-# The branch filter names `main` literally. GitHub's `pull_request` trigger takes no
-# expression, so a fork whose default branch is called something else has to edit this
-# line — the one place in this repository where that is true.
-
 name: check
-
 on:
-  pull_request:
+  push:
     branches: [main]
-
+  pull_request:
 permissions:
   contents: read
-
-concurrency:
-  group: check-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v4
         with:
-          python-version: '3.12'
-
-      - name: Install the checker's one dependency
-        run: pip install pyyaml
-
-      # Structure first, and the worked example alongside it: the example is a fixture
-      # the repository keeps green, and a pull request is the first thing that would
-      # notice if it stopped being one.
-
-      - name: Validate the repository
-        run: python3 scripts/check.py
-
-      - name: Validate the worked example
-        run: python3 scripts/check.py --root example
-
-      - name: Run the checker's own test suite
-        run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
-
-      - name: Check that the frontend parses
-        run: node --check site/site.js
+          node-version: "22"
+          cache: npm
+      - run: ./scripts/check.sh
