@@ -1,9 +1,12 @@
 # Changelog
 
-Notable changes to the conjecture-search template. The template is pre-stable: every
-release below `v1.0.0` may require forks to migrate.
+Notable changes to the conjecture-search template. Each released section corresponds to
+the Git tag with the same version. The template is pre-stable: until `v1.0.0`, a minor
+version may require forks to migrate, and a patch version is a backward-compatible fix.
 
 ## [Unreleased]
+
+## [0.2.0] - 2026-09-29
 
 The manuscript moves to MyST Markdown, the harness is cut down to what protects the status
 of a result, and a reader's site for mathematicians sits on top of it. Forks migrate: most
@@ -66,3 +69,37 @@ items below are breaking.
 
 - A checkpoint can close only a candidate an earlier checkpoint proposed.
 - A non-string entry in a node's `references` is reported instead of crashing the checker.
+
+## [0.1.0] - 2026-09-04
+
+### Added
+
+- Require explicitly delimited metadata blocks in proof and refutation dossiers, so narrative
+  comments cannot be interpreted as header fields.
+- Treat numbered equations, alignments, figures, and tables nested inside claims as structural
+  labels owned by those environments.
+
+### Changed
+
+- Replace control-plane decision records with this package-level changelog and Git tags.
+- Keep the documentation link checker focused on live documentation while exempting immutable
+  search checkpoints and proof reviews.
+- Make capability-pack installation tests independent of which packs are installed in the host
+  repository.
+- Validate numerical `instance` observations at artifact write time.
+- Correct live role and lens references to the current universal constraint order.
+
+### Removed
+
+- Remove the constraint-citation index and its `check.py constraints` command.
+- Remove the `decisions/` control-plane archive and its contribution workflow.
+
+### Fixed
+
+- Keep installed capability-pack roles synchronized with their pack sources.
+- Remove the synthesizer's stale reference to the retired decisions archive.
+- Verify the byte-preserved source and checksum declared by migrated numerical artifacts.
+
+[Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/releases/tag/v0.1.0
