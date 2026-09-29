@@ -92,7 +92,9 @@ def load_portfolio(root: Path, errors: list[str]) -> dict[str, dict] | None:
 
 def read_checkpoints(root: Path, nodes: dict[str, dict],
                      errors: list[str]) -> tuple[dict[str, dict], list[Path]]:
-    """Validate the log, in date order; return the live candidates by id, and the log."""
+    """Validate the log, in date order; return every proposed candidate by id — its
+    ``statement``, its ``source`` and whether a later checkpoint ``closed`` it — and the
+    log."""
     proposed: dict[str, dict] = {}
     closed: set[str] = set()
     log = markdown_records(root, EXPLORATIONS, errors)
@@ -132,8 +134,8 @@ def read_checkpoints(root: Path, nodes: dict[str, dict],
                 proposed[cid] = {"statement": entry["statement"], "source": context}
     for cid in sorted(set(proposed) & set(nodes)):
         errors.append(f"{proposed[cid]['source']}: candidate '{cid}' is also a node id")
-    live = {cid: entry for cid, entry in sorted(proposed.items()) if cid not in closed}
-    return live, log
+    return {cid: {**entry, "closed": cid in closed}
+            for cid, entry in sorted(proposed.items())}, log
 
 
 def last_mention(root: Path, route: str, log: list[Path]) -> str | None:
@@ -151,7 +153,8 @@ def last_mention(root: Path, route: str, log: list[Path]) -> str | None:
 def check(root: Path, nodes: dict[str, dict], errors: list[str]) -> dict:
     target = brief_target(root, nodes, errors)
     approaches = load_portfolio(root, errors)
-    candidates, log = read_checkpoints(root, nodes, errors)
+    proposed, log = read_checkpoints(root, nodes, errors)
+    candidates = {cid: entry for cid, entry in proposed.items() if not entry["closed"]}
     for aid, approach in sorted((approaches or {}).items()):
         blocker = approach.get("blocker")
         if not _text(blocker):
@@ -169,5 +172,6 @@ def check(root: Path, nodes: dict[str, dict], errors: list[str]) -> dict:
             errors.append(f"{PORTFOLIO}: the target '{target}' is {status}; close "
                           f"{', '.join(active)}")
     return {"target": target, "approaches": approaches or {}, "candidates": candidates,
+            "proposed": proposed,
             "mentions": {aid: last_mention(root, aid, log) for aid in approaches or {}},
             "latest": log[-1].relative_to(root).as_posix() if log else None}

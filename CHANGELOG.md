@@ -6,10 +6,35 @@ release below `v1.0.0` may require forks to migrate.
 ## [Unreleased]
 
 The manuscript moves to MyST Markdown, and the harness is cut down to what protects the
-status of a result.
+status of a result. A reader's site, written for mathematicians, sits on top of it.
+
+### Added
+
+- The reader's site under `site/`: exposition for a mathematician who has never seen the
+  repository — the problem, the results with the idea of each proof, and a card per open
+  problem — with the dossiers and the manuscript after it in the table of contents.
+  `templates/site/` holds its pages; `example/site/` is a finished one. See *Site page* in
+  `SPECIFICATION.md`.
+- A page records the status and statement fingerprint of each id it rests on
+  (`relies-on`, `checked`). `check.py --stamp <page>` writes them and the block that shows
+  them; a page whose record no longer matches is stale — a `WARN` during the search, an
+  error under `check.py --site-strict`, which the `site` workflow now runs. Once there is a
+  site, the summary also lists the proved and refuted nodes no page rests on.
+- A candidate's statement has a fingerprint: the SHA-256 of its whitespace-normalized
+  text.
+- The `writer` agent (`.claude/agents/writer.md`), launched at milestones, as the new
+  workflow step 8.
+- GitHub issue forms for an idea on an open problem, a counterexample and a correction.
+- `templates/solution.md` opens with an *Overview*, sets a `numbering` prefix and shows a
+  folded proof, for the dossiers to come; existing dossiers are left as they are, since
+  editing them lifts their certification.
 
 ### Changed
 
+- **Breaking:** `index.md` is gone, at the root and in `example/`; the site starts at
+  `site/index.md`, and the table of contents in `myst.yml` is now in parts: the site, the
+  *Open problems*, *Full proofs* and *Precise statements*. A fork moves its landing text
+  into `site/index.md` and copies the new `toc:`.
 - **Breaking:** the manuscript (`modules/*.md`) and the dossiers (`solutions/*.md`) are MyST
   Markdown. A claim is a `prf:<kind>` directive whose `:label:` is its ledger id; the checker
   reads it through `myst build --site`. The ledger has eight kinds.

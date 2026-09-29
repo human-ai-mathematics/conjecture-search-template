@@ -1,16 +1,17 @@
 # SPECIFICATION.md — repository contract
 
 This file is the whole contract. No client loads it on its own, so every session that edits
-the repository reads it first, and both agent files in [`.claude/agents/`](.claude/agents/)
-tell their agent to. [`example/`](example/README.md) is one complete search, worth reading
+the repository reads it first, and every agent file in [`.claude/agents/`](.claude/agents/)
+tells its agent to. [`example/`](example/README.md) is one complete search, worth reading
 once alongside it; [`templates/`](templates/) holds an empty copy of each file genre.
 
 ## Scope
 
 This is a harness for **sustained conjecture search**: proving or refuting one hard statement,
 over many sessions and several agents at once, without losing what the search has learned.
-Theory building, classification, exposition and computer-assisted proof are outside what it
-is tuned for.
+Theory building, classification and computer-assisted proof are outside what it is tuned
+for. Exposition sits on top of it, not inside it: the reader's site under `site/` tells a
+mathematician what the search found, and is written at milestones (*Site page*).
 
 > Ledger = what is mathematically claimed. Portfolio = what the search is doing.
 > Checkpoints = what the search learned.
@@ -34,7 +35,9 @@ Everything below serves six ideas; when a case is not covered, decide by them.
   portfolio and the bibliography. Every other role returns exact edits for it to apply.
 - **Every statement has one home.** An established statement lives in the manuscript, a
   tentative one in the checkpoint that proposed it. Everything else points at it by id:
-  the ledger, the brief and the portfolio never restate a claim.
+  the ledger, the brief and the portfolio never restate a claim. The reader's site is a
+  narration, not a home: it may restate a claim informally, but the statement that counts
+  is the manuscript's, and a page never misstates a status.
 - **The record is not rewritten.** Explorations and reviews are append-only; a correction is
   a new dated file that says what it corrects.
 
@@ -52,6 +55,7 @@ Everything below serves six ideas; when a case is not covered, decide by them.
 | shared computation code | `research/lib/` (optional) | any role |
 | proof and refutation dossiers | `solutions/*.md` | `researcher` |
 | independent reviews | `research/reviews/*.md` (append-only) | `reviewer` |
+| the reader's site: exposition for mathematicians | `site/*.md` | `writer` |
 
 The brief and the portfolio are optional. Create the brief when a sustained search starts;
 its *Routes* section is enough while one agent works at a time. Create the portfolio when
@@ -124,6 +128,11 @@ A session is this loop:
    whether to reformulate. When a route changed state or a candidate was born or ended,
    make sure a checkpoint says why, and that the route's `next` names the test that would
    move it now.
+8. If a milestone was reached — a status changed, a route closed, a problem became worth
+   a card — launch a `writer` to bring the pages of `site/` that it touches up to date
+   (*Site page*): name the milestone and the ids it concerns. Not every session: the site
+   follows milestones. The summary's `site: no page rests on …` line lists the proved and
+   refuted nodes the site does not mention yet; decide which deserve a place.
 
 A certification the full check reports as lifted — a dossier or a statement edited since it
 was fingerprinted — goes back through step 5: a new review, or a new human acceptance.
@@ -140,6 +149,7 @@ Stop when the target is settled, or when no route is left worth running.
 | an unfinished idea attacked early | `researcher` (not its author) | `refute` or `mine` |
 | a dossier certified | `reviewer` | `certify` |
 | manuscript/ledger/dossier/brief agreement audited | `reviewer` | `sync` |
+| the reader's site brought up to date | `writer` | — |
 
 Each role ends its reply with this handoff, which the orchestrator acts on:
 
@@ -298,8 +308,11 @@ Let the tooling grow only as the search needs it:
 
 A **dossier** is a standalone MyST page `solutions/<ledger-id>.md` (`:` replaced by `-`),
 copied from [`templates/solution.md`](templates/solution.md). Its front matter carries
-`ledger-node:` — the node id, or a list of ids — and a `title`, and never its own
-certification. It states the theorem in a `prf:theorem`, possibly sharper than the
+`ledger-node:` — the node id, or a list of ids — a `title`, and a `numbering` prefix so
+that its statements read Theorem 3.1, Lemma 3.2, … (set it before the first review: any
+later edit lifts the certification); never its own certification. It opens with an
+**Overview**, the steps and what each contributes, and may fold a routine computation
+into a `:class: dropdown` proof, still written in full. It states the theorem in a `prf:theorem`, possibly sharper than the
 manuscript statement it cites, and proves it in a `prf:proof`; every step stands
 analytically, and each step the author could not close is a `prf:remark` naming what
 remains. It may cite certified nodes instead of reproving them; it never contains
@@ -374,6 +387,90 @@ matches, the checker drops the certification until a new review passes it. The b
 review invalidates a passing one, the orchestrator removes the certification and both
 reports stay.
 
+### Site page — `site/*.md`
+
+The reader's site is written for a mathematician who has never seen this repository: the
+problem, the results with the idea of each proof, and the open problems where a reader
+can help. It is exposition, free in form — it may simplify, state informally, and choose
+what to show — and it never publishes the working record raw: no checkpoint, review,
+ledger or portfolio, and no harness vocabulary. A route set aside becomes a paragraph on
+why the approach fails; a problem becomes a card. The dossiers stay where they are,
+unchanged, under *Full proofs*: a page links to a dossier, never includes it, so that no
+label is duplicated and no certification lifts.
+
+**It grows with its content**, and never holds an empty page. It starts with four pages
+— `index.md`, `problem.md`, `results.md`, `about.md` — plus `open.md` and `proofs.md`, the
+introductions the table of contents needs, all copied from
+[`templates/site/`](templates/site/). One card per published problem goes in
+`site/open/<slug>.md`. The reader goes problem → result → idea of the proof → open question
+in four pages.
+
+When the content calls for it, and one page at a time, a page becomes a part:
+
+| part | pages | a page appears when |
+|---|---|---|
+| I. The problem — `site/problem/` | Introduction; Background | there are definitions to set or a literature to summarize, with a table of the best known bounds |
+| II. What we know now — `site/results/` | Main results; Counterexamples | something was refuted: the counterexample, and what it teaches |
+| III. Approaches and obstacles — `site/approaches/` | one page per major idea | the idea has a history worth telling: what it gives, exactly where it breaks and the example that breaks it, what would unblock it (a card in IV) |
+| IV. Open problems — `site/open/` | one card per problem | — |
+
+Each obstacle is explained once, on the page of the approach it blocks, and every other
+page links there: there is no separate *Why it is hard* or *Dead ends* page retelling it.
+A short dead end is a *Why X fails* paragraph at the end of its idea's page; a barrier that
+blocks every approach gets its section in the Introduction. A new page gets its `toc:`
+entry in `myst.yml` when it is written.
+
+A page states results in `prf:` directives as it likes; outside `modules/` they are not
+nodes, and their labels start with `site:`. Main results are lettered with
+`:enumerator: A`, so the letters never shift; exposition pages carry `numbering: false`,
+and the results page `numbering: {equation: false}`. A result's idea of proof is a
+paragraph — the mechanism, a figure if one helps — followed by links to its full proof and
+its precise statement; the dossier's own *Overview* and folded details are the next two
+levels.
+
+**A card** presents one problem worth a reader's time: its answer would give a result
+worth stating, or it is a natural case of a known question, or a counterexample would
+teach something. That the search is blocked on it is not enough; a problem that no longer
+serves the target is published only if its card says what makes it interesting on its
+own; and a problem whose answer is classical is not presented as open. The card follows
+[`templates/site/open-problem.md`](templates/site/open-problem.md); its number and its id
+never change once published.
+
+**The one coupling: a page never misstates a status.** Its front matter records what it
+rests on:
+
+```yaml
+---
+title: Problem 1 — <title>
+problem: conj:main            # a card only: the id whose status it shows
+relies-on:                    # written by check.py --stamp
+  conj:main: {status: open, fingerprint: <sha256>}
+  cand:key-bound: {status: live, fingerprint: <sha256>}
+checked: 2026-09-29           # written by check.py --stamp
+---
+```
+
+The writer lists the ids a page rests on — any node or candidate, as a plain list under
+`relies-on:` — rereads the page against their current statements, then runs
+`uv run scripts/check.py --stamp <page>`. That records each id's status (a node's, or
+`live` / `closed` for a candidate) and its fingerprint (a node's, as for certification;
+a candidate's, the SHA-256 of its whitespace-normalized `statement`), dates the page
+`checked`, and writes the block under its title that shows the date and, on a card, the
+status. The block is generated, never typed; the other front matter fields are kept, but
+comments in it are not. A fingerprint signals that a page needs rereading; it does not
+check that a paraphrase is faithful, which is the writer's job and the human reader's.
+
+A page is **stale** when an id it rests on has vanished, changed status or changed
+statement, when it was never stamped, or when its block was edited by hand. The check
+warns (`WARN`) and never fails on a stale page while the search runs; `--site-strict`
+makes it an error, and the `site` workflow publishes only under it. The check catches a
+page that misstates; a page that *omits* — a result proved since, cited nowhere — it only
+lists in the summary, since not every lemma deserves a page.
+
+**Publication is a human act.** A person reads the site as a reader would before
+dispatching the `site` workflow by hand; no agent dispatches it. A green `--site-strict`
+says the pages are current, never that they are well written or faithful.
+
 ## Verify
 
 ```bash
@@ -382,19 +479,23 @@ uv run scripts/check.py                   # full: manuscript included; before an
 uv run scripts/check.py --fast            # research state only, no MyST build; seconds
 uv run scripts/check.py --root example    # the worked example, kept green as a fixture
 uv run scripts/check.py --fingerprint solutions/thm-main.md   # a certification's fingerprints
+uv run scripts/check.py --stamp site/results.md   # after rereading a site page
+uv run scripts/check.py --site-strict     # a stale site page is an error: before publishing
 ```
 
 A green check establishes structure only. Whether manuscript, ledger and dossier say the
 same thing, and whether a proof is correct, is the reviewer's job.
 
-`check.py` prints each error as a `FAIL` line, then a summary: nodes by status, routes by
-state with their `next` test and latest checkpoint, live candidates, draft dossiers, the
-latest checkpoint. `--fast` skips the MyST build, and with it the manuscript anchors and the
+`check.py` prints each error as a `FAIL` line and each stale site page as a `WARN` line,
+then a summary: nodes by status, routes by state with their `next` test and latest
+checkpoint, live candidates, draft dossiers, the latest checkpoint, the site's pages and
+the settled nodes none of them rests on. `--fast` skips the MyST build, and with it the manuscript anchors and the
 statement fingerprints; dossier fingerprints are still compared. The full check writes
 nothing the repository tracks; the MyST build lands in the gitignored `_build/`, and
 concurrent checks of one tree take turns on it. It needs uv, which provisions PyYAML from
 `pyproject.toml`, and MyST, pinned in `package.json` and installed with `npm ci`. CI runs
-`check.sh` — the full check — on pull requests and on pushes to `main`.
+`check.sh` — the full check — on pull requests and on pushes to `main`; the `site` workflow
+runs `--site-strict` before it builds anything.
 
 **Harness changes.** Keep this file, the checker, its tests, the templates and the example
 in agreement, and add a line under `Unreleased` in [`CHANGELOG.md`](CHANGELOG.md). Harness

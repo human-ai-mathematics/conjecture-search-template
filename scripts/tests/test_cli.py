@@ -53,6 +53,20 @@ class CommandLineTests(CheckerFixture):
         self.assertFalse((self.root / "_build/site").exists())
         self.assertEqual(self.cli().returncode, 1)
 
+    def test_a_stale_page_warns_while_searching_and_fails_a_publication(self):
+        self.ledger([node("conj:main", kind="conjecture", status="open")])
+        self.page("p", **{"relies-on": ["conj:main"]})
+        result = self.cli()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("WARN site/p.md: stale", result.stdout)
+        self.assertEqual(self.cli("--site-strict").returncode, 1)
+        stamped = self.cli("--stamp", "site/p.md")
+        self.assertEqual(stamped.returncode, 0, stamped.stdout + stamped.stderr)
+        self.assertIn("stamped site/p.md", stamped.stdout)
+        result = self.cli("--site-strict")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("site: 1 page(s), 0 stale warning(s)", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,7 @@
 # Publish the manuscript and its dossiers to GitHub Pages, on manual dispatch only.
-# The checker runs first, so a structurally invalid revision publishes nothing. Before the
-# first run, enable Settings → Pages → Source: GitHub Actions.
+# The checker runs first, so a structurally invalid revision publishes nothing, and neither
+# does a site page that misstates a status (--site-strict). Before the first run, enable
+# Settings → Pages → Source: GitHub Actions.
 
 name: site
 
@@ -31,7 +32,7 @@ jobs:
         run: npm ci
 
       - name: Validate the repository
-        run: uv run scripts/check.py
+        run: uv run scripts/check.py --site-strict
 
       # A project site is served under /<repository>/, and MyST has to know it.
       - name: Build the site

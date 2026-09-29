@@ -1,0 +1,7 @@
+# The three forms below, and a line for contributors who prefer e-mail.
+# Replace the address placeholder when instantiating the template.
+blank_issues_enabled: true
+contact_links:
+  - name: Write by e-mail
+    url: mailto:<contact email>
+    about: For a contribution you would rather send privately.

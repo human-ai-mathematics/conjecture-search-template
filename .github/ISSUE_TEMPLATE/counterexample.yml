@@ -1,0 +1,18 @@
+name: Counterexample
+description: An explicit object that contradicts a statement on the site.
+labels: [contribution, counterexample]
+body:
+  - type: input
+    id: statement
+    attributes:
+      label: Statement
+      description: The identifier of the problem or result, e.g. conj:main.
+    validations:
+      required: true
+  - type: textarea
+    id: witness
+    attributes:
+      label: The counterexample
+      description: The object, and the computation showing that it violates the statement, in exact arithmetic where possible.
+    validations:
+      required: true

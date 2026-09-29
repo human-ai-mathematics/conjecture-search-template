@@ -21,7 +21,8 @@ repository by reading it.
 | [`research/reviews/`](research/reviews/) | independent proof reviews |
 | [`research/runs/`](research/runs/) | computation scripts and their output |
 | [`solutions/`](solutions/) | standalone proof and refutation dossiers |
-| [`.claude/agents/`](.claude/agents/) | the two roles: `researcher` and `reviewer` |
+| [`site/`](site/) | the reader's site: exposition for mathematicians, at milestones |
+| [`.claude/agents/`](.claude/agents/) | the three roles: `researcher`, `reviewer` and `writer` |
 | [`templates/`](templates/) | an empty copy of each file genre |
 | [`example/`](example/README.md) | one complete worked search, a fixture to copy from |
 
@@ -35,12 +36,14 @@ npm ci
 ./scripts/check.sh               # the checker, the worked example, the unit tests
 uv run scripts/check.py         # full check; 0 errors required before any status change
 uv run scripts/check.py --fast  # research state only, no MyST build
-npx myst start                   # read the manuscript and dossiers in a browser
+uv run scripts/check.py --stamp site/results.md   # after rereading a site page
+npx myst start                   # read the site, the dossiers and the manuscript in a browser
 ```
 
 The first check in a fresh clone downloads MyST's site theme into `_build/`. A green check
-establishes structure only. The `site` workflow publishes
-the HTML site to GitHub Pages when dispatched by hand.
+establishes structure only; a stale site page is a warning. The `site` workflow publishes
+the HTML site to GitHub Pages when dispatched by hand, and only if no site page is stale
+(`check.py --site-strict`).
 
 ---
 
@@ -57,8 +60,12 @@ the HTML site to GitHub Pages when dispatched by hand.
    `research/program/brief.md` and rewrite every section for your target, including any
    rule specific to your program under its traps.
 4. **Name things.** Replace the title above, the placeholders in [`myst.yml`](myst.yml) and
-   the abstract in [`modules/00-overview.md`](modules/00-overview.md); then delete this
-   section.
+   the abstract in [`modules/00-overview.md`](modules/00-overview.md).
+5. **Open the site.** Write [`site/index.md`](site/index.md) and
+   [`site/problem.md`](site/problem.md) for a reader, put the contact address in
+   [`site/about.md`](site/about.md) and
+   [`.github/ISSUE_TEMPLATE/config.yml`](.github/ISSUE_TEMPLATE/config.yml), and stamp the
+   pages (`uv run scripts/check.py --stamp site/*.md`); then delete this section.
 
 Create `research/program/portfolio.yaml` from
 [`templates/portfolio.yaml`](templates/portfolio.yaml) once several routes run at once. Add

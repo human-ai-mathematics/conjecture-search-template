@@ -23,7 +23,10 @@ refuted by $a = (1,1)$. In order:
 5. the witness candidate is promoted to the refuter node `prop:example-refuter`;
 6. the refuter gets an ordinary dossier ([`solutions/`](solutions/)) and an independent
    review ([`research/reviews/`](research/reviews/));
-7. only then does the target become `refuted`, through `refuted_by`.
+7. only then does the target become `refuted`, through `refuted_by`;
+8. the reader's site, [`site/`](site/), tells it all to a mathematician: the problem, the
+   three results with the idea of each proof, and one open problem card. Its card is on a
+   classical identity, and says so: it shows the form of a card, not a research question.
 
 It is its own MyST project ([`myst.yml`](myst.yml)) and must stay a top-level sibling of
 `research/` and `modules/`, or its ledger would count as a second one.

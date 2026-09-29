@@ -7,7 +7,20 @@ project:
   math:
     '\R': '\mathbb{R}'
   toc:
-    - file: index.md
-    - pattern: '{modules,solutions}/!(README).md'
+    - file: site/index.md
+    - file: site/problem.md
+    - file: site/results.md
+    - title: Open problems
+      children:
+        - pattern: 'site/open{,/*}.md'
+    - file: site/about.md
+    - title: Full proofs
+      children:
+        - pattern: '{site/proofs,solutions/*}.md'
+    - title: Precise statements
+      children:
+        - pattern: 'modules/!(README).md'
 site:
   template: book-theme
+  options:
+    logo_text: Worked example

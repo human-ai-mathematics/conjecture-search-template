@@ -1,0 +1,29 @@
+name: Idea on an open problem
+description: A proof, a partial result, a reference or an approach for a problem on the site.
+labels: [contribution, open-problem]
+body:
+  - type: input
+    id: problem
+    attributes:
+      label: Problem
+      description: The identifier the problem card gives, e.g. conj:main.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What you bring
+      options:
+        - A proof
+        - A partial result (a special case, a weaker bound)
+        - A reference to existing work
+        - An approach worth trying
+    validations:
+      required: true
+  - type: textarea
+    id: content
+    attributes:
+      label: The idea
+      description: The argument, or where to find it. LaTeX between $…$ renders.
+    validations:
+      required: true

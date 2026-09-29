@@ -5,8 +5,10 @@
     uv run scripts/check.py --fast           # research state only: no MyST build
     uv run scripts/check.py --root example   # another tree, e.g. the worked example
     uv run scripts/check.py --fingerprint solutions/thm-main.md   # for a review or acceptance
+    uv run scripts/check.py --stamp site/results.md   # after rereading a site page
+    uv run scripts/check.py --site-strict    # before publishing: a stale page is an error
 
-Exit 0 = clean, 1 = errors. A green run establishes structure only, never that a proof
+Exit 0 = clean, 1 = errors. A stale site page is a warning (WARN) unless --site-strict. A green run establishes structure only, never that a proof
 is correct. Reading the manuscript runs 'myst build --site', whose output lands in the
 gitignored _build/; --fast skips it, and with it the manuscript anchors and the statement
 fingerprints. Needs MyST ('npm ci') unless --fast; uv provides PyYAML from pyproject.toml.
@@ -22,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import yaml  # noqa: E402
 
-from checks import analyze, fingerprint  # noqa: E402
+from checks import analyze, fingerprint, stamp  # noqa: E402
 
 
 def summary(report: dict) -> None:
@@ -46,6 +48,10 @@ def summary(report: dict) -> None:
         print(f"draft {path}: no proof record names it")
     if report["latest"]:
         print(f"latest checkpoint: {report['latest']}")
+    if report["pages"]:
+        print(f"site: {report['pages']} page(s), {len(report['warnings'])} stale warning(s)")
+        if report["unmentioned"]:
+            print(f"site: no page rests on {', '.join(report['unmentioned'])}")
     if report["fast"]:
         print("fast: manuscript not read; anchors and statement fingerprints unchecked")
 
@@ -59,7 +65,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--fingerprint", nargs="+", metavar="DOSSIER",
                         help="print the fingerprints a review or acceptance of these "
                              "dossiers records, and check nothing else")
+    parser.add_argument("--stamp", nargs="+", metavar="PAGE",
+                        help="record in these site pages the current status and fingerprint "
+                             "of what they rest on, date them today, and check nothing else")
+    parser.add_argument("--site-strict", action="store_true",
+                        help="a stale site page is an error, not a warning: for publishing")
     args = parser.parse_args(argv)
+    if args.stamp:
+        written, errors = stamp(args.root, args.stamp)
+        for error in errors:
+            print("FAIL", error)
+        for page in written:
+            print("stamped", page)
+        return 1 if errors else 0
     if args.fingerprint:
         recorded, errors = fingerprint(args.root, args.fingerprint)
         for error in errors:
@@ -69,8 +87,13 @@ def main(argv: list[str] | None = None) -> int:
         print(yaml.safe_dump({"fingerprints": recorded}, sort_keys=False), end="")
         return 0
     report = analyze(args.root, fast=args.fast)
+    if args.site_strict:
+        report["errors"] += report["warnings"]
     for error in report["errors"]:
         print("FAIL", error)
+    if not args.site_strict:
+        for warning in report["warnings"]:
+            print("WARN", warning)
     summary(report)
     if report["errors"]:
         print(f"{len(report['errors'])} error(s)")

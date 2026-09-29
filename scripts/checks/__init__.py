@@ -5,9 +5,10 @@ to obey, so a fresh clone of the template passes.
 """
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
-from . import ledger, manuscript, proofs, search
+from . import ledger, manuscript, proofs, search, site
 from .common import as_list, contained_path, read_front_matter, repo_relative, sha256
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -15,8 +16,13 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def analyze(root: Path | None = None, labels: dict[str, dict] | None = None, *,
             fast: bool = False) -> dict:
-    """Validate ``root`` and return ``{"errors", "nodes", "drafts", "target", "approaches",
-    "candidates", "mentions", "latest", "fast"}``.
+    """Validate ``root`` and return ``{"errors", "warnings", "nodes", "drafts", "target",
+    "approaches", "candidates", "proposed", "mentions", "latest", "pages", "unmentioned",
+    "fast"}``.
+
+    ``warnings`` are the stale pages of the reader's site: they never fail a check, and
+    ``check.py --site-strict`` turns them into errors. ``unmentioned`` lists the proved and
+    refuted nodes no site page rests on, once there is a site: a reminder, not a warning.
 
     ``fast`` skips the manuscript: no MyST build, so the anchors and the statement
     fingerprints go unchecked. ``labels`` is the manuscript as
@@ -29,8 +35,13 @@ def analyze(root: Path | None = None, labels: dict[str, dict] | None = None, *,
         labels = manuscript.manuscript_labels(root, errors)
     nodes = ledger.check(root, labels, errors)
     drafts = proofs.check(root, nodes, labels, errors)
-    return {"errors": errors, "nodes": nodes, "drafts": drafts, "fast": labels is None,
-            **search.check(root, nodes, errors)}
+    state = search.check(root, nodes, errors)
+    warnings: list[str] = []
+    count, mentioned = site.check(root, site.current(nodes, labels, state["proposed"]),
+                                  errors, warnings)
+    return {"errors": errors, "warnings": warnings, "nodes": nodes, "drafts": drafts,
+            "pages": count, "unmentioned": site.unmentioned(nodes, mentioned) if count else [],
+            "fast": labels is None, **state}
 
 
 def fingerprint(root: Path | None, dossiers: list[str]) -> tuple[dict[str, str], list[str]]:
@@ -62,3 +73,20 @@ def fingerprint(root: Path | None, dossiers: list[str]) -> tuple[dict[str, str],
                 else:
                     result[ref] = digest
     return result, errors
+
+
+def stamp(root: Path | None, pages: list[str], today: date | None = None) -> tuple[list[str], list[str]]:
+    """Stamp ``pages`` of the reader's site against the research record as it stands:
+    the pages written, and the reasons any was not. Defects elsewhere do not count."""
+    root = Path(root) if root is not None else ROOT
+    errors: list[str] = []
+    labels = manuscript.manuscript_labels(root, errors)
+    if errors and not labels:
+        return [], errors  # no manuscript, so no fingerprint to record
+    ignored: list[str] = []
+    nodes = ledger.load(root, ignored)
+    proposed, _ = search.read_checkpoints(root, nodes, ignored)
+    errors = []
+    written = site.stamp(root, pages, site.current(nodes, labels, proposed),
+                         today or date.today(), errors)
+    return written, errors
