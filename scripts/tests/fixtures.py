@@ -139,10 +139,6 @@ class CheckerFixture(unittest.TestCase):
     def checkpoint(self, name: str, *, date: str = "2026-08-26", **fields) -> str:
         return self.write(f"research/explorations/{date}-{name}.md", front_matter(fields))
 
-    def page(self, name: str, body: str = "Exposition.\n", **fields) -> str:
-        """A page of the reader's site, under ``site/``."""
-        return self.write(f"site/{name}.md", front_matter({"title": "Page", **fields}, body))
-
     def brief(self, target: str) -> None:
         self.write("research/program/brief.md", front_matter({"target": target}))
 

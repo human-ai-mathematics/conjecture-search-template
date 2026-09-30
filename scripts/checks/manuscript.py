@@ -9,7 +9,8 @@ or role, an unresolved cross-reference, and a duplicate label.
 
 Each claim also gets a *fingerprint*: the SHA-256 of its statement as MyST parsed it, blind
 to what does not change the mathematics — line wrapping, source positions, numbering, the
-text a cross-reference renders to, a proof nested in the claim. A certification records
+text a cross-reference renders to and the page its target lives on, a proof nested in the
+claim, the status ``scripts/status.mjs`` displays from the ledger. A certification records
 the fingerprints of the statements it checked, so an edited statement is detected.
 """
 from __future__ import annotations
@@ -106,7 +107,8 @@ def build(root: Path, errors: list[str]) -> Path | None:
 
 #: The node fields that carry the mathematics; everything else is layout or rendering.
 STATEMENT_FIELDS = ("type", "kind", "name", "value", "identifier", "url", "lang")
-#: Nodes that point elsewhere: their identifier matters, their rendered text does not.
+#: Nodes that point elsewhere: their identifier matters, their rendered text and the page
+#: their target lives on do not, so moving a statement to another module changes nothing.
 POINTERS = frozenset({"crossReference", "cite", "footnoteReference"})
 WHITESPACE = re.compile(r"\s+")
 
@@ -114,6 +116,8 @@ WHITESPACE = re.compile(r"\s+")
 def _statement(node: dict) -> dict:
     kept: dict = {}
     for field in STATEMENT_FIELDS:
+        if field == "url" and node.get("type") in POINTERS:
+            continue
         value = node.get(field)
         if isinstance(value, str):
             kept[field] = WHITESPACE.sub(" ", value).strip()
@@ -122,6 +126,7 @@ def _statement(node: dict) -> dict:
             _statement(child) for child in node.get("children") or []
             if isinstance(child, dict)
             and not (child.get("type") == "proof" and child.get("kind") == "proof")
+            and not child.get("claimStatus")
         ]
     return kept
 

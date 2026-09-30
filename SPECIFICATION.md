@@ -10,8 +10,8 @@ once alongside it; [`templates/`](templates/) holds an empty copy of each file g
 This is a harness for **sustained conjecture search**: proving or refuting one hard statement,
 over many sessions and several agents at once, without losing what the search has learned.
 Theory building, classification and computer-assisted proof are outside what it is tuned
-for. Exposition sits on top of it, not inside it: the reader's site under `site/` tells a
-mathematician what the search found, and is written at milestones (*Site page*).
+for. The manuscript under `modules/` is what a mathematician reads: fixed statements in
+prose written for a reader, brought up to date at milestones (*Manuscript*).
 
 > Ledger = what is mathematically claimed. Portfolio = what the search is doing.
 > Checkpoints = what the search learned.
@@ -31,13 +31,15 @@ Everything below serves six ideas; when a case is not covered, decide by them.
   or a named human accepts it — and only for the versions it saw: the dossier and every
   statement it was checked against are fingerprinted, and editing any of them lifts the
   certification.
-- **One writer.** Only the orchestrator writes the ledger, the manuscript, the brief, the
-  portfolio and the bibliography. Every other role returns exact edits for it to apply.
+- **One writer per file.** Only the orchestrator writes the ledger, the statements of the
+  manuscript, the brief, the portfolio and the bibliography; only the `writer` writes the
+  prose around the statements. Every other role returns exact edits for the orchestrator
+  to apply.
 - **Every statement has one home.** An established statement lives in the manuscript, a
   tentative one in the checkpoint that proposed it. Everything else points at it by id:
-  the ledger, the brief and the portfolio never restate a claim. The reader's site is a
-  narration, not a home: it may restate a claim informally, but the statement that counts
-  is the manuscript's, and a page never misstates a status.
+  the ledger, the brief and the portfolio never restate a claim. A status has one home
+  too, the ledger: the manuscript displays it next to each statement, and its prose never
+  states one.
 - **The record is not rewritten.** Explorations and reviews are append-only; a correction is
   a new dated file that says what it corrects.
 
@@ -45,7 +47,8 @@ Everything below serves six ideas; when a case is not covered, decide by them.
 
 | content | location | writer |
 |---|---|---|
-| canonical statements (the manuscript) | `modules/*.md` | orchestrator |
+| canonical statements: the labelled `prf:` directives of the manuscript | `modules/*.md` | orchestrator |
+| the manuscript's prose, its headings and its split into files | `modules/*.md`, `modules/` entries of `myst.yml` | `writer` |
 | claim state and logical edges | `research/program/ledger.yaml` | orchestrator |
 | target, negation, completion criteria, traps, neighbourhood | `research/program/brief.md` (optional) | orchestrator |
 | routes and blockers | `research/program/portfolio.yaml` (optional) | orchestrator |
@@ -55,7 +58,7 @@ Everything below serves six ideas; when a case is not covered, decide by them.
 | shared computation code | `research/lib/` (optional) | any role |
 | proof and refutation dossiers | `solutions/*.md` | `researcher` |
 | independent reviews | `research/reviews/*.md` (append-only) | `reviewer` |
-| the reader's site: exposition for mathematicians | `site/*.md` | `writer` |
+| the introduction to the full proofs | `proofs.md` | orchestrator |
 
 The brief and the portfolio are optional. Create the brief when a sustained search starts,
 and the portfolio with its first route: every route lives there, and nowhere else. The
@@ -72,7 +75,7 @@ target statement + ledger node  →  brief  →  routes in the portfolio
 ```
 
 The **orchestrator** is the main session. It applies every proposed delta to the
-single-writer files above, and checks afterwards: `uv run scripts/check.py --fast` after an
+files it writes, and checks afterwards: `uv run scripts/check.py --fast` after an
 edit to research state, the full `uv run scripts/check.py` after a manuscript edit and
 before any status change.
 
@@ -125,11 +128,11 @@ A session is this loop:
    whether to reformulate. When a route changed state or a candidate was born or ended,
    make sure a checkpoint says why, and that the route's `next` names the test that would
    move it now.
-8. If a milestone was reached — a status changed, a route closed, a problem became worth
-   a card — launch a `writer` to bring the pages of `site/` that it touches up to date
-   (*Site page*): name the milestone and the ids it concerns. Not every session: the site
-   follows milestones. The summary's `site: no page rests on …` line lists the proved and
-   refuted nodes the site does not mention yet; decide which deserve a place.
+8. If a milestone was reached — a status changed, a route closed, a statement was added —
+   launch a `writer` to bring the manuscript's prose up to date (*Manuscript*): name the
+   milestone and the ids it concerns. Not every session: the prose follows milestones.
+   Run `uv run scripts/check.py --statements` before and after; the two outputs must be
+   identical, or the writer changed a statement and its edit is reverted.
 
 A certification the full check reports as lifted — a dossier or a statement edited since it
 was fingerprinted — goes back through step 5: a new review, or a new human acceptance.
@@ -146,7 +149,7 @@ Stop when the target is settled, or when no route is left worth running.
 | an unfinished idea attacked early | `researcher` (not its author) | `refute` or `mine` |
 | a dossier certified | `reviewer` | `certify` |
 | manuscript/ledger/dossier/brief agreement audited | `reviewer` | `sync` |
-| the reader's site brought up to date | `writer` | — |
+| the manuscript's prose brought up to date | `writer` | — |
 
 Each role ends its reply with this handoff, which the orchestrator acts on:
 
@@ -206,8 +209,10 @@ is exactly one ledger node. A label on a heading (`(sec:x)=`), an equation or a
 `myst build --site`, so an unknown directive, an unresolved cross-reference, a duplicate
 label and any MyST error are errors. It also fingerprints each claim: the SHA-256 of its
 statement as MyST parsed it, blind to line wrapping, spacing, numbering, a cross-reference's
-rendered text and a proof nested in the claim. Any other edit — a symbol, a word, a
-hypothesis, the kind — changes it.
+rendered text and the page its target lives on, a proof nested in the claim, and the
+displayed status. Its label and its file do not enter either, so moving a statement to
+another module lifts nothing. Any other edit — a symbol, a word, a hypothesis, the kind,
+the title — changes it.
 
 ### Brief — `research/program/brief.md`
 
@@ -384,72 +389,45 @@ matches, the checker drops the certification until a new review passes it. The b
 review invalidates a passing one, the orchestrator removes the certification and both
 reports stay.
 
-### Site page — `site/*.md`
+### Manuscript — `modules/*.md`
 
-The reader's site is written for a mathematician who has never seen this repository: the
-problem, the results with the idea of each proof, and the open problems where a reader
-can help. It is exposition, free in form — it may simplify, state informally, and choose
-what to show — and it never publishes the working record raw: no checkpoint, review,
-ledger or portfolio, and no harness vocabulary. The `writer` owns it; how the site grows
-from four pages into parts, what makes a problem worth a card, and how each page is written
-are in [`writer.md`](.claude/agents/writer.md).
+The manuscript is the one text a reader reads: a mathematician who has never seen this
+repository should understand the work from it alone. It is split in two by authority.
 
-It starts with six pages copied from [`templates/site/`](templates/site/): `index.md`,
-`problem.md`, `results.md`, `about.md`, and `open.md` and `proofs.md`, the index pages of
-*Open problems* and *Full proofs*. A problem card is `site/open/<slug>.md`, from
-[`templates/site/open-problem.md`](templates/site/open-problem.md); its number and its id
-never change once published. A new page gets its `toc:` entry in `myst.yml` when it is
-written. A page states results in `prf:` directives as it likes; outside `modules/` they
-are not nodes, and their labels start with `site:`.
+- **The statements are fixed.** The content of a labelled claim directive, its title
+  argument included (`:::{prf:theorem} Title`), is the statement; the orchestrator writes
+  it, and its `:label:` is its ledger id.
+- **Everything else is prose**, the `writer`'s: headings, motivation, examples worked by
+  hand, the idea of each proof, remarks, the order of sections and the split into files,
+  with the matching `toc:` entries of `myst.yml`. It may be rewritten freely; the writer
+  proposes a new or reworded statement as a delta, never edits one.
 
-**Dossiers.** A page links to a dossier, never includes it, so that no label is duplicated
-and no certification lifts. Only certified dossiers are published: the `site` workflow
-removes every draft (`check.py --drafts`) before it checks and builds, so a page that still
-links to one fails the publication. Read locally, the table of contents shows the drafts
-too.
+Four rules keep the two apart:
 
-**The one coupling: a page never misstates a status.** A page that states the status of
-a node or a candidate records what it rests on:
+1. **A status is displayed, never written.** [`scripts/status.mjs`](scripts/status.mjs), a
+   MyST plugin, reads the ledger at build time and shows each statement's status next to
+   its title: *Not settled here* (the ledger's `open`: not established in this project,
+   which says nothing of the literature), *Proved* (linking to its dossier), or *Refuted
+   by* its refuter. The prose points at a statement (`[](#conj:main)`) and never says it was proved, refuted or
+   is open. No check sees this; the reviewer's `sync` lens does.
+2. **A writer's pass changes no statement.** `check.py --statements` prints every
+   statement with its fingerprint; the orchestrator runs it before and after, and the two
+   outputs must match. Unlike a certification, it also guards an open conjecture.
+3. **No harness vocabulary in displayed prose.** Fence, ledger, route, checkpoint,
+   candidate, dossier: a reader does not need them. Notes for agents go in `%` comments,
+   which MyST does not render.
+4. **Computations are evidence, and say so.** A reported computation never reads as proof.
 
-```yaml
----
-title: Problem 1 — <title>
-problem: conj:main            # a card only: the id whose status it shows
-relies-on:                    # written by check.py --stamp
-  conj:main: {status: open, fingerprint: <sha256>}
-  cand:key-bound: {status: live, fingerprint: <sha256>}
-checked: 2026-09-29           # written by check.py --stamp
----
-```
+How the prose is written is in [`writer.md`](.claude/agents/writer.md).
 
-The writer lists the ids a page rests on — any node or candidate, as a plain list under
-`relies-on:` — rereads the page against their current statements, then runs
-`uv run scripts/check.py --stamp <page>`. That records each id's status (a node's, or
-`live` / `closed` for a candidate) and its fingerprint (a node's, as for certification;
-a candidate's, the SHA-256 of its whitespace-normalized `statement`), dates the page
-`checked`, and writes the block under its title that shows the date and, on a card, the
-status. A page with no `relies-on` — `about.md`, say — states no status: it carries no
-date and no block. On `open.md` and `proofs.md`, `--stamp` also writes the list a person
-should not keep: every card with the status of its problem, and every certified dossier
-with the statement it proves. Generated lines are never typed; the other front matter
-fields are kept, but comments in it are not.
+**Full proofs.** The table of contents lists the manuscript, then `proofs.md` and the
+dossiers under *Full proofs*; a proved statement links to its dossier. Only certified
+dossiers are published: the `pages` workflow removes every draft (`check.py --drafts`)
+before it checks and builds. Read locally, the table of contents shows the drafts too.
 
-A page is **stale** when an id it rests on has vanished, changed status or changed
-statement, when it was never stamped, when its block or its list was edited by hand, or
-when its list no longer matches the cards or the certified dossiers. It is **unfinished**
-while it — or `myst.yml` — still carries a template placeholder: an `<angle-bracketed
-hint>` or a "Replace this" line. The check warns (`WARN`) on both while the search runs;
-`--site-strict` makes them errors, and the `site` workflow publishes only under it.
-
-**What the check guarantees, and what it does not.** It compares what a page *declares*
-with the record. An id missing from `relies-on`, a paraphrase that claims more than the
-statement, a result proved since and cited nowhere: none of these is seen. The summary only
-lists the settled nodes no page rests on, since not every lemma deserves a page.
-Faithfulness is editorial — the writer's, then the reader's.
-
-**Publication is a human act.** A person reads the site as a reader would before
-dispatching the `site` workflow by hand; no agent dispatches it. A green `--site-strict`
-says the pages are current and complete, never that they are well written or faithful.
+**Publication is a human act.** A person reads the manuscript as a reader would before
+dispatching the `pages` workflow by hand; no agent dispatches it. A green check says the
+structure holds, never that the prose is well written or faithful.
 
 ## Verify
 
@@ -459,24 +437,22 @@ uv run scripts/check.py                   # full: manuscript included; before an
 uv run scripts/check.py --fast            # research state only, no MyST build; seconds
 uv run scripts/check.py --root example    # the worked example, kept green as a fixture
 uv run scripts/check.py --fingerprint solutions/thm-main.md   # a certification's fingerprints
-uv run scripts/check.py --stamp site/results.md   # after rereading a site page
-uv run scripts/check.py --site-strict     # a stale or unfinished site page is an error
 uv run scripts/check.py --drafts          # the draft dossiers, left out of the published site
+uv run scripts/check.py --statements      # before and after a writer's pass: must not change
 ```
 
 A green check establishes structure only. Whether manuscript, ledger and dossier say the
 same thing, and whether a proof is correct, is the reviewer's job.
 
-`check.py` prints each error as a `FAIL` line and each stale or unfinished site page as a
-`WARN` line, then a summary: nodes by status, routes by state with their `next` test and
-latest checkpoint, live candidates, draft dossiers, the latest checkpoint, the site's pages
-and the settled nodes none of them rests on. `--fast` skips the MyST build, and with it the manuscript anchors and the
+`check.py` prints each error as a `FAIL` line, then a summary: nodes by status, routes by
+state with their `next` test and latest checkpoint, live candidates, draft dossiers and the
+latest checkpoint. `--fast` skips the MyST build, and with it the manuscript anchors and the
 statement fingerprints; dossier fingerprints are still compared. The full check writes
 nothing the repository tracks; the MyST build lands in the gitignored `_build/`, and
 concurrent checks of one tree take turns on it. It needs uv, which provisions PyYAML from
 `pyproject.toml`, and MyST, pinned in `package.json` and installed with `npm ci`. CI runs
-`check.sh` — the full check — on pull requests and on pushes to `main`; the `site` workflow
-removes the drafts, then runs `--site-strict` before it builds anything.
+`check.sh` — the full check — on pull requests and on pushes to `main`; the `pages` workflow
+removes the drafts, then runs the full check before it builds anything.
 
 **Harness changes.** Keep this file, the checker, its tests, the templates and the example
 in agreement, and add a line under `Unreleased` in [`CHANGELOG.md`](CHANGELOG.md). Harness

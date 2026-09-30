@@ -92,11 +92,14 @@ ledger's edges match what the statements say; that is this lens's whole job. For
    relies on. Name the venue or the evidence of adoption; anything else is a defect.
 5. If a brief exists, its negation negates the target's current statement exactly. A stale
    negation is a defect in the brief, never grounds to edit `modules/`.
+6. The manuscript's prose states no status by hand: no "we prove", "is open", "was
+   refuted" beside a statement whose displayed status could say otherwise. Each such
+   phrase is a defect, with a patch that points at the statement instead.
 
 Report additions: a table node | dossier agrees | edges agree | brief negation agrees |
-verdict, quoting both texts for every disagreement; exact patches as `path:line` plus
-replacement text. Make no edits. If which side is wrong is a mathematical question, report
-it as blocked.
+verdict, then any status written in prose, quoting both texts for every disagreement;
+exact patches as `path:line` plus replacement text. Make no edits. If which side is wrong
+is a mathematical question, report it as blocked.
 
 ## Report
 

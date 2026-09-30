@@ -199,6 +199,30 @@ class ManuscriptTests(unittest.TestCase):
         self.assertNotIn("cor:bodiless", self.labels)
 
 
+class FingerprintTests(unittest.TestCase):
+    def test_a_reference_is_its_target_not_the_page_the_target_lives_on(self):
+        reference = {"type": "crossReference", "identifier": "prop:a", "kind": "proof:lemma"}
+        claim = {"type": "proof", "kind": "lemma", "children": [reference]}
+        moved = {**claim, "children": [{**reference, "url": "/other", "remote": True}]}
+        self.assertEqual(manuscript.fingerprint(moved), manuscript.fingerprint(claim))
+
+    def test_a_displayed_status_is_not_part_of_the_statement(self):
+        """scripts/status.mjs adds the status to a claim's title, or a title holding only
+        the status; neither changes the fingerprint, so a status change lifts nothing."""
+        text = {"type": "paragraph", "children": [{"type": "text", "value": "Let x."}]}
+        status = {"type": "span", "claimStatus": True,
+                  "children": [{"type": "text", "value": "Not settled here"}]}
+        title = {"type": "admonitionTitle", "children": [{"type": "text", "value": "Bound"}]}
+        claim = {"type": "proof", "kind": "lemma", "children": [title, text]}
+        titled = {**claim, "children": [{**title, "children": [*title["children"], status]},
+                                        text]}
+        bare = {"type": "proof", "kind": "lemma", "children": [text]}
+        created = {**bare, "children": [{"type": "admonitionTitle", "claimStatus": True,
+                                         "children": [status]}, text]}
+        self.assertEqual(manuscript.fingerprint(titled), manuscript.fingerprint(claim))
+        self.assertEqual(manuscript.fingerprint(created), manuscript.fingerprint(bare))
+
+
 class ManuscriptAbsenceTests(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()

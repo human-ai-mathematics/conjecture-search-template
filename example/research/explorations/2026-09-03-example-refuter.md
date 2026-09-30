@@ -22,7 +22,7 @@ Yes, and the witness is now certified. How the refutation went (*Refutation* in
 1. **The witness was a candidate.** A witness is not a refutation.
 2. **The statement it establishes becomes a node.** `prop:example-refuter`, with its own
    manuscript statement at `:label: prop:example-refuter` in
-   [`../../modules/00-overview.md`](../../modules/00-overview.md). The node asserts that
+   [`../../modules/02-refutation.md`](../../modules/02-refutation.md). The node asserts that
    the specific vector $(1,1)$ has centred sum of squares $0$ and half sum of squares $1$ —
    an ordinary provable claim — and only then concludes that `conj:example` is false.
 3. **It gets an ordinary dossier.** `solutions/prop-example-refuter.md`.
