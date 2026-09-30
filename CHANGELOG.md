@@ -6,6 +6,14 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-30
+
+Each statement names itself and invites a contribution, and `goal.md` says what the
+template is for. Forks migrate: set `github:` in `myst.yml`, rename the `problem` and
+`where` fields of their issue forms to `statement`, create the Discussions categories by
+hand, and recompute with `check.py --fingerprint` the certifications of the statements that
+link to a section on another page.
+
 ### Added
 
 - `goal.md` states what the template is for: organize an AI-driven search on a
@@ -158,7 +166,8 @@ items below are breaking.
 - Remove the synthesizer's stale reference to the retired decisions archive.
 - Verify the byte-preserved source and checksum declared by migrated numerical artifacts.
 
-[Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/releases/tag/v0.1.0
