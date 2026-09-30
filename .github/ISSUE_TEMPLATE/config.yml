@@ -1,7 +1,13 @@
-# The three forms below, and a line for contributors who prefer e-mail.
-# Replace the address placeholder when instantiating the template.
+# The three forms below, a link to Discussions for conversation, and a line for
+# contributors who prefer e-mail. Replace the placeholders when instantiating the
+# template; delete the Discussions link if the repository does not use them.
 blank_issues_enabled: true
 contact_links:
+  - name: Ask a question, or think out loud
+    url: <repository URL>/discussions
+    about: >
+      Interpretation, background, whether an idea is worth trying. Nothing has to be
+      finished to be worth saying here.
   - name: Write by e-mail
     url: mailto:<contact email>
     about: For a contribution you would rather send privately.

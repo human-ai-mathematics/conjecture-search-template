@@ -13,6 +13,9 @@ project:
   authors:
     - name:
         literal: <author>
+  # The repository, e.g. https://github.com/<owner>/<repo>. Once set, each statement links
+  # to the issue forms of .github/ISSUE_TEMPLATE with its label filled in.
+  # github: <repository URL>
   # The shared bibliography. A literature node's `references:` keys must
   # exist here. It ships empty: MyST refuses a .bib holding only comments.
   bibliography:
@@ -31,7 +34,8 @@ project:
     '\abs': '\left\lvert #1\right\rvert'
     '\inner': '\left\langle #1,#2\right\rangle'
     # --- program macros
-  # Each statement shows its status, read from the ledger: see scripts/status.mjs.
+  # Each statement shows its status, read from the ledger, and its label: see
+  # scripts/status.mjs.
   plugins:
     - scripts/status.mjs
   # The manuscript comes first, then the full proofs. A pattern that matches nothing is

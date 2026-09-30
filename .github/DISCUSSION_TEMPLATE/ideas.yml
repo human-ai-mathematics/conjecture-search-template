@@ -1,0 +1,15 @@
+# The Ideas category of Discussions: thinking out loud, before anything is ready for an
+# issue. A finished argument, a counterexample or a correction goes in an issue form.
+body:
+  - type: input
+    id: statement
+    attributes:
+      label: Statement
+      description: The label shown next to the statement the idea bears on, e.g. conj:main, if any.
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: Half-formed is fine. LaTeX between $…$ renders.
+    validations:
+      required: true

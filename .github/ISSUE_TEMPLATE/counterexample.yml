@@ -6,7 +6,7 @@ body:
     id: statement
     attributes:
       label: Statement
-      description: The identifier of the problem or result, e.g. conj:main.
+      description: The label shown next to the statement, e.g. conj:main.
     validations:
       required: true
   - type: textarea

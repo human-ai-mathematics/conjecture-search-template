@@ -3,10 +3,10 @@ description: A proof, a partial result, a reference or an approach for a problem
 labels: [contribution, open-problem]
 body:
   - type: input
-    id: problem
+    id: statement
     attributes:
-      label: Problem
-      description: The label of the problem, e.g. conj:main.
+      label: Statement
+      description: The label shown next to the problem, e.g. conj:main.
     validations:
       required: true
   - type: dropdown

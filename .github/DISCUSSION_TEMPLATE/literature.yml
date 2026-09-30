@@ -1,0 +1,21 @@
+# The Literature category of Discussions: a reference, or a related result.
+body:
+  - type: input
+    id: reference
+    attributes:
+      label: Reference
+      description: Authors, title, and a DOI or arXiv number.
+    validations:
+      required: true
+  - type: input
+    id: statement
+    attributes:
+      label: Statement
+      description: The label shown next to the statement it bears on, e.g. conj:main, if any.
+  - type: textarea
+    id: relevance
+    attributes:
+      label: Why it matters here
+      description: Which result, and what it proves, refutes or suggests.
+    validations:
+      required: true

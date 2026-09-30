@@ -242,6 +242,28 @@ class FingerprintTests(unittest.TestCase):
         self.assertEqual(manuscript.fingerprint(titled), manuscript.fingerprint(claim))
         self.assertEqual(manuscript.fingerprint(created), manuscript.fingerprint(bare))
 
+    def test_the_displayed_label_and_form_links_are_not_part_of_the_statement(self):
+        """After the status, scripts/status.mjs shows the label and links to the issue
+        forms; setting or changing the repository lifts nothing."""
+        text = {"type": "paragraph", "children": [{"type": "text", "value": "Let x."}]}
+        title = {"type": "admonitionTitle", "children": [{"type": "text", "value": "Bound"}]}
+        claim = {"type": "proof", "kind": "lemma", "children": [title, text]}
+
+        def shown(repository):
+            link = {"type": "link",
+                    "url": f"{repository}/issues/new?template=correction.yml&statement=lem%3Ax",
+                    "children": [{"type": "text", "value": "Correction"}]}
+            status = {"type": "span", "claimStatus": True,
+                      "children": [{"type": "text", "value": " — "},
+                                   {"type": "inlineCode", "value": "lem:x"},
+                                   {"type": "text", "value": " · "}, link]}
+            return {**claim, "children": [{**title, "children": [*title["children"], status]},
+                                          text]}
+        self.assertEqual(manuscript.fingerprint(shown("https://github.com/a/b")),
+                         manuscript.fingerprint(claim))
+        self.assertEqual(manuscript.fingerprint(shown("https://github.com/c/d")),
+                         manuscript.fingerprint(claim))
+
 
 class ManuscriptAbsenceTests(unittest.TestCase):
     def setUp(self):

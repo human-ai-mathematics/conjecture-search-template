@@ -12,6 +12,16 @@ version may require forks to migrate, and a patch version is a backward-compatib
   conjecture, make every status trustworthy, and open the research to mathematicians; with
   criteria of success, what is out of scope, how to judge a change to the template, and
   what a program may adapt and which guarantees it keeps.
+- Each statement shows its label after its status, so that a reader can name it. When
+  `project.github` in `myst.yml` names the repository, `scripts/status.mjs` also links
+  each statement to the issue forms with its label filled in: *Idea* and *Counterexample*
+  on an open statement, *Correction* on any other. The three forms share the field id
+  `statement`, which the idea and correction forms called `problem` and `where`.
+- `.github/DISCUSSION_TEMPLATE/` holds forms for the Discussions categories *Q&A*,
+  *Ideas* and *Literature*; `config.yml` links to Discussions. *Contributions* in
+  `SPECIFICATION.md` says how issues and discussions enter the search. Forks: set
+  `github:` in `myst.yml`, rename the `problem` and `where` fields of their issue forms
+  to `statement`, and create the categories by hand.
 
 ### Fixed
 

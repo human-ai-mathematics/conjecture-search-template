@@ -3,10 +3,10 @@ description: An error in a page, a proof or a statement.
 labels: [correction]
 body:
   - type: input
-    id: where
+    id: statement
     attributes:
-      label: Where
-      description: The page and the statement, e.g. "Open problems, Conjecture 1", or its label.
+      label: Statement
+      description: The label shown next to the statement, e.g. conj:main, or the page if the error is elsewhere.
     validations:
       required: true
   - type: textarea
