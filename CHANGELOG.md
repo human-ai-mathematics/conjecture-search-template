@@ -6,6 +6,13 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ## [Unreleased]
 
+### Added
+
+- `goal.md` states what the template is for: organize an AI-driven search on a
+  conjecture, make every status trustworthy, and open the research to mathematicians; with
+  criteria of success, what is out of scope, how to judge a change to the template, and
+  what a program may adapt and which guarantees it keeps.
+
 ### Fixed
 
 - A statement's fingerprint ignores the heading text of a section it links to on another
