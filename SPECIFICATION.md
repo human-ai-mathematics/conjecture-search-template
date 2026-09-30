@@ -209,9 +209,10 @@ is exactly one ledger node. A label on a heading (`(sec:x)=`), an equation or a
 `myst build --site`, so an unknown directive, an unresolved cross-reference, a duplicate
 label and any MyST error are errors. It also fingerprints each claim: the SHA-256 of its
 statement as MyST parsed it, blind to line wrapping, spacing, numbering, a cross-reference's
-rendered text and the page its target lives on, a proof nested in the claim, and the
-displayed status. Its label and its file do not enter either, so moving a statement to
-another module lifts nothing. Any other edit — a symbol, a word, a hypothesis, the kind,
+rendered text and the page its target lives on — a link to a section (`[](#sec:x)`) is one,
+so renaming the heading lifts nothing — a proof nested in the claim, and the displayed
+status. Its label and its file do not enter either, so moving a statement to another
+module lifts nothing. Any other edit — a symbol, a word, a hypothesis, the kind,
 the title — changes it.
 
 ### Brief — `research/program/brief.md`

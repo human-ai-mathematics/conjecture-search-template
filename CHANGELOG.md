@@ -6,6 +6,15 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ## [Unreleased]
 
+### Fixed
+
+- A statement's fingerprint ignores the heading text of a section it links to on another
+  page: MyST renders `[](#sec:x)` there as a `link`, which the fingerprint now reads as a
+  pointer to `sec:x`, as it already did a cross-reference. Renaming such a heading no
+  longer lifts a certification. The fingerprint of a statement holding such a link
+  changes once: a fork recomputes the certifications concerned
+  (`check.py --fingerprint`), since the statement itself did not change.
+
 ## [0.3.0] - 2026-09-30
 
 The reader's site is removed: the manuscript is the one text a reader reads. Forks

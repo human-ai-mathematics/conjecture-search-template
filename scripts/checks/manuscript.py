@@ -9,9 +9,10 @@ or role, an unresolved cross-reference, and a duplicate label.
 
 Each claim also gets a *fingerprint*: the SHA-256 of its statement as MyST parsed it, blind
 to what does not change the mathematics — line wrapping, source positions, numbering, the
-text a cross-reference renders to and the page its target lives on, a proof nested in the
-claim, the status ``scripts/status.mjs`` displays from the ledger. A certification records
-the fingerprints of the statements it checked, so an edited statement is detected.
+text a cross-reference or a link to a label renders to and the page its target lives on, a
+proof nested in the claim, the status ``scripts/status.mjs`` displays from the ledger. A
+certification records the fingerprints of the statements it checked, so an edited
+statement is detected.
 """
 from __future__ import annotations
 
@@ -113,15 +114,24 @@ POINTERS = frozenset({"crossReference", "cite", "footnoteReference"})
 WHITESPACE = re.compile(r"\s+")
 
 
+def _pointer(node: dict) -> bool:
+    """A reference to a label. MyST resolves ``[](#sec:x)`` to a heading on another page
+    as a ``link`` carrying the label and the heading's text: it is a pointer too, so
+    renaming the heading changes nothing. A link to a URL keeps its text and its URL."""
+    kind = node.get("type")
+    return kind in POINTERS or (kind == "link" and bool(node.get("identifier")))
+
+
 def _statement(node: dict) -> dict:
+    pointer = _pointer(node)
     kept: dict = {}
     for field in STATEMENT_FIELDS:
-        if field == "url" and node.get("type") in POINTERS:
+        if field == "url" and pointer:
             continue
         value = node.get(field)
         if isinstance(value, str):
             kept[field] = WHITESPACE.sub(" ", value).strip()
-    if node.get("type") not in POINTERS:
+    if not pointer:
         kept["children"] = [
             _statement(child) for child in node.get("children") or []
             if isinstance(child, dict)

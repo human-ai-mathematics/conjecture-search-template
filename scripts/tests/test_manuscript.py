@@ -206,6 +206,26 @@ class FingerprintTests(unittest.TestCase):
         moved = {**claim, "children": [{**reference, "url": "/other", "remote": True}]}
         self.assertEqual(manuscript.fingerprint(moved), manuscript.fingerprint(claim))
 
+    def test_a_link_to_a_heading_is_its_label_not_the_heading_text(self):
+        """[](#sec:x) to a heading on another page is a link carrying the heading's text:
+        renaming the heading must not change the statement. A link to a URL is kept."""
+        def claim(link):
+            return {"type": "proof", "kind": "lemma", "children": [
+                {"type": "paragraph", "children": [{"type": "text", "value": "See "}, link]}]}
+        def section(title):
+            return {"type": "link", "identifier": "sec:x", "label": "sec:x", "url": "/other",
+                    "children": [{"type": "text", "value": title}]}
+        self.assertEqual(manuscript.fingerprint(claim(section("Old title"))),
+                         manuscript.fingerprint(claim(section("New title"))))
+        self.assertNotEqual(manuscript.fingerprint(claim(section("Old title"))),
+                            manuscript.fingerprint(claim({**section("Old title"),
+                                                          "identifier": "sec:y"})))
+        def external(text):
+            return {"type": "link", "url": "https://example.org",
+                    "children": [{"type": "text", "value": text}]}
+        self.assertNotEqual(manuscript.fingerprint(claim(external("a"))),
+                            manuscript.fingerprint(claim(external("b"))))
+
     def test_a_displayed_status_is_not_part_of_the_statement(self):
         """scripts/status.mjs adds the status to a claim's title, or a title holding only
         the status; neither changes the fingerprint, so a status change lifts nothing."""
