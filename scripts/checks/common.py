@@ -119,9 +119,3 @@ def markdown_records(root: Path, directory: str, errors: list[str]) -> list[Path
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def text_fingerprint(text: str) -> str:
-    """The SHA-256 of ``text`` with its whitespace runs collapsed: a candidate's statement
-    keeps its fingerprint when a checkpoint is merely re-wrapped."""
-    return hashlib.sha256(" ".join(text.split()).encode("utf-8")).hexdigest()

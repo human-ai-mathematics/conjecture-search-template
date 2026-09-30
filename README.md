@@ -15,13 +15,12 @@ repository by reading it.
 
 | path | holds |
 |---|---|
-| [`modules/`](modules/) | the manuscript: every claim, as a labelled `prf:` directive |
+| [`modules/`](modules/) | the manuscript, the text a reader reads: every claim as a labelled `prf:` directive, in prose written for a mathematician |
 | [`research/program/`](research/program/) | the ledger; the brief once a search runs, the portfolio of routes from the first route |
 | [`research/explorations/`](research/explorations/) | dated checkpoints and candidate statements |
 | [`research/reviews/`](research/reviews/) | independent proof reviews |
 | [`research/runs/`](research/runs/) | computation scripts and their output |
 | [`solutions/`](solutions/) | standalone proof and refutation dossiers |
-| [`site/`](site/) | the reader's site: exposition for mathematicians, at milestones |
 | [`.claude/agents/`](.claude/agents/) | the three roles: `researcher`, `reviewer` and `writer` |
 | [`templates/`](templates/) | an empty copy of each file genre |
 | [`example/`](example/README.md) | one complete worked search, a fixture to copy from |
@@ -36,16 +35,16 @@ npm ci
 ./scripts/check.sh               # the checker, the worked example, the unit tests
 uv run scripts/check.py         # full check; 0 errors required before any status change
 uv run scripts/check.py --fast  # research state only, no MyST build
-uv run scripts/check.py --stamp site/results.md   # after rereading a site page
-uv run scripts/check.py --drafts                  # the draft dossiers, never published
-npx myst start                   # read the site, the dossiers and the manuscript in a browser
+uv run scripts/check.py --statements   # before and after a writer's pass: must not change
+uv run scripts/check.py --drafts       # the draft dossiers, never published
+npx myst start                   # read the manuscript and the proofs in a browser
 ```
 
-The first check in a fresh clone downloads MyST's site theme into `_build/`, and warns on
-every template placeholder still to fill in. A green check establishes structure only; a
-stale or unfinished site page is a warning. The `site` workflow publishes the HTML site to
-GitHub Pages when dispatched by hand: it leaves out the draft dossiers, and publishes only
-if no site page is stale or unfinished (`check.py --site-strict`).
+The first check in a fresh clone downloads MyST's site theme into `_build/`. A green check
+establishes structure only. Each statement shows its status, read from the ledger by
+[`scripts/status.mjs`](scripts/status.mjs). The `pages` workflow publishes the manuscript
+and the certified dossiers to GitHub Pages when dispatched by hand, after a person has
+read them.
 
 ---
 
@@ -63,12 +62,11 @@ if no site page is stale or unfinished (`check.py --site-strict`).
    rule specific to your program under its traps.
 4. **Name things.** Replace the title above, the placeholders in [`myst.yml`](myst.yml) and
    the abstract in [`modules/00-overview.md`](modules/00-overview.md).
-5. **Open the site.** Write [`site/index.md`](site/index.md) and
-   [`site/problem.md`](site/problem.md) for a reader, put the contact address in
-   [`site/about.md`](site/about.md) and
-   [`.github/ISSUE_TEMPLATE/config.yml`](.github/ISSUE_TEMPLATE/config.yml), and stamp the
-   pages (`uv run scripts/check.py --stamp site/*.md`). The check warns on any placeholder
-   left; then delete this section.
+5. **Write the overview.** Replace the prose of
+   [`modules/00-overview.md`](modules/00-overview.md) for a reader, and put the contact
+   address there and in
+   [`.github/ISSUE_TEMPLATE/config.yml`](.github/ISSUE_TEMPLATE/config.yml); then delete
+   this section.
 
 Create `research/program/portfolio.yaml` from
 [`templates/portfolio.yaml`](templates/portfolio.yaml) with the first route. Add

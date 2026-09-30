@@ -172,6 +172,5 @@ def check(root: Path, nodes: dict[str, dict], errors: list[str]) -> dict:
             errors.append(f"{PORTFOLIO}: the target '{target}' is {status}; close "
                           f"{', '.join(active)}")
     return {"target": target, "approaches": approaches or {}, "candidates": candidates,
-            "proposed": proposed,
             "mentions": {aid: last_mention(root, aid, log) for aid in approaches or {}},
             "latest": log[-1].relative_to(root).as_posix() if log else None}

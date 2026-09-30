@@ -45,6 +45,18 @@ class CommandLineTests(CheckerFixture):
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn("the statement of 'thm:a' changed since", result.stdout)
 
+    def test_statements_are_listed_and_an_edit_changes_the_list(self):
+        self.ledger([node("conj:b", kind="conjecture", status="open"),
+                     node("def:a", kind="definition", status="defined")])
+        before = self.cli("--statements")
+        self.assertEqual(before.returncode, 0, before.stdout + before.stderr)
+        self.assertEqual([line.split()[0] for line in before.stdout.splitlines()],
+                         ["conj:b", "def:a"])
+        self.module.write_text(self.module.read_text() + "\nProse around the statements.\n")
+        self.assertEqual(self.cli("--statements").stdout, before.stdout)
+        self.module.write_text(self.module.read_text().replace("fixture", "edited", 1))
+        self.assertNotEqual(self.cli("--statements").stdout, before.stdout)
+
     def test_a_fast_check_runs_no_build_and_says_what_it_skipped(self):
         self.ledger([node("conj:main", kind="conjecture", status="open")], anchor=False)
         result = self.cli("--fast")
@@ -52,27 +64,6 @@ class CommandLineTests(CheckerFixture):
         self.assertIn("fast: manuscript not read", result.stdout)
         self.assertFalse((self.root / "_build/site").exists())
         self.assertEqual(self.cli().returncode, 1)
-
-    def test_a_stale_page_warns_while_searching_and_fails_a_publication(self):
-        self.ledger([node("conj:main", kind="conjecture", status="open")])
-        self.page("p", **{"relies-on": ["conj:main"]})
-        result = self.cli()
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("WARN site/p.md: stale", result.stdout)
-        self.assertEqual(self.cli("--site-strict").returncode, 1)
-        stamped = self.cli("--stamp", "site/p.md")
-        self.assertEqual(stamped.returncode, 0, stamped.stdout + stamped.stderr)
-        self.assertIn("stamped site/p.md", stamped.stdout)
-        result = self.cli("--site-strict")
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("site: 1 page(s), 0 warning(s)", result.stdout)
-
-    def test_an_unfinished_page_warns_and_fails_a_publication(self):
-        self.page("p", "Replace this page.\n")
-        result = self.cli()
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("WARN site/p.md:5: unfinished: 'Replace this'", result.stdout)
-        self.assertEqual(self.cli("--site-strict").returncode, 1)
 
     def test_drafts_lists_the_dossiers_no_proof_record_names(self):
         self.ledger([node("thm:a")])

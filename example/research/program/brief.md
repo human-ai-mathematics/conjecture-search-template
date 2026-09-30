@@ -6,7 +6,7 @@ target: conj:example
 
 ## The target
 
-`conj:example`, stated in [`../../modules/00-overview.md`](../../modules/00-overview.md).
+`conj:example`, stated in [`../../modules/02-refutation.md`](../../modules/02-refutation.md).
 It is not the identity `prop:example`, which is proved; it asserts a **uniform constant**
 $\tfrac12$, and the constant is where it is vulnerable.
 

@@ -1,5 +1,5 @@
 # The worked example's claim graph: status and edges only. Each statement, its kind and
-# its file are the manuscript's (modules/00-overview.md, under :label: <id>). This is a
+# its file are the manuscript's (modules/*.md, under :label: <id>). This is a
 # fixture, not this repository's program; the rules are the same as for the real ledger,
 # research/program/ledger.yaml, and the fields are in SPECIFICATION.md, Formats → Ledger.
 #

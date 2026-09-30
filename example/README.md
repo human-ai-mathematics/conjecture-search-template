@@ -13,7 +13,7 @@ The mathematics is deliberately trivial. The target `conj:example` — for all r
 $a_1,\dots,a_n$ with $n \ge 2$, $\sum_i (a_i - \bar a)^2 \ge \tfrac12 \sum_i a_i^2$ — is false,
 refuted by $a = (1,1)$. In order:
 
-1. the target is stated in [`modules/00-overview.md`](modules/00-overview.md) and gets a node
+1. the target is stated in [`modules/02-refutation.md`](modules/02-refutation.md) and gets a node
    in [`research/program/ledger.yaml`](research/program/ledger.yaml);
 2. the [brief](research/program/brief.md) fixes the exact negation and what would finish it,
    and reads the proved fence `prop:upper-constant` to say where the target is weakest;
@@ -24,9 +24,11 @@ refuted by $a = (1,1)$. In order:
 6. the refuter gets an ordinary dossier ([`solutions/`](solutions/)) and an independent
    review ([`research/reviews/`](research/reviews/));
 7. only then does the target become `refuted`, through `refuted_by`;
-8. the reader's site, [`site/`](site/), tells it all to a mathematician: the problem, the
-   three results with the idea of each proof, and one open problem card. Its card is on a
-   classical identity, and says so: it shows the form of a card, not a research question.
+8. the manuscript, [`modules/`](modules/), tells it all to a mathematician: the question,
+   the three results with the idea of each proof, and one question left unsettled. That
+   question is a classical identity, and says so up front: it shows the form, not a
+   research question. Each
+   statement shows its status, read from the ledger.
 
 It is its own MyST project ([`myst.yml`](myst.yml)) and must stay a top-level sibling of
 `research/` and `modules/`, or its ledger would count as a second one.

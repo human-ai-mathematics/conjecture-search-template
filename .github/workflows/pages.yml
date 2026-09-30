@@ -1,10 +1,9 @@
-# Publish the reader's site, the certified dossiers and the manuscript to GitHub Pages, on
-# manual dispatch only. The draft dossiers are removed first; then the checker runs, so a
-# structurally invalid revision publishes nothing, and neither does a site page that
-# misstates a status or still carries a template placeholder (--site-strict). Before the
-# first run, enable Settings → Pages → Source: GitHub Actions.
+# Publish the manuscript and the certified dossiers to GitHub Pages, on manual dispatch
+# only. The draft dossiers are removed first; then the checker runs, so a structurally
+# invalid revision publishes nothing. A person reads the manuscript before dispatching.
+# Before the first run, enable Settings → Pages → Source: GitHub Actions.
 
-name: site
+name: pages
 
 on:
   workflow_dispatch:
@@ -40,7 +39,7 @@ jobs:
           uv run scripts/check.py --drafts | xargs -r rm -v --
 
       - name: Validate the repository
-        run: uv run scripts/check.py --site-strict
+        run: uv run scripts/check.py
 
       # A project site is served under /<repository>/, and MyST has to know it.
       - name: Build the site

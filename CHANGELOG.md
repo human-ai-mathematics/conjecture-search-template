@@ -6,6 +6,38 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-30
+
+The reader's site is removed: the manuscript is the one text a reader reads. Forks
+migrate: delete `site/`, copy the `toc:` and `plugins:` of `myst.yml`, add `proofs.md`,
+run `npm ci`, and move what the site told a reader into the prose of `modules/`.
+
+### Changed
+
+- `modules/` is written for a mathematician. The content of a labelled directive, its
+  title included, is the statement and stays the orchestrator's; the prose around it, the
+  headings and the split into files are the `writer`'s, which now works on `modules/`.
+- Each statement shows its status, read from the ledger at build time by the MyST plugin
+  `scripts/status.mjs` (new dev dependency `js-yaml`). Prose never states a status; the
+  reviewer's `sync` lens checks it. The ledger's `open` shows as *Not settled here*: it
+  says what this project has not established, not what the literature leaves open.
+- `check.py --statements` prints every statement's fingerprint; it is run before and after
+  a writer's pass, and must not change.
+- A statement's fingerprint ignores the page a cross-reference's target lives on, and the
+  displayed status, so a statement moved to another module lifts no certification.
+- `templates/module.md` lists the optional paragraphs of a module: idea of the proof,
+  limits, why it matters, evidence, where to start, what remains. The `writer` says
+  before a statement the project has not settled whether it is a research problem, and
+  never presents as undecided what an easy argument decides.
+- The table of contents lists the manuscript, then the full proofs after `proofs.md`. The
+  `site` workflow is renamed `pages`.
+
+### Removed
+
+- `site/`, `templates/site/`, `scripts/checks/site.py`, `check.py --stamp` and
+  `--site-strict`, `relies-on` and `checked`, the stale and placeholder warnings, and the
+  summary's `site:` lines.
+
 ## [0.2.0] - 2026-09-29
 
 The manuscript moves to MyST Markdown, the harness is cut down to what protects the status
@@ -100,6 +132,7 @@ items below are breaking.
 - Remove the synthesizer's stale reference to the retired decisions archive.
 - Verify the byte-preserved source and checksum declared by migrated numerical artifacts.
 
-[Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/releases/tag/v0.1.0
