@@ -209,9 +209,10 @@ is exactly one ledger node. A label on a heading (`(sec:x)=`), an equation or a
 `myst build --site`, so an unknown directive, an unresolved cross-reference, a duplicate
 label and any MyST error are errors. It also fingerprints each claim: the SHA-256 of its
 statement as MyST parsed it, blind to line wrapping, spacing, numbering, a cross-reference's
-rendered text and the page its target lives on, a proof nested in the claim, and the
-displayed status. Its label and its file do not enter either, so moving a statement to
-another module lifts nothing. Any other edit — a symbol, a word, a hypothesis, the kind,
+rendered text and the page its target lives on — a link to a section (`[](#sec:x)`) is one,
+so renaming the heading lifts nothing — a proof nested in the claim, and the displayed
+status. Its label and its file do not enter either, so moving a statement to another
+module lifts nothing. Any other edit — a symbol, a word, a hypothesis, the kind,
 the title — changes it.
 
 ### Brief — `research/program/brief.md`
@@ -408,8 +409,9 @@ Four rules keep the two apart:
    MyST plugin, reads the ledger at build time and shows each statement's status next to
    its title: *Not settled here* (the ledger's `open`: not established in this project,
    which says nothing of the literature), *Proved* (linking to its dossier), or *Refuted
-   by* its refuter. The prose points at a statement (`[](#conj:main)`) and never says it was proved, refuted or
-   is open. No check sees this; the reviewer's `sync` lens does.
+   by* its refuter, then the statement's label. The prose points at a statement
+   (`[](#conj:main)`) and never says it was proved, refuted or is open. No check sees
+   this; the reviewer's `sync` lens does.
 2. **A writer's pass changes no statement.** `check.py --statements` prints every
    statement with its fingerprint; the orchestrator runs it before and after, and the two
    outputs must match. Unlike a certification, it also guards an open conjecture.
@@ -424,6 +426,17 @@ How the prose is written is in [`writer.md`](.claude/agents/writer.md).
 dossiers under *Full proofs*; a proved statement links to its dossier. Only certified
 dossiers are published: the `pages` workflow removes every draft (`check.py --drafts`)
 before it checks and builds. Read locally, the table of contents shows the drafts too.
+
+**Contributions.** A reader names a statement by the label displayed next to it. Once
+`project.github` in `myst.yml` names the repository, the plugin adds links that open an
+issue form of [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/) with that label in its
+`statement` field: *Idea* and *Counterexample* on an open statement, *Correction* on any
+other. Conversation goes to GitHub Discussions, if the repository uses them: the forms of
+[`.github/DISCUSSION_TEMPLATE/`](.github/DISCUSSION_TEMPLATE/) serve the categories
+*Q&A*, *Ideas* and *Literature*, which are created by hand in the repository settings, as
+is *Announcements*. An issue or a discussion moves nothing: the orchestrator turns what it
+brings into a mission, a delta or a correction, and a named human's acceptance of a proof
+is recorded as `accepted_by`.
 
 **Publication is a human act.** A person reads the manuscript as a reader would before
 dispatching the `pages` workflow by hand; no agent dispatches it. A green check says the

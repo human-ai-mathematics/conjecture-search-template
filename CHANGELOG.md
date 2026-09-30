@@ -6,6 +6,40 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-30
+
+Each statement names itself and invites a contribution, and `goal.md` says what the
+template is for. Forks migrate: set `github:` in `myst.yml`, rename the `problem` and
+`where` fields of their issue forms to `statement`, create the Discussions categories by
+hand, and recompute with `check.py --fingerprint` the certifications of the statements that
+link to a section on another page.
+
+### Added
+
+- `goal.md` states what the template is for: organize an AI-driven search on a
+  conjecture, make every status trustworthy, and open the research to mathematicians; with
+  criteria of success, what is out of scope, how to judge a change to the template, and
+  what a program may adapt and which guarantees it keeps.
+- Each statement shows its label after its status, so that a reader can name it. When
+  `project.github` in `myst.yml` names the repository, `scripts/status.mjs` also links
+  each statement to the issue forms with its label filled in: *Idea* and *Counterexample*
+  on an open statement, *Correction* on any other. The three forms share the field id
+  `statement`, which the idea and correction forms called `problem` and `where`.
+- `.github/DISCUSSION_TEMPLATE/` holds forms for the Discussions categories *Q&A*,
+  *Ideas* and *Literature*; `config.yml` links to Discussions. *Contributions* in
+  `SPECIFICATION.md` says how issues and discussions enter the search. Forks: set
+  `github:` in `myst.yml`, rename the `problem` and `where` fields of their issue forms
+  to `statement`, and create the categories by hand.
+
+### Fixed
+
+- A statement's fingerprint ignores the heading text of a section it links to on another
+  page: MyST renders `[](#sec:x)` there as a `link`, which the fingerprint now reads as a
+  pointer to `sec:x`, as it already did a cross-reference. Renaming such a heading no
+  longer lifts a certification. The fingerprint of a statement holding such a link
+  changes once: a fork recomputes the certifications concerned
+  (`check.py --fingerprint`), since the statement itself did not change.
+
 ## [0.3.0] - 2026-09-30
 
 The reader's site is removed: the manuscript is the one text a reader reads. Forks
@@ -132,7 +166,8 @@ items below are breaking.
 - Remove the synthesizer's stale reference to the retired decisions archive.
 - Verify the byte-preserved source and checksum declared by migrated numerical artifacts.
 
-[Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/releases/tag/v0.1.0

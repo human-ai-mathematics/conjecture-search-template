@@ -6,7 +6,8 @@ project:
     - name: Template author
   math:
     '\R': '\mathbb{R}'
-  # Each statement shows its status, read from the ledger: see scripts/status.mjs.
+  # Each statement shows its status, read from the ledger, and its label: see
+  # scripts/status.mjs.
   plugins:
     - ../scripts/status.mjs
   toc:

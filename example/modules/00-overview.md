@@ -61,4 +61,5 @@ reports one, it says so.
 
 Contributions — a proof, a counterexample, a reference we missed, a correction — are
 welcome by e-mail at `contact@example.org` or as an issue on the project repository. Name
-a statement by its label, for instance `conj:weighted-example`.
+a statement by the label shown next to its title, for instance `conj:weighted-example`;
+on the published site, the links beside it open a form with that label filled in.

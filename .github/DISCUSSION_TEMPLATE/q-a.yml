@@ -1,0 +1,14 @@
+# The Q&A category of Discussions: a question with an answer to mark.
+body:
+  - type: input
+    id: statement
+    attributes:
+      label: Statement
+      description: The label shown next to the statement the question is about, e.g. conj:main, if any.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: LaTeX between $…$ renders.
+    validations:
+      required: true

@@ -15,5 +15,6 @@ Replace this abstract: the object, the question, and what a reader will find her
 Replace this section. Say what this document studies and why, with an example worked by
 hand; state the question and point at its precise statement; say how the modules that
 follow are organised. Close with how results are checked — a statement counts as proved
-only once a reviewer other than its author has checked its full proof — and where to send
-a contribution.
+only once a reviewer other than its author has checked its full proof — and how to
+contribute: the label next to each statement names it, and the links beside it open a
+form on the project repository.

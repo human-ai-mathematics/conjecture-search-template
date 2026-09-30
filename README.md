@@ -8,7 +8,8 @@ A MyST Markdown manuscript together with a harness for **sustained conjecture se
 proving or refuting one hard statement over many sessions and several agents, while keeping
 track of what is claimed, what the search is doing, and why.
 
-The rules are in [`SPECIFICATION.md`](SPECIFICATION.md). Start every session that edits the
+Why the template exists, and how to judge a change to it, is in [`goal.md`](goal.md). The
+rules are in [`SPECIFICATION.md`](SPECIFICATION.md). Start every session that edits the
 repository by reading it.
 
 ## Layout
@@ -67,6 +68,12 @@ read them.
    address there and in
    [`.github/ISSUE_TEMPLATE/config.yml`](.github/ISSUE_TEMPLATE/config.yml); then delete
    this section.
+6. **Open it to contributions.** Set `github:` in [`myst.yml`](myst.yml) to the
+   repository URL, so that each statement links to the issue forms, and replace
+   `<repository URL>` in `config.yml`. To use Discussions, enable them and create the
+   categories *Announcements*, *Q&A* (answerable), *Ideas* and *Literature* in the
+   repository settings; the forms in `.github/DISCUSSION_TEMPLATE/` match the last three.
+   Otherwise delete that directory and the Discussions link of `config.yml`.
 
 Create `research/program/portfolio.yaml` from
 [`templates/portfolio.yaml`](templates/portfolio.yaml) with the first route. Add
