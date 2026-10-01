@@ -76,7 +76,8 @@ it matters, what is known, where to start. Its label is its stable name.
 A displayed *Not settled here* means only that this project has not settled the
 statement. Such a statement may be a research problem or simply not done yet: say which,
 from the brief and the literature, before the statement and not after. Never let a
-classical fact read as a research problem.
+classical fact read as a research problem. A displayed *Preprint, not yet checked here*
+is a source's announced result: present it as that source's theorem, not as a problem.
 
 When you rename, split or reorder modules, keep `myst.yml`'s `toc:` in step. Labels and
 statements move with their directives, so no certification lifts.

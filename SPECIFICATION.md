@@ -414,7 +414,9 @@ Four rules keep the two apart:
 1. **A status is displayed, never written.** [`scripts/status.mjs`](scripts/status.mjs), a
    MyST plugin, reads the ledger at build time and shows each statement's status next to
    its title: *Not settled here* (the ledger's `open`: not established in this project,
-   which says nothing of the literature), *Proved* (linking to its dossier) followed by
+   which says nothing of the literature), *Preprint, not yet checked here* (an open
+   theorem, lemma, proposition or corollary on `references`: a source's result that is
+   neither established nor certified here, see *Imported results*), *Proved* (linking to its dossier) followed by
    who certified it — *agent review (model, date)*, *reviewed by* a human, or *accepted
    by* a human — *Established in the literature* (a proved node on `references` alone),
    or *Refuted by* its refuter, then the statement's label. The prose points at a statement

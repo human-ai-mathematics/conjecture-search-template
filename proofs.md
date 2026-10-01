@@ -20,4 +20,7 @@ Next to *Proved*, each statement says who checked its proof, and when:
   report.
 
 A statement marked *Established in the literature* is an established result of the field,
-cited where it is stated, and not reproved here.
+cited where it is stated, and not reproved here. A statement marked *Preprint, not yet
+checked here* is a result a recent source announces: it is used as that source states it,
+but neither the field nor this project has checked its proof yet, and every statement
+resting on it says so.

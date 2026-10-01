@@ -3,6 +3,10 @@
 //
 //   Not settled here   the ledger says open: not established in this project, which
 //                      says nothing of the literature
+//   Preprint, not yet checked here
+//                      an open theorem, lemma, proposition or corollary with references:
+//                      a result a source announces, not yet established in the field
+//                      nor checked by this project's own review
 //   Proved             links to the first dossier a proof record names, followed by who
 //                      certified each proof: "agent review (model, date)" or
 //                      "reviewed by <name> (date)", linked to the review report on GitHub,
@@ -88,8 +92,14 @@ function provenance(record, repository) {
   return [{ type: 'link', url, children: [text(label)] }];
 }
 
-function status(node, file, repository) {
-  if (node.status === 'open') return [text('Not settled here')];
+// The kinds that assert a result; an open one with references is a source's claim.
+const RESULTS = new Set(['theorem', 'lemma', 'proposition', 'corollary']);
+
+function status(node, kind, file, repository) {
+  if (node.status === 'open') {
+    const imported = RESULTS.has(kind) && node.references?.length;
+    return [text(imported ? 'Preprint, not yet checked here' : 'Not settled here')];
+  }
   if (node.status === 'proved') {
     const records = (node.proofs ?? []).filter((record) => record?.artifact);
     if (!records.length) {
@@ -142,7 +152,7 @@ const statusTransform = {
       const node = ledger.get(statement.label);
       if (!node) continue;
       const parts = [
-        status(node, file.path ?? '.', repository),
+        status(node, statement.kind, file.path ?? '.', repository),
         [{ type: 'inlineCode', value: node.id }],
         ...forms(node, repository).map((link) => [link]),
       ].filter((part) => part.length);
