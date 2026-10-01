@@ -23,4 +23,5 @@ A statement marked *Established in the literature* is an established result of t
 cited where it is stated, and not reproved here. A statement marked *Preprint, not yet
 checked here* is a result a recent source announces: it is used as that source states it,
 but neither the field nor this project has checked its proof yet, and every statement
-resting on it says so.
+resting on it says so. Once this project has checked it, with a written proof and a
+review like any other, it shows *Proved (from a preprint)* followed by who checked it.

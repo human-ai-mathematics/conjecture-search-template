@@ -418,7 +418,8 @@ Four rules keep the two apart:
    theorem, lemma, proposition or corollary on `references`: a source's result that is
    neither established nor certified here, see *Imported results*), *Proved* (linking to its dossier) followed by
    who certified it — *agent review (model, date)*, *reviewed by* a human, or *accepted
-   by* a human — *Established in the literature* (a proved node on `references` alone),
+   by* a human; *Proved (from a preprint)* when the node also has `references`, a source's
+   result checked here — *Established in the literature* (a proved node on `references` alone),
    or *Refuted by* its refuter, then the statement's label. The prose points at a statement
    (`[](#conj:main)`) and never says it was proved, refuted or is open. No check sees
    this; the reviewer's `sync` lens does.

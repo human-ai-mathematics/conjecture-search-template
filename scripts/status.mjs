@@ -11,6 +11,10 @@
 //                      certified each proof: "agent review (model, date)" or
 //                      "reviewed by <name> (date)", linked to the review report on GitHub,
 //                      or "accepted by <name> (date)" for a human's attestation
+//   Proved (from a preprint)
+//                      a proved node with references and a proof record: a source's
+//                      result, not established in the field, that this project checked
+//                      with its own dossier; the provenance follows as for Proved
 //   Established in the literature
 //                      a proved node with references and no proof record
 //   Refuted            links to the first refuter in refuted_by
@@ -109,8 +113,9 @@ function status(node, kind, file, repository) {
     const certified = records.map((record) => provenance(record, repository))
       .filter((part) => part.length)
       .flatMap((part, i) => (i ? [text('; '), ...part] : part));
+    const label = node.references?.length ? 'Proved (from a preprint)' : 'Proved';
     return [
-      { type: 'link', url, children: [text('Proved')] },
+      { type: 'link', url, children: [text(label)] },
       ...(certified.length ? [text(' · '), ...certified] : []),
     ];
   }

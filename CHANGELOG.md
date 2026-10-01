@@ -17,7 +17,8 @@ version may require forks to migrate, and a patch version is a backward-compatib
 - An open theorem, lemma, proposition or corollary resting on `references` shows
   *Preprint, not yet checked here* instead of *Not settled here*: a source announces it,
   and neither the field nor the project has checked it yet. An open conjecture keeps
-  *Not settled here*.
+  *Not settled here*. Once certified with the project's own dossier, such a result shows
+  *Proved (from a preprint)*, followed by who checked it.
 - The writer gives a manuscript whose overview outgrows a first reading a short welcome
   page, `modules/index.md`: the question, the main results, the parts and reading paths.
   How the modules are organised and how results are checked move there from the overview.
