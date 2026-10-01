@@ -10,8 +10,6 @@ Either way, a certification holds only for the versions it saw. Its ``fingerprin
 the dossier's path to its SHA-256, and each statement the proof is checked against — the
 node's own, those it depends on or assumes, the target it refutes — to the fingerprint
 ``manuscript.py`` computes. A dossier or a statement edited since is no longer certified.
-A fingerprint recorded before 0.5.0 included the statement's title; it still matches while
-the title is unchanged.
 A fast check reads no manuscript, so it compares only the dossiers.
 """
 from __future__ import annotations
@@ -139,11 +137,10 @@ def _current(root: Path, nid: str, artifact: object, dossier: Path | None,
                           f"it needs {redo}")
     for ref in relied_on(nid, nodes):
         digest = recorded.get(ref)
-        claim = (labels or {}).get(ref, {})
-        current = claim.get("fingerprint")
+        current = (labels or {}).get(ref, {}).get("fingerprint")
         if digest is None:
             errors.append(f"{context}: {source} does not fingerprint the statement of '{ref}'")
-        elif current is not None and digest not in (current, claim.get("titled")):
+        elif current is not None and current != digest:
             errors.append(f"{context}: the statement of '{ref}' changed since {source} "
                           f"fingerprinted it; it needs {redo}")
 

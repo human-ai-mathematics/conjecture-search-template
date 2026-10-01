@@ -1,11 +1,11 @@
 # SPECIFICATION.md — repository contract
 
 This file is the whole contract. No client loads it on its own, so every session that edits
-the repository reads it first, and every agent file in [`.claude/agents/`](.claude/agents/)
-and [`.codex/agents/`](.codex/agents/) tells its agent to. The two directories define the
+the repository reads it first, and every agent file in `[.claude/agents/](.claude/agents/)`
+and `[.codex/agents/](.codex/agents/)` tells its agent to. The two directories define the
 same three roles, for Claude Code and for Codex: a change to a role is made in both.
-[`example/`](example/README.md) is one complete search, worth reading once alongside it;
-[`templates/`](templates/) holds an empty copy of each file genre.
+`[example/](example/README.md)` is one complete search, worth reading once alongside it;
+`[templates/](templates/)` holds an empty copy of each file genre.
 
 ## Scope
 
@@ -23,44 +23,48 @@ prose written for a reader, brought up to date at milestones (*Manuscript*).
 Everything below serves six ideas; when a case is not covered, decide by them.
 
 - **Record what must survive; certify what changes a status.** Exploration is free: a quick
-  computation, a guess, a witness checked by hand needs no file and no ceremony. What a
-  later session or another agent will rely on is recorded; what moves a status is certified.
+computation, a guess, a witness checked by hand needs no file and no ceremony. What a
+later session or another agent will rely on is recorded; what moves a status is certified.
 - **A status is earned, never predicted.** A claim becomes `proved` or `refuted` only through
-  a certified proof or refutation — or, for an established result, its references.
-  Numerical output, a green check, a finite battery or a count of failed attempts moves
-  nothing.
+a certified proof or refutation — or, for an established result, its references.
+Numerical output, a green check, a finite battery or a count of failed attempts moves
+nothing.
 - **Nobody certifies their own proof.** A proof counts once an independent review passes it
-  or a named human accepts it — and only for the versions it saw: the dossier and every
-  statement it was checked against are fingerprinted, and editing any of them lifts the
-  certification.
+or a named human accepts it — and only for the versions it saw: the dossier and every
+statement it was checked against are fingerprinted, and editing any of them lifts the
+certification.
 - **One writer per file.** Only the orchestrator writes the ledger, the statements of the
-  manuscript, the brief, the portfolio and the bibliography; only the `writer` writes the
-  prose around the statements. Every other role returns exact edits for the orchestrator
-  to apply.
+manuscript, the brief, the portfolio and the bibliography; only the `writer` writes the
+prose around the statements. Every other role returns exact edits for the orchestrator
+to apply.
 - **Every statement has one home.** An established statement lives in the manuscript, a
-  tentative one in the checkpoint that proposed it. Everything else points at it by id:
-  the ledger, the brief and the portfolio never restate a claim. A status has one home
-  too, the ledger: the manuscript displays it next to each statement, and its prose never
-  states one.
+tentative one in the checkpoint that proposed it. Everything else points at it by id:
+the ledger, the brief and the portfolio never restate a claim. A status has one home
+too, the ledger: the manuscript displays it next to each statement, and its prose never
+states one.
 - **The record is not rewritten.** Explorations and reviews are append-only; a correction is
-  a new dated file that says what it corrects.
+a new dated file that says what it corrects.
+
+
 
 ## Layout
 
-| content | location | writer |
-|---|---|---|
-| canonical statements: the labelled `prf:` directives of the manuscript | `modules/*.md` | orchestrator |
-| the manuscript's prose, its headings and its split into files | `modules/*.md`, `modules/` entries of `myst.yml` | `writer` |
-| claim state and logical edges | `research/program/ledger.yaml` | orchestrator |
-| target, negation, completion criteria, traps, neighbourhood | `research/program/brief.md` (optional) | orchestrator |
-| routes and blockers | `research/program/portfolio.yaml` (optional) | orchestrator |
-| bibliography | `references.bib` | orchestrator |
-| checkpoints and candidate statements | `research/explorations/*.md` (append-only) | any role |
-| computation scripts and their output | `research/runs/` | any role |
-| shared computation code | `research/lib/` (optional) | any role |
-| proof and refutation dossiers | `solutions/*.md` | `researcher` |
-| independent reviews | `research/reviews/*.md` (append-only) | `reviewer` |
-| the introduction to the full proofs | `proofs.md` | orchestrator |
+
+| content                                                                | location                                         | writer       |
+| ---------------------------------------------------------------------- | ------------------------------------------------ | ------------ |
+| canonical statements: the labelled `prf:` directives of the manuscript | `modules/*.md`                                   | orchestrator |
+| the manuscript's prose, its headings and its split into files          | `modules/*.md`, `modules/` entries of `myst.yml` | `writer`     |
+| claim state and logical edges                                          | `research/program/ledger.yaml`                   | orchestrator |
+| target, negation, completion criteria, traps, neighbourhood            | `research/program/brief.md` (optional)           | orchestrator |
+| routes and blockers                                                    | `research/program/portfolio.yaml` (optional)     | orchestrator |
+| bibliography                                                           | `references.bib`                                 | orchestrator |
+| checkpoints and candidate statements                                   | `research/explorations/*.md` (append-only)       | any role     |
+| computation scripts and their output                                   | `research/runs/`                                 | any role     |
+| shared computation code                                                | `research/lib/` (optional)                       | any role     |
+| proof and refutation dossiers                                          | `solutions/*.md`                                 | `researcher` |
+| independent reviews                                                    | `research/reviews/*.md` (append-only)            | `reviewer`   |
+| the introduction to the full proofs                                    | `proofs.md`                                      | orchestrator |
+
 
 The brief and the portfolio are optional. Create the brief when a sustained search starts,
 and the portfolio with its first route: every route lives there, and nowhere else. The
@@ -116,22 +120,22 @@ says which failure it answers.
 A session is this loop:
 
 1. Run `uv run scripts/check.py` and read its summary: the target, each route with its
-   `next` test and the last checkpoint that names it, the live candidates, the draft
+  `next` test and the last checkpoint that names it, the live candidates, the draft
    dossiers, and any certification an edit has lifted.
 2. Pick a route of the portfolio that is not blocked.
 3. Launch a `researcher` on a mission for it: the question, the expected result, a
-   starting lens, and the route and target by id.
+  starting lens, and the route and target by id.
 4. Apply the handoff's `deltas`; act on `next` by passing it on verbatim.
 5. When a dossier is ready, launch a fresh `reviewer` with the `certify` lens (see
-   *Review* for what fresh means).
+  *Review* for what fresh means).
 6. Apply its verdict — a `proofs` record on `pass`, its `next` to a researcher on
-   `revise` — then run the full `check.py` again.
+  `revise` — then run the full `check.py` again.
 7. Decide what the replies teach: which route to pursue, which to set aside and why,
-   whether to reformulate. When a route changed state or a candidate was born or ended,
+  whether to reformulate. When a route changed state or a candidate was born or ended,
    make sure a checkpoint says why, and that the route's `next` names the test that would
    move it now.
 8. If a milestone was reached — a status changed, a route closed, a statement was added —
-   launch a `writer` to bring the manuscript's prose up to date (*Manuscript*): name the
+  launch a `writer` to bring the manuscript's prose up to date (*Manuscript*): name the
    milestone and the ids it concerns. Not every session: the prose follows milestones.
    Run `uv run scripts/check.py --statements` before and after; the two outputs must be
    identical, or the writer changed a statement and its edit is reverted.
@@ -142,16 +146,18 @@ Recomputing the fingerprints without reading again forges a review.
 
 Stop when the target is settled, or when no route is left worth running.
 
-| you want | role | starting lens |
-|---|---|---|
-| a proof attempt | `researcher` | `prove` |
-| a counterexample hunt | `researcher` | `refute` |
-| to learn what an existing proof really buys | `researcher` | `mine` |
-| an object built to order | `researcher` | `construct` |
-| an unfinished idea attacked early | `researcher` (not its author) | `refute` or `mine` |
-| a dossier certified | `reviewer` | `certify` |
-| manuscript/ledger/dossier/brief agreement audited | `reviewer` | `sync` |
-| the manuscript's prose brought up to date | `writer` | — |
+
+| you want                                          | role                          | starting lens      |
+| ------------------------------------------------- | ----------------------------- | ------------------ |
+| a proof attempt                                   | `researcher`                  | `prove`            |
+| a counterexample hunt                             | `researcher`                  | `refute`           |
+| to learn what an existing proof really buys       | `researcher`                  | `mine`             |
+| an object built to order                          | `researcher`                  | `construct`        |
+| an unfinished idea attacked early                 | `researcher` (not its author) | `refute` or `mine` |
+| a dossier certified                               | `reviewer`                    | `certify`          |
+| manuscript/ledger/dossier/brief agreement audited | `reviewer`                    | `sync`             |
+| the manuscript's prose brought up to date         | `writer`                      | —                  |
+
 
 Each role ends its reply with this handoff, which the orchestrator acts on:
 
@@ -175,27 +181,32 @@ Every model call re-reads the whole conversation, so an orchestrator's cost grow
 the length of its context times the number of its calls. Six rules keep it small.
 
 1. **Launch agents through the client, never through a shell.** In Claude Code, the Agent
-   tool with the role as `subagent_type`; in Codex, `spawn_agent` with the role as
+  tool with the role as `subagent_type`; in Codex, `spawn_agent` with the role as
    `agent_type` and `fork_turns: "none"`. Either is a fresh context in the sense of
    *Review*. Never run `claude -p` or `codex exec` in the background: its cost is not
    recorded, it needs approvals, and its progress can be seen only by polling.
 2. **Wait by blocking, never by polling.** Wait for an agent with one blocking call (in
-   Codex, `wait_agent` with a long timeout); a long command, with one call that waits for
-   it to end. A loop of `sleep`, `tail` or status checks re-sends the whole context at
-   every turn, and in practice costs more than the agents it waits for.
+  Codex, `wait_agent` with `timeout_ms: 1800000`, half an hour); a long command, with one
+   call that waits for it to end. If the wait returns while the agent still runs, wait
+   again at once, with nothing in between. A loop of `sleep`, `tail` or status checks — or
+   of `wait_agent` with a timeout of seconds — re-sends the whole context at every turn,
+   and in practice costs more than the agents it waits for.
 3. **The orchestrator reads handoffs, not the work.** It reads the checker's summary, the
-   replies and the files it must edit. Reading dossiers, modules and sources to check an
+  replies and the files it must edit. Reading dossiers, modules and sources to check an
    agent's claim is a `reviewer`'s job, most often a `sync` audit.
 4. **A mission names paths; it does not paste them.** An agent's role is already loaded
-   as its instructions, and it reads `SPECIFICATION.md` and the files it needs on its own.
+  as its instructions, and it reads `SPECIFICATION.md` and the files it needs on its own.
    The mission gives the question, the ids and the paths, not their contents; the
    orchestrator does not read the role files to brief an agent.
 5. **One task per session.** A new task starts in a new session from the checker's
-   summary, not after a compaction of the previous one.
+  summary, not after a compaction of the previous one.
 6. **A lapsed certification gets a re-review.** When the checker reports a dossier or a
-   statement changed since its review, the mission names the last `pass` report and the
-   commit that added it, and asks for a re-review (*Review*); a review in full only when
-   the argument itself was rewritten.
+  statement changed since its review, the mission asks for a re-review (*Review*): it
+   names the last `pass` report, the commit that added it, and quotes the checker's lines
+   naming what changed. The orchestrator does not judge whether a review in full is
+   needed; the reviewer does.
+
+
 
 ## Formats
 
@@ -215,16 +226,18 @@ nodes:
 The ledger holds only what the manuscript cannot: each claim's status and its edges. The
 statement, its kind (the `prf:` directive) and its file are read from the manuscript.
 
-| field | meaning |
-|---|---|
-| `id` | Stable id, and **the manuscript anchor**: `:label: <id>` in `modules/`. Required. |
-| `status` | `open`, `proved`, `refuted`, or `defined` (for, and only for, a `prf:definition`). It records what is established, never what is expected. Required. |
-| `depends_on` | Claims used in the proof — the acyclic proof DAG. A proved node may not inherit an open or refuted dependency, transitively. |
-| `assumes` | Antecedents of a proved implication. Truth and applicability are separate: the implication stays `proved` while an antecedent is open, which `depends_on` would forbid. |
-| `bounded_by` | Fences. A proved fence binds: a statement violating it is wrong by construction. An open one is a plausible method barrier: it guides work and fences nothing. |
+
+| field        | meaning                                                                                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`         | Stable id, and **the manuscript anchor**: `:label: <id>` in `modules/`. Required.                                                                                         |
+| `status`     | `open`, `proved`, `refuted`, or `defined` (for, and only for, a `prf:definition`). It records what is established, never what is expected. Required.                      |
+| `depends_on` | Claims used in the proof — the acyclic proof DAG. A proved node may not inherit an open or refuted dependency, transitively.                                              |
+| `assumes`    | Antecedents of a proved implication. Truth and applicability are separate: the implication stays `proved` while an antecedent is open, which `depends_on` would forbid.   |
+| `bounded_by` | Fences. A proved fence binds: a statement violating it is wrong by construction. An open one is a plausible method barrier: it guides work and fences nothing.            |
 | `references` | BibTeX keys in `references.bib`, making this a result imported from the literature. An *established* result needs no proof record to be `proved`; see *Imported results*. |
-| `proofs` | Certification records; required for a proved node without `references`. |
-| `refuted_by` | Proved refuters; required for, and only valid with, `status: refuted`. |
+| `proofs`     | Certification records; required for a proved node without `references`.                                                                                                   |
+| `refuted_by` | Proved refuters; required for, and only valid with, `status: refuted`.                                                                                                    |
+
 
 Relation fields are lists of node ids. An open question is a `prf:conjecture` in the
 direction the search tries to establish. A fixed normalization — a sign, a scaling, which
@@ -238,18 +251,16 @@ is exactly one ledger node. A label on a heading (`(sec:x)=`), an equation or a
 `prf:remark` is structural and is not a node. The checker reads the manuscript through
 `myst build --site`, so an unknown directive, an unresolved cross-reference, a duplicate
 label and any MyST error are errors. It also fingerprints each claim: the SHA-256 of its
-statement as MyST parsed it, blind to line wrapping, spacing, numbering, the title, a
-cross-reference's rendered text and the page its target lives on — a link to a section (`[](#sec:x)`) is one,
+statement as MyST parsed it, blind to line wrapping, spacing, numbering, a cross-reference's
+rendered text and the page its target lives on — a link to a section (`[](#sec:x)`) is one,
 so renaming the heading lifts nothing — a proof nested in the claim, and the displayed
 status. Its label and its file do not enter either, so moving a statement to another
-module lifts nothing. Any other edit — a symbol, a word, a hypothesis, the kind — changes
-it. The title names the statement for a reader and asserts nothing: the `sync` lens checks
-that it says nothing the body does not. A fingerprint recorded before 0.5.0 included the
-title; it still matches while the title is unchanged.
+module lifts nothing. Any other edit — a symbol, a word, a hypothesis, the kind,
+the title — changes it.
 
 ### Brief — `research/program/brief.md`
 
-Front matter `target: <node id>`. The body, copied from [`templates/brief.md`](templates/brief.md),
+Front matter `target: <node id>`. The body, copied from `[templates/brief.md](templates/brief.md)`,
 gives what an agent needs before attacking the target honestly: where the statement is vulnerable,
 its exact negation, what counts as a complete proof and refutation, edge cases, traps and circular
 reductions, the neighbouring statements worth examining (by id), and a budget policy that permits an
@@ -283,12 +294,12 @@ A checkpoint is the memory of what was learned. Write one when something must ou
 session: a candidate born or ended, an observation worth keeping, a dead end the next agent
 would repeat, a route changing state, a run someone may reuse. One checkpoint may cover
 several small explorations. The body, copied from
-[`templates/checkpoint.md`](templates/checkpoint.md), names nodes, routes and blockers by id
+`[templates/checkpoint.md](templates/checkpoint.md)`, names nodes, routes and blockers by id
 under four headings:
 
 - **Question examined** — what the work tried to understand.
 - **What we learned** — each item marked *established* (an argument written out, not
-  certified), *observed* (computation or examples) or *intuition*.
+certified), *observed* (computation or examples) or *intuition*.
 - **What resists** — the precise obstacle, or the limit of the method.
 - **Proposed next step** — the next action, and what it would decide.
 
@@ -322,7 +333,7 @@ by hand — skips the candidate stage and is proposed directly as a manuscript c
 Exploratory computation is free: a `python -c`, a scratch script, a notebook, kept nowhere.
 A computation becomes a **run** once something that must survive rests on it — a checkpoint
 cites it, a route is chosen or closed because of it. A run is a committed, seeded script, run
-with `uv run`, copied from [`templates/run.py`](templates/run.py). Its output lands next to it
+with `uv run`, copied from `[templates/run.py](templates/run.py)`. Its output lands next to it
 as `<date>-<slug>.jsonl`, whose first line — written by the template's `provenance()` — holds the
 seed, the parameters, the git commit, flagged `dirty` if the tree had uncommitted changes, and
 the library versions; a checkpoint cites it under `artifacts:`. A run guides the choice of route
@@ -333,16 +344,16 @@ Let the tooling grow only as the search needs it:
 
 1. **A plain script**, standard library only.
 2. **Dependencies declared in the script** (PEP 723), once it needs numpy or mpmath:
-   `# /// script` / `# dependencies = ["numpy>=2", "mpmath"]` / `# ///` at its top.
-3. **A package, `research/lib/`**, once two scripts share code: its own `pyproject.toml`
-   and committed `uv.lock`, kept apart from the checker's, and unit tests — a bug in a
-   shared oracle contaminates every run that used it. Scripts stay the entry points and
+  `# /// script` / `# dependencies = ["numpy>=2", "mpmath"]` / `# ///` at its top.
+3. **A package,** `research/lib/`, once two scripts share code: its own `pyproject.toml`
+  and committed `uv.lock`, kept apart from the checker's, and unit tests — a bug in a  
+   shared oracle contaminates every run that used it. Scripts stay the entry points and  
    import it; the lock at the recorded commit gives the library versions.
 
 ### Proof records and dossiers
 
 A **dossier** is a standalone MyST page `solutions/<ledger-id>.md` (`:` replaced by `-`),
-copied from [`templates/solution.md`](templates/solution.md). Its front matter carries
+copied from `[templates/solution.md](templates/solution.md)`. Its front matter carries
 `ledger-node:` — the node id, or a list of ids — a `title`, and a `numbering` prefix so
 that its statements read Theorem 3.1, Lemma 3.2, … (set it before the first review: any
 later edit lifts the certification); never its own certification. It opens with an
@@ -366,8 +377,9 @@ proofs:
 
 A **proof record** names a dossier and exactly one of `review` — an independent review with
 `verdict: pass` — or `accepted_by`, a named human's attestation, which carries its own
-`fingerprints`. `accepted_by` is a human's identity (*Review* below). A node may carry several independent proofs. A dossier no `proofs[]` record
-names is an uncertified draft; the summary lists it as one.
+`fingerprints`. `accepted_by` is a human's identity (*Review* below). A node may carry several
+independent proofs. A dossier no `proofs[]` record names is an uncertified draft; the summary lists
+it as one.
 
 **Fingerprints** pin a certification to what it saw. They map the dossier's path to its
 SHA-256, and each statement the proof is checked against to its fingerprint: the node's own,
@@ -409,32 +421,37 @@ fingerprints:            # the versions read: uv run scripts/check.py --fingerpr
 ---
 ```
 
-**Independence is a fresh context, not a different name.** An agent reviewer is a
-`reviewer` sub-agent launched without any conversation history — never a fork of the
-session, never the session that wrote or directed the dossier — and given only repository
-paths and the author's `next`. A sub-agent launched as *Orchestration* says is one. `authors` and `reviewer` record who wrote and who read, each as
-an **identity** `<who>, <model or human>, <YYYY-MM-DD>`: an agent's role, model and date,
-such as `reviewer, claude-opus-5-5, 2026-09-03` (`unknown` when the model was not recorded),
-or a human's name, `human` and date, such as `A. Referee, human, 2026-09-10`. The checker
-verifies the form, and that the reviewer's `<who>` is no author's; these fields record
-independence, they never create it. The site shows the reviewer next to each proved
-statement, so that a reader tells an agent's review from a human's.
+**Independence is a fresh context, not a different name.** An agent reviewer is a `reviewer`
+sub-agent launched without any conversation history — never a fork of the session, never the session
+that wrote or directed the dossier — and given only repository paths and the author's `next`. A
+sub-agent launched as *Orchestration* says is one. `authors` and `reviewer` record who wrote and who
+read, each as an **identity** `<who>, <model or human>, <YYYY-MM-DD>`: an agent's role, model and
+date, such as `reviewer, claude-opus-5-5, 2026-09-03` (`unknown` when the model was not recorded),
+or a human's name, `human` and date, such as `A. Referee, human, 2026-09-10`. The checker verifies
+the form, and that the reviewer's `<who>` is no author's; these fields record independence, they
+never create it. The site shows the reviewer next to each proved statement, so that a reader tells
+an agent's review from a human's.
 
-Only `pass` certifies, and only the versions it read: once a fingerprint no longer
-matches, the checker drops the certification until a new review passes it. The body states **Findings**, **Corrections** (or "None") and
-**Exclusions** — nearby claims not certified. A repaired proof gets a new report; if a later
-review invalidates a passing one, the orchestrator removes the certification and both
-reports stay.
+Only `pass` certifies, and only the versions it read: once a fingerprint no longer matches, the
+checker drops the certification until a new review passes it. The body states **Findings**,
+**Corrections** (or "None") and **Exclusions** — nearby claims not certified. A repaired proof gets
+a new report; if a later review invalidates a passing one, the orchestrator removes the
+certification and both reports stay.
 
 **A re-review** restores a lapsed certification without starting over. When a dossier or
 a statement it was checked against is edited after a `pass`, the next reviewer — still a
-fresh context — is given that report and the diff since it:
-`git diff <commit> -- <dossier> modules/`, where `<commit>` is the one that added the
-report. It checks every changed line and every step a change bears on; when only a
-statement changed, that is whether the proof still gets from the new statement what it used
-of the old one. Its Findings name the report it starts from and what it re-checked. A
-change to the argument's structure, or doubt about the earlier report, calls for a review in
-full. A re-review is an ordinary review: same front matter, fresh fingerprints.
+fresh context — is given that report, the commit `<commit>` that added it, and the
+checker's lines naming what changed: the dossier, the statements, or both. Its scope is
+the diff of exactly those, `git diff <commit> -- <dossier>` and each changed statement
+then and now, and every step a change bears on; when only a statement changed, that is
+whether the proof still gets from the new statement what it used of the old one. The
+earlier report sets the scope and nothing else: what it found is not evidence, and every
+step the re-review relies on, it checks. It reviews in full instead, and says so, when the
+argument's structure changed, when the earlier report looks wrong, or when that report is
+itself the second of two re-reviews in a row: a certification rests on no more than two
+re-reviews since a review in full. A re-review's Findings open with *Re-review of*
+`<report>`, then say what it re-checked. Otherwise it is an ordinary review: same front
+matter, fresh fingerprints.
 
 ### Manuscript — `modules/*.md`
 
@@ -442,17 +459,17 @@ The manuscript is the one text a reader reads: a mathematician who has never see
 repository should understand the work from it alone. It is split in two by authority.
 
 - **The statements are fixed.** The content of a labelled claim directive, its title
-  argument included (`:::{prf:theorem} Title`), is the statement; the orchestrator writes
-  it, and its `:label:` is its ledger id.
+argument included (`:::{prf:theorem} Title`), is the statement; the orchestrator writes
+it, and its `:label:` is its ledger id.
 - **Everything else is prose**, the `writer`'s: headings, motivation, examples worked by
-  hand, the idea of each proof, remarks, the order of sections and the split into files,
-  with the matching `toc:` entries of `myst.yml`. It may be rewritten freely; the writer
-  proposes a new or reworded statement as a delta, never edits one.
+hand, the idea of each proof, remarks, the order of sections and the split into files,
+with the matching `toc:` entries of `myst.yml`. It may be rewritten freely; the writer
+proposes a new or reworded statement as a delta, never edits one.
 
 Four rules keep the two apart:
 
-1. **A status is displayed, never written.** [`scripts/status.mjs`](scripts/status.mjs), a
-   MyST plugin, reads the ledger at build time and shows each statement's status next to
+1. **A status is displayed, never written.** `[scripts/status.mjs](scripts/status.mjs)`, a
+  MyST plugin, reads the ledger at build time and shows each statement's status next to
    its title: *Not settled here* (the ledger's `open`: not established in this project,
    which says nothing of the literature), *Preprint, not yet checked here* (an open
    theorem, lemma, proposition or corollary on `references`: a source's result that is
@@ -464,14 +481,14 @@ Four rules keep the two apart:
    (`[](#conj:main)`) and never says it was proved, refuted or is open. No check sees
    this; the reviewer's `sync` lens does.
 2. **A writer's pass changes no statement.** `check.py --statements` prints every
-   statement with its fingerprint; the orchestrator runs it before and after, and the two
+  statement with its fingerprint; the orchestrator runs it before and after, and the two
    outputs must match. Unlike a certification, it also guards an open conjecture.
 3. **No harness vocabulary in displayed prose.** Fence, ledger, route, checkpoint,
-   candidate, dossier: a reader does not need them. Notes for agents go in `%` comments,
+  candidate, dossier: a reader does not need them. Notes for agents go in `%` comments,
    which MyST does not render.
 4. **Computations are evidence, and say so.** A reported computation never reads as proof.
 
-How the prose is written is in [`writer.md`](.claude/agents/writer.md).
+How the prose is written is in `[writer.md](.claude/agents/writer.md)`.
 
 **Full proofs.** The table of contents lists the manuscript, then `proofs.md` and the
 dossiers under *Full proofs*; a proved statement links to its dossier. Only certified
@@ -480,10 +497,10 @@ before it checks and builds. Read locally, the table of contents shows the draft
 
 **Contributions.** A reader names a statement by the label displayed next to it. Once
 `project.github` in `myst.yml` names the repository, the plugin adds links that open an
-issue form of [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/) with that label in its
+issue form of `[.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/)` with that label in its
 `statement` field: *Idea* and *Counterexample* on an open statement, *Correction* on any
 other. Conversation goes to GitHub Discussions, if the repository uses them: the forms of
-[`.github/DISCUSSION_TEMPLATE/`](.github/DISCUSSION_TEMPLATE/) serve the categories
+`[.github/DISCUSSION_TEMPLATE/](.github/DISCUSSION_TEMPLATE/)` serve the categories
 *Q&A*, *Ideas* and *Literature*, which are created by hand in the repository settings, as
 is *Announcements*. An issue or a discussion moves nothing: the orchestrator turns what it
 brings into a mission, a delta or a correction, and a named human's acceptance of a proof
@@ -519,5 +536,5 @@ concurrent checks of one tree take turns on it. It needs uv, which provisions Py
 removes the drafts, then runs the full check before it builds anything.
 
 **Harness changes.** Keep this file, the checker, its tests, the templates and the example
-in agreement, and add a line under `Unreleased` in [`CHANGELOG.md`](CHANGELOG.md). Harness
+in agreement, and add a line under `Unreleased` in `[CHANGELOG.md](CHANGELOG.md)`. Harness
 work changes no mathematical status.

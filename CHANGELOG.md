@@ -25,21 +25,17 @@ version may require forks to migrate, and a patch version is a backward-compatib
 - `SPECIFICATION.md` gains *Orchestration*: agents are launched through the client
   (Claude Code's Agent tool, Codex's `spawn_agent` with `fork_turns: "none"`), never
   through `claude -p` or `codex exec` in the background; they are awaited by one blocking
-  call, never by polling; the orchestrator reads handoffs rather than the work, passes
-  paths rather than contents, and runs one task per session. The README says which
-  commands to approve once and for good. In a measured Codex session, polling alone was
-  45 % of the orchestrator's input tokens.
+  call (in Codex, `wait_agent` with a half-hour timeout), never by polling; the
+  orchestrator reads handoffs rather than the work, passes paths rather than contents, and
+  runs one task per session. The README says which commands to approve once and for good.
+  In a measured Codex session, polling alone was 45 % of the orchestrator's input tokens.
 - A **re-review** restores a lapsed certification from the last `pass` report and the
-  `git diff` since it, instead of a review in full: the reviewer checks what changed and
-  what it bears on. *Orchestration* asks for one whenever the argument itself was not
-  rewritten.
+  diff of what the checker reports changed, instead of a review in full: the reviewer
+  checks what changed and what it bears on. The earlier report sets the scope, never the
+  evidence. The orchestrator always asks for a re-review; the reviewer decides on a review
+  in full, and owes one after two re-reviews in a row.
 
 ### Changed
-
-- A statement's title no longer enters its fingerprint: renaming a statement lifts no
-  certification, and the `sync` lens checks that a title says nothing its body does not.
-  No migration: a fingerprint recorded before, title included, still matches while the
-  title is unchanged.
 
 - `reviewer`, every `authors` entry and `accepted_by` are identities
   `<who>, <model or human>, <YYYY-MM-DD>`, which the checker validates; `accepted_by` must
