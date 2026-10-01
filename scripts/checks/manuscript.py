@@ -9,8 +9,9 @@ or role, an unresolved cross-reference, and a duplicate label.
 
 Each claim also gets a *fingerprint*: the SHA-256 of its statement as MyST parsed it, blind
 to what does not change the mathematics — line wrapping, source positions, numbering, the
-text a cross-reference or a link to a label renders to and the page its target lives on, a
-proof nested in the claim, the status ``scripts/status.mjs`` displays from the ledger. A
+title, the text a cross-reference or a link to a label renders to and the page its target
+lives on, a proof nested in the claim, the status ``scripts/status.mjs`` displays from the
+ledger. A
 certification records the fingerprints of the statements it checked, so an edited
 statement is detected.
 """
@@ -141,9 +142,13 @@ def _statement(node: dict) -> dict:
     return kept
 
 
-def fingerprint(claim: dict) -> str:
-    """The SHA-256 of a claim's statement: its kind and its content, not its label."""
-    canonical = {"kind": claim.get("kind"), "children": _statement(claim)["children"]}
+def fingerprint(claim: dict, title: bool = False) -> str:
+    """The SHA-256 of a claim's statement: its kind and its content, not its label nor its
+    title. With ``title``, the fingerprint recorded before 0.5.0, which included it."""
+    children = _statement(claim)["children"]
+    if not title:
+        children = [child for child in children if child.get("type") != "admonitionTitle"]
+    canonical = {"kind": claim.get("kind"), "children": children}
     text = json.dumps(canonical, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -221,6 +226,9 @@ def read(content: Path, errors: list[str]) -> dict[str, dict]:
                                  "file": relative}
                 if claim:
                     labels[label]["fingerprint"] = fingerprint(node)
+                    titled = fingerprint(node, title=True)
+                    if titled != labels[label]["fingerprint"]:
+                        labels[label]["titled"] = titled
     return labels
 
 

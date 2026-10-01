@@ -109,6 +109,15 @@ class ProofTests(CheckerFixture):
         self.assertIn("the statement of 'thm:a' changed since research/reviews/2026-08-25-a.md "
                       "fingerprinted it; it needs a new review", self.errors())
 
+    def test_a_fingerprint_recorded_with_the_title_holds_while_the_title_is_unchanged(self):
+        self.certify()
+        recorded = self.anchors["thm:a"]["fingerprint"]
+        self.edit_statement("thm:a")
+        self.anchors["thm:a"]["titled"] = recorded
+        self.assertClean()
+        del self.anchors["thm:a"]["titled"]
+        self.assertIn("the statement of 'thm:a' changed", self.errors())
+
     def test_a_fast_check_compares_dossiers_but_not_statements(self):
         self.certify()
         self.edit_statement("thm:a")

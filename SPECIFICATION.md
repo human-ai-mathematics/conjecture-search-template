@@ -169,6 +169,34 @@ route it blocks is a portfolio delta naming the exact `cand:` or node id — "th
 hard" is not a blocker. Words such as "pass" or "done" in prose never control a
 transition; only a review's `verdict` certifies.
 
+### Orchestration
+
+Every model call re-reads the whole conversation, so an orchestrator's cost grows with
+the length of its context times the number of its calls. Six rules keep it small.
+
+1. **Launch agents through the client, never through a shell.** In Claude Code, the Agent
+   tool with the role as `subagent_type`; in Codex, `spawn_agent` with the role as
+   `agent_type` and `fork_turns: "none"`. Either is a fresh context in the sense of
+   *Review*. Never run `claude -p` or `codex exec` in the background: its cost is not
+   recorded, it needs approvals, and its progress can be seen only by polling.
+2. **Wait by blocking, never by polling.** Wait for an agent with one blocking call (in
+   Codex, `wait_agent` with a long timeout); a long command, with one call that waits for
+   it to end. A loop of `sleep`, `tail` or status checks re-sends the whole context at
+   every turn, and in practice costs more than the agents it waits for.
+3. **The orchestrator reads handoffs, not the work.** It reads the checker's summary, the
+   replies and the files it must edit. Reading dossiers, modules and sources to check an
+   agent's claim is a `reviewer`'s job, most often a `sync` audit.
+4. **A mission names paths; it does not paste them.** An agent's role is already loaded
+   as its instructions, and it reads `SPECIFICATION.md` and the files it needs on its own.
+   The mission gives the question, the ids and the paths, not their contents; the
+   orchestrator does not read the role files to brief an agent.
+5. **One task per session.** A new task starts in a new session from the checker's
+   summary, not after a compaction of the previous one.
+6. **A lapsed certification gets a re-review.** When the checker reports a dossier or a
+   statement changed since its review, the mission names the last `pass` report and the
+   commit that added it, and asks for a re-review (*Review*); a review in full only when
+   the argument itself was rewritten.
+
 ## Formats
 
 Write mathematics in LaTeX `$...$`. The manuscript and the dossiers are MyST Markdown: a
@@ -210,12 +238,14 @@ is exactly one ledger node. A label on a heading (`(sec:x)=`), an equation or a
 `prf:remark` is structural and is not a node. The checker reads the manuscript through
 `myst build --site`, so an unknown directive, an unresolved cross-reference, a duplicate
 label and any MyST error are errors. It also fingerprints each claim: the SHA-256 of its
-statement as MyST parsed it, blind to line wrapping, spacing, numbering, a cross-reference's
-rendered text and the page its target lives on — a link to a section (`[](#sec:x)`) is one,
+statement as MyST parsed it, blind to line wrapping, spacing, numbering, the title, a
+cross-reference's rendered text and the page its target lives on — a link to a section (`[](#sec:x)`) is one,
 so renaming the heading lifts nothing — a proof nested in the claim, and the displayed
 status. Its label and its file do not enter either, so moving a statement to another
-module lifts nothing. Any other edit — a symbol, a word, a hypothesis, the kind,
-the title — changes it.
+module lifts nothing. Any other edit — a symbol, a word, a hypothesis, the kind — changes
+it. The title names the statement for a reader and asserts nothing: the `sync` lens checks
+that it says nothing the body does not. A fingerprint recorded before 0.5.0 included the
+title; it still matches while the title is unchanged.
 
 ### Brief — `research/program/brief.md`
 
@@ -382,7 +412,7 @@ fingerprints:            # the versions read: uv run scripts/check.py --fingerpr
 **Independence is a fresh context, not a different name.** An agent reviewer is a
 `reviewer` sub-agent launched without any conversation history — never a fork of the
 session, never the session that wrote or directed the dossier — and given only repository
-paths and the author's `next`. `authors` and `reviewer` record who wrote and who read, each as
+paths and the author's `next`. A sub-agent launched as *Orchestration* says is one. `authors` and `reviewer` record who wrote and who read, each as
 an **identity** `<who>, <model or human>, <YYYY-MM-DD>`: an agent's role, model and date,
 such as `reviewer, claude-opus-5-5, 2026-09-03` (`unknown` when the model was not recorded),
 or a human's name, `human` and date, such as `A. Referee, human, 2026-09-10`. The checker
@@ -395,6 +425,16 @@ matches, the checker drops the certification until a new review passes it. The b
 **Exclusions** — nearby claims not certified. A repaired proof gets a new report; if a later
 review invalidates a passing one, the orchestrator removes the certification and both
 reports stay.
+
+**A re-review** restores a lapsed certification without starting over. When a dossier or
+a statement it was checked against is edited after a `pass`, the next reviewer — still a
+fresh context — is given that report and the diff since it:
+`git diff <commit> -- <dossier> modules/`, where `<commit>` is the one that added the
+report. It checks every changed line and every step a change bears on; when only a
+statement changed, that is whether the proof still gets from the new statement what it used
+of the old one. Its Findings name the report it starts from and what it re-checked. A
+change to the argument's structure, or doubt about the earlier report, calls for a review in
+full. A re-review is an ordinary review: same front matter, fresh fingerprints.
 
 ### Manuscript — `modules/*.md`
 

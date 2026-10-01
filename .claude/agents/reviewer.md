@@ -62,6 +62,14 @@ the handoff's `deltas` and writes no file.
    and limit interchanges are where these proofs fail.
 7. **Build.** `uv run scripts/check.py` reports no MyST error for the dossier.
 
+**A re-review** (*Review* in `SPECIFICATION.md`) is given the last `pass` report and a
+commit. Run `git diff <commit> -- <dossier> modules/`, and apply the steps above to every
+changed line and every step a change bears on: a changed statement the proof uses must
+still give what the proof takes from it; a changed own statement must still be what the
+dossier proves. Read beyond the diff wherever it leads. Name the earlier report and the
+scope you re-checked in the Findings. If the argument's structure changed, or the earlier
+report looks wrong, review in full and say so.
+
 **A refuter** is certified as an ordinary proof, plus one question: does it negate the
 target's exact quantified statement? Quote the target and its negation, and say whether the
 dossier supplies a single witness (enough for a universal claim) or a certified divergent
@@ -82,7 +90,9 @@ manuscript, the dossier theorem and the brief's negation say the same thing, nor
 ledger's edges match what the statements say; that is this lens's whole job. For each node in scope:
 
 1. Compare the theorem of every `proofs[].artifact` with the labelled `prf:` directive —
-   same quantifiers, constants, hypotheses, direction. The manuscript is canonical.
+   same quantifiers, constants, hypotheses, direction. The manuscript is canonical. The
+   directive's title says nothing its body does not: titles are not fingerprinted, so
+   this lens is their only check.
 2. Check that the ledger `status` and edges fit the statement: a `defined` node is a
    definition, a `depends_on` is actually used, a `bounded_by` actually bears on it.
 3. Check that every `assumes` antecedent is visible in the implication, and that a

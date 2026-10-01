@@ -113,6 +113,12 @@ $x^3 \\ge 0$.
 For all $x \\ge 0$, see [](#prop:nested):
 $x^2 \\ge 0$.
 :::
+
+:::{prf:lemma} Squares are nonnegative
+:label: lem:twin-titled
+For all $x \\ge 0$, see [](#prop:nested):
+$x^2 \\ge 0$.
+:::
 """
 
 DOSSIER = """\
@@ -191,6 +197,15 @@ class ManuscriptTests(unittest.TestCase):
         self.assertEqual(self.labels["lem:twin-b"]["fingerprint"], fingerprint)
         self.assertNotEqual(self.labels["lem:edited"]["fingerprint"], fingerprint)
         self.assertNotEqual(self.labels["prop:twin"]["fingerprint"], fingerprint)
+
+    def test_a_title_is_not_part_of_the_statement(self):
+        """A title names a statement for the reader; the sync lens checks it is faithful.
+        The fingerprint recorded before 0.5.0, title included, is kept beside it."""
+        twin = self.labels["lem:twin-a"]
+        titled = self.labels["lem:twin-titled"]
+        self.assertEqual(titled["fingerprint"], twin["fingerprint"])
+        self.assertNotEqual(titled["titled"], twin["fingerprint"])
+        self.assertNotIn("titled", twin)
 
     def test_an_error_myst_reports_is_an_error_here(self):
         """A bodiless directive is dropped from the tree; only MyST's own output says so."""

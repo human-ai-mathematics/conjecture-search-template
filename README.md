@@ -41,6 +41,13 @@ uv run scripts/check.py --drafts       # the draft dossiers, never published
 npx myst start                   # read the manuscript and the proofs in a browser
 ```
 
+Agents run the checker and MyST many times per session. Approve those commands once and
+for good (`uv run scripts/check.py` and `node_modules/.bin/myst`): in Claude Code, as
+`allow` rules in `.claude/settings.json`; in Codex, by accepting the prefix rule offered
+on the first escalation. Each approval asked again costs a turn, and in Codex a call to
+its reviewing model. How agents are launched and awaited is *Orchestration* in
+`SPECIFICATION.md`.
+
 The first check in a fresh clone downloads MyST's site theme into `_build/`. A green check
 establishes structure only. Each statement shows its status, read from the ledger by
 [`scripts/status.mjs`](scripts/status.mjs). The `pages` workflow publishes the manuscript
