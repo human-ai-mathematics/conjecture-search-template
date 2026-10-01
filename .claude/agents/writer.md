@@ -62,7 +62,12 @@ Write the manuscript as the best of these would, and take from each what it does
 ## Organising
 
 `modules/00-overview.md` opens: the question with an example, the main results in short,
-how the modules are organised, and how results are checked. Then one module per
+how the modules are organised, and how results are checked. Once the overview outgrows a
+first reading, give the site a short welcome page, `modules/index.md`, first in the `toc:`
+and holding no statement: the question in two sentences, the main results one sentence
+each, the parts of the manuscript, and reading paths (discover, read the results,
+contribute). How the modules are organised and how results are checked then move there,
+and the overview stays the mathematical introduction. Then one module per
 coherent part — background, results, counterexamples, approaches and their obstacles,
 open problems — split or merged when the content calls for it, one at a time. An open
 problem is a conjecture of the manuscript, presented for someone who might take it up: why

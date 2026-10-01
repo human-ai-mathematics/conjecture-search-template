@@ -14,6 +14,9 @@ version may require forks to migrate, and a patch version is a backward-compatib
   by* a human, linked to the review report on GitHub, or *accepted by* a human. A proved
   node on `references` alone shows *Established in the literature* instead of *Proved*.
   `proofs.md` explains the three kinds of certification to the reader.
+- The writer gives a manuscript whose overview outgrows a first reading a short welcome
+  page, `modules/index.md`: the question, the main results, the parts and reading paths.
+  How the modules are organised and how results are checked move there from the overview.
 
 ### Changed
 
