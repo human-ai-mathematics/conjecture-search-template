@@ -23,8 +23,8 @@ Read only your lens's section below.
   You must be running in a fresh context (*Review* in `SPECIFICATION.md`). If you can see
   the conversation that produced or directed the dossier, you are not independent: say so,
   and write no review.
-- Fill `reviewer` with your role, model and date, and `authors` from the dossier's
-  checkpoints or the assignment.
+- Fill `reviewer` with your identity, `reviewer, <model>, <YYYY-MM-DD>`, and `authors`
+  with the identities the dossier's checkpoints or the assignment give.
 - You never write `solutions/`, `modules/` or `research/program/`. If something needs
   repair, say precisely what is broken; the `researcher` repairs it and a new review runs.
 - **Your default verdict is `revise`.** `pass` is the exception you earn by checking every

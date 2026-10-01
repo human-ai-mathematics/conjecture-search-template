@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import unittest
 
-from fixtures import CheckerFixture, node
+from fixtures import AUTHOR, HUMAN, CheckerFixture, node
 
 
 class ProofTests(CheckerFixture):
@@ -28,8 +28,33 @@ class ProofTests(CheckerFixture):
         self.assertIn("thm:a: a proved node without references needs a proof record", self.errors())
 
     def test_the_author_never_certifies_their_own_proof(self):
-        self.certify(reviewer="researcher")
+        self.certify(reviewer="researcher, claude-fable-5, 2026-08-26")
         self.assertIn("reviewer: must not be one of the authors", self.errors())
+
+    def test_an_author_is_matched_by_name_whatever_the_model_or_date(self):
+        self.certify(reviewer="Researcher, claude-opus-5-5, 2026-08-30")
+        self.assertIn("reviewer: must not be one of the authors", self.errors())
+
+    def test_reviewers_and_authors_are_identities(self):
+        self.certify(reviewer="reviewer", authors=[AUTHOR, "researcher, 2026-08-25",
+                                                   "researcher, m, 2026-02-30"])
+        errors = self.errors()
+        self.assertIn(".reviewer: want '<who>, <model or human>, <YYYY-MM-DD>', got 'reviewer'",
+                      errors)
+        self.assertIn("got 'researcher, 2026-08-25'", errors)
+        self.assertIn("got 'researcher, m, 2026-02-30'", errors)
+
+    def test_a_human_reviews_too(self):
+        self.certify(reviewer=HUMAN)
+        self.assertClean()
+
+    def test_only_a_human_accepts_a_proof(self):
+        self.ledger([node("thm:a", proofs=[])], certify=False)
+        artifact = self.solution("a", "thm:a")
+        self.ledger([node("thm:a", proofs=[
+            {"artifact": artifact, "accepted_by": AUTHOR,
+             "fingerprints": self.fingerprints([artifact], ["thm:a"])}])])
+        self.assertIn("proofs[0].accepted_by: an acceptance is a human's", self.errors())
 
     def test_a_revise_verdict_cannot_certify(self):
         self.certify(verdict="revise")
@@ -56,7 +81,7 @@ class ProofTests(CheckerFixture):
     def test_a_review_header_is_validated_even_when_unused(self):
         self.review("orphan", verdict="maybe", authors=[], extra_field=1)
         self.write("research/reviews/2026-08-25-list.md",
-                   "---\nverdict: pass\nauthors: [a]\nreviewer: b\n"
+                   "---\nverdict: pass\nauthors: ['a, m, 2026-08-25']\nreviewer: 'b, m, 2026-08-25'\n"
                    "fingerprints: [solutions/a.md]\n---\n")
         self.review("keys", fingerprints={"notes/a.md": "0" * 64, "thm:ghost": "0" * 64,
                                           "solutions/a.md": "ABC"})
@@ -103,7 +128,7 @@ class ProofTests(CheckerFixture):
         self.edit_statement("def:norm")
         errors = self.errors()
         self.assertIn("lem:base.proofs[0]: the statement of 'lem:base' changed since the "
-                      "acceptance by fixture human fingerprinted it; it needs a new acceptance",
+                      f"acceptance by {HUMAN} fingerprinted it; it needs a new acceptance",
                       errors)
         self.assertIn("thm:user.proofs[0]: the statement of 'lem:base' changed", errors)
         self.assertIn("thm:user.proofs[0]: the statement of 'def:norm' changed", errors)
@@ -119,8 +144,8 @@ class ProofTests(CheckerFixture):
         self.ledger([node("thm:a", proofs=[])], certify=False)
         artifact = self.solution("a", "thm:a")
         self.ledger([node("thm:a", proofs=[
-            {"artifact": artifact, "accepted_by": "A. Referee"},
-            {"artifact": artifact, "accepted_by": "A. Referee",
+            {"artifact": artifact, "accepted_by": HUMAN},
+            {"artifact": artifact, "accepted_by": HUMAN,
              "fingerprints": self.fingerprints([artifact], ["thm:a"])},
             {"artifact": artifact, "review": "research/reviews/r.md",
              "fingerprints": self.fingerprints([artifact], ["thm:a"])},
@@ -132,34 +157,34 @@ class ProofTests(CheckerFixture):
                       errors)
         with (self.root / artifact).open("a") as stream:
             stream.write("An edit after the acceptance.\n")
-        self.assertIn("proofs[1]: solutions/a.md changed since the acceptance by A. Referee "
+        self.assertIn(f"proofs[1]: solutions/a.md changed since the acceptance by {HUMAN} "
                       "fingerprinted it; it needs a new acceptance", self.errors())
 
     def test_a_record_is_either_reviewed_or_accepted_by_a_named_human(self):
         self.ledger([node("thm:a", proofs=[])], certify=False)
         artifact = self.solution("a", "thm:a")
         self.ledger([node("thm:a", proofs=[
-            {"artifact": artifact, "accepted_by": "A. Referee",
+            {"artifact": artifact, "accepted_by": HUMAN,
              "fingerprints": self.fingerprints([artifact], ["thm:a"])},
             {"artifact": artifact},
-            {"artifact": artifact, "accepted_by": "B", "review": "research/reviews/r.md"},
+            {"artifact": artifact, "accepted_by": HUMAN, "review": "research/reviews/r.md"},
             {"artifact": artifact, "accepted_by": " "},
-            {"artifact": artifact, "accepted_by": "B", "mode": "human"},
+            {"artifact": artifact, "accepted_by": HUMAN, "mode": "human"},
         ])])
         errors = self.errors()
         self.assertNotIn("proofs[0]", errors)
         self.assertIn("proofs[1]: needs exactly one of review", errors)
         self.assertIn("proofs[2]: needs exactly one of review", errors)
-        self.assertIn("proofs[3].accepted_by: must name who accepted", errors)
+        self.assertIn("proofs[3].accepted_by: want '<who>, <model or human>", errors)
         self.assertIn("proofs[4]: unknown field 'mode'", errors)
 
     def test_a_dossier_is_markdown_under_solutions_and_names_its_node(self):
         self.write("notes/a.md", "---\nledger-node: thm:a\n---\n")
         self.write("solutions/plain.md", "no front matter\n")
         self.ledger([node("thm:a", proofs=[
-            {"artifact": "notes/a.md", "accepted_by": "X"},
-            {"artifact": self.solution("other", "thm:b"), "accepted_by": "X"},
-            {"artifact": "solutions/plain.md", "accepted_by": "X"},
+            {"artifact": "notes/a.md", "accepted_by": HUMAN},
+            {"artifact": self.solution("other", "thm:b"), "accepted_by": HUMAN},
+            {"artifact": "solutions/plain.md", "accepted_by": HUMAN},
         ])])
         errors = self.errors()
         self.assertIn("'notes/a.md' must be under solutions/", errors)
@@ -172,9 +197,9 @@ class ProofTests(CheckerFixture):
         second = self.solution("second", "thm:a")
         both = self.fingerprints([shared, second], ["thm:a", "thm:b"])
         self.ledger([
-            node("thm:a", proofs=[{"artifact": shared, "accepted_by": "X", "fingerprints": both},
-                                  {"artifact": second, "accepted_by": "Y", "fingerprints": both}]),
-            node("thm:b", proofs=[{"artifact": shared, "accepted_by": "X", "fingerprints": both}]),
+            node("thm:a", proofs=[{"artifact": shared, "accepted_by": HUMAN, "fingerprints": both},
+                                  {"artifact": second, "accepted_by": "B. Referee, human, 2026-08-26", "fingerprints": both}]),
+            node("thm:b", proofs=[{"artifact": shared, "accepted_by": HUMAN, "fingerprints": both}]),
         ])
         self.assertClean()
 

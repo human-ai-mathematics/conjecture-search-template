@@ -1,8 +1,10 @@
 """Certification: proof records, dossiers under ``solutions/``, reviews, refutations.
 
-A proof record is a dossier plus exactly one of ``review`` (an agent's independent review)
-or ``accepted_by`` (a human's attestation). The review is checked hardest: it must exist
-under ``research/reviews/``, pass, and name a reviewer who is not an author.
+A proof record is a dossier plus exactly one of ``review`` (an independent review) or
+``accepted_by`` (a human's attestation). The review is checked hardest: it must exist under
+``research/reviews/``, pass, and name a reviewer who is not an author. Every reviewer,
+author and acceptor is an identity ``<who>, <model or human>, <YYYY-MM-DD>``, which the
+site shows next to the statement.
 
 Either way, a certification holds only for the versions it saw. Its ``fingerprints`` map
 the dossier's path to its SHA-256, and each statement the proof is checked against — the
@@ -13,6 +15,7 @@ A fast check reads no manuscript, so it compares only the dossiers.
 from __future__ import annotations
 
 import re
+from datetime import date
 from pathlib import Path
 
 from .common import (as_list, contained_path, markdown_records, one_of,
@@ -25,6 +28,34 @@ PROOF_FIELDS = {"artifact", "review", "accepted_by", "fingerprints"}
 REVIEW_VERDICTS = {"pass", "revise"}
 REVIEW_FIELDS = {"verdict", "authors", "reviewer", "fingerprints"}
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+IDENTITY_RE = re.compile(
+    r"^\s*([^,]*[^,\s])\s*,\s*([A-Za-z0-9._-]+)\s*,\s*(\d{4}-\d{2}-\d{2})\s*$")
+IDENTITY_FORM = "'<who>, <model or human>, <YYYY-MM-DD>'"
+
+
+def parse_identity(value: object) -> dict[str, str] | None:
+    """An identity ``<who>, <model or human>, <YYYY-MM-DD>``: an agent's role, model and
+    date (``unknown`` when the model was not recorded), or a human's name, ``human`` and
+    date. None when it is malformed."""
+    match = IDENTITY_RE.match(value) if isinstance(value, str) else None
+    if match is None:
+        return None
+    who, what, when = match.groups()
+    try:
+        date.fromisoformat(when)
+    except ValueError:
+        return None
+    kind = "human" if what == "human" else "agent"
+    return {"who": who, "kind": kind, "model": None if kind == "human" else what,
+            "date": when}
+
+
+def identity(value: object, context: str, errors: list[str]) -> dict[str, str] | None:
+    """``parse_identity``, reporting a malformed value."""
+    parsed = parse_identity(value)
+    if parsed is None:
+        errors.append(f"{context}: want {IDENTITY_FORM}, got {value!r}")
+    return parsed
 
 
 def relied_on(nid: str, nodes: dict[str, dict]) -> list[str]:
@@ -66,11 +97,11 @@ def read_reviews(root: Path, nodes: dict[str, dict], errors: list[str]) -> dict[
             errors.append(f"{context}: unknown field '{field}'")
         if not one_of(raw.get("verdict"), REVIEW_VERDICTS):
             errors.append(f"{context}.verdict: want one of {sorted(REVIEW_VERDICTS)}")
-        reviewer = raw.get("reviewer")
-        authors = string_list(raw, "authors", context, errors, required=True)
-        if not isinstance(reviewer, str) or not reviewer.strip():
-            errors.append(f"{context}.reviewer: must be a non-empty string")
-        elif reviewer in authors:
+        authors = [identity(author, f"{context}.authors", errors)
+                   for author in string_list(raw, "authors", context, errors, required=True)]
+        reviewer = identity(raw.get("reviewer"), f"{context}.reviewer", errors)
+        if reviewer and reviewer["who"].casefold() in {
+                author["who"].casefold() for author in authors if author}:
             errors.append(f"{context}.reviewer: must not be one of the authors")
         reviews[repo_relative(root, path)] = {
             "verdict": raw.get("verdict"),
@@ -131,8 +162,12 @@ def _proof(root: Path, nid: str, proof: object, context: str, reviews: dict[str,
         errors.append(f"{context}: needs exactly one of review (agent) or accepted_by (human)")
         return named
     if accepted_by is not None:
-        if not isinstance(accepted_by, str) or not accepted_by.strip():
-            errors.append(f"{context}.accepted_by: must name who accepted the proof")
+        acceptor = identity(accepted_by, f"{context}.accepted_by", errors)
+        if acceptor is None:
+            return named
+        if acceptor["kind"] != "human":
+            errors.append(f"{context}.accepted_by: an acceptance is a human's; an agent "
+                          "certifies through a review")
             return named
         recorded = fingerprints(proof.get("fingerprints"), nodes,
                                 f"{context}.fingerprints", errors)

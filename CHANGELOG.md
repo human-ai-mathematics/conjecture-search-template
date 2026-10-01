@@ -10,6 +10,19 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 - `.codex/agents/` defines the three roles for Codex, mirroring `.claude/agents/`; the
   README and `SPECIFICATION.md` name both directories.
+- Each proved statement shows who certified it: *agent review (model, date)* or *reviewed
+  by* a human, linked to the review report on GitHub, or *accepted by* a human. A proved
+  node on `references` alone shows *Established in the literature* instead of *Proved*.
+  `proofs.md` explains the three kinds of certification to the reader.
+
+### Changed
+
+- `reviewer`, every `authors` entry and `accepted_by` are identities
+  `<who>, <model or human>, <YYYY-MM-DD>`, which the checker validates; `accepted_by` must
+  be a human's, and the reviewer's `<who>` must be no author's. Forks migrate: rewrite
+  each review's `reviewer` and `authors` in that form (`unknown` for an unrecorded model,
+  the filename's date when no other is known). The review fields are not fingerprinted,
+  so no certification lapses.
 
 ## [0.4.0] - 2026-09-30
 

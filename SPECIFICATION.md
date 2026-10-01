@@ -328,7 +328,7 @@ proofs:
   - artifact: solutions/thm-main.md
     review: research/reviews/2026-09-02-thm-main-review.md
   - artifact: solutions/thm-main-second-proof.md
-    accepted_by: <human identity>
+    accepted_by: A. Referee, human, 2026-09-10
     fingerprints:                   # printed by: uv run scripts/check.py --fingerprint <dossier>
       solutions/thm-main-second-proof.md: <sha256>
       thm:main: <sha256>
@@ -336,7 +336,7 @@ proofs:
 
 A **proof record** names a dossier and exactly one of `review` — an independent review with
 `verdict: pass` — or `accepted_by`, a named human's attestation, which carries its own
-`fingerprints`. A node may carry several independent proofs. A dossier no `proofs[]` record
+`fingerprints`. `accepted_by` is a human's identity (*Review* below). A node may carry several independent proofs. A dossier no `proofs[]` record
 names is an uncertified draft; the summary lists it as one.
 
 **Fingerprints** pin a certification to what it saw. They map the dossier's path to its
@@ -369,8 +369,9 @@ generally needs a certified divergent family. The refuter never enters the targe
 ```yaml
 ---
 verdict: revise          # pass | revise
-authors: [<proof author>]
-reviewer: <independent reviewer>
+authors:
+  - researcher, claude-opus-5-5, 2026-09-02   # <who>, <model or human>, <YYYY-MM-DD>
+reviewer: reviewer, claude-opus-5-5, 2026-09-03
 fingerprints:            # the versions read: uv run scripts/check.py --fingerprint <dossier>
   solutions/thm-main.md: <sha256>
   thm:main: <sha256>
@@ -381,10 +382,13 @@ fingerprints:            # the versions read: uv run scripts/check.py --fingerpr
 **Independence is a fresh context, not a different name.** An agent reviewer is a
 `reviewer` sub-agent launched without any conversation history — never a fork of the
 session, never the session that wrote or directed the dossier — and given only repository
-paths and the author's `next`. `authors` and `reviewer` record who wrote and who read: a
-human's name, or an agent's role, model and date, such as
-`reviewer, claude-opus-5-5, 2026-09-03`. The checker only verifies that `reviewer` differs
-from every author, so these fields record independence; they never create it.
+paths and the author's `next`. `authors` and `reviewer` record who wrote and who read, each as
+an **identity** `<who>, <model or human>, <YYYY-MM-DD>`: an agent's role, model and date,
+such as `reviewer, claude-opus-5-5, 2026-09-03` (`unknown` when the model was not recorded),
+or a human's name, `human` and date, such as `A. Referee, human, 2026-09-10`. The checker
+verifies the form, and that the reviewer's `<who>` is no author's; these fields record
+independence, they never create it. The site shows the reviewer next to each proved
+statement, so that a reader tells an agent's review from a human's.
 
 Only `pass` certifies, and only the versions it read: once a fingerprint no longer
 matches, the checker drops the certification until a new review passes it. The body states **Findings**, **Corrections** (or "None") and
@@ -410,8 +414,10 @@ Four rules keep the two apart:
 1. **A status is displayed, never written.** [`scripts/status.mjs`](scripts/status.mjs), a
    MyST plugin, reads the ledger at build time and shows each statement's status next to
    its title: *Not settled here* (the ledger's `open`: not established in this project,
-   which says nothing of the literature), *Proved* (linking to its dossier), or *Refuted
-   by* its refuter, then the statement's label. The prose points at a statement
+   which says nothing of the literature), *Proved* (linking to its dossier) followed by
+   who certified it — *agent review (model, date)*, *reviewed by* a human, or *accepted
+   by* a human — *Established in the literature* (a proved node on `references` alone),
+   or *Refuted by* its refuter, then the statement's label. The prose points at a statement
    (`[](#conj:main)`) and never says it was proved, refuted or is open. No check sees
    this; the reviewer's `sync` lens does.
 2. **A writer's pass changes no statement.** `check.py --statements` prints every

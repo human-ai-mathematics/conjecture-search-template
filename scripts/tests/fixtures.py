@@ -23,6 +23,10 @@ from checks.manuscript import KIND  # noqa: E402
 from checks.proofs import relied_on  # noqa: E402
 
 CHECK = REPO / "scripts/check.py"
+# Identities, as reviews and proof records write them.
+AUTHOR = "researcher, claude-opus-5-5, 2026-08-25"
+REVIEWER = "reviewer, claude-opus-5-5, 2026-08-25"
+HUMAN = "A. Referee, human, 2026-08-25"
 
 #: The site template is a local stub, so a fixture build never downloads MyST's theme.
 MYST_CONFIG = """version: 1
@@ -106,7 +110,7 @@ class CheckerFixture(unittest.TestCase):
             if (certify and item.get("status") == "proved"
                     and "references" not in item and "proofs" not in item):
                 artifact = self.solution(f"fixture-{item['id'].replace(':', '-')}", item["id"])
-                item["proofs"] = [{"artifact": artifact, "accepted_by": "fixture human",
+                item["proofs"] = [{"artifact": artifact, "accepted_by": HUMAN,
                                    "fingerprints": self.fingerprints(
                                        [artifact], relied_on(item["id"], graph))}]
         self.write("research/program/ledger.yaml",
@@ -118,7 +122,7 @@ class CheckerFixture(unittest.TestCase):
                           front_matter({"title": "Dossier", "ledger-node": list(node_ids)}))
 
     def review(self, name: str, *, solutions=(), statements=(), verdict: str = "pass",
-               reviewer: str = "reviewer", authors=("researcher",), **extra) -> str:
+               reviewer: str = REVIEWER, authors=(AUTHOR,), **extra) -> str:
         """A review of ``solutions`` checked against ``statements``, each fingerprinted as
         it stands now."""
         return self.write(f"research/reviews/2026-08-25-{name}.md", front_matter({
