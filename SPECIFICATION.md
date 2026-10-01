@@ -2,8 +2,10 @@
 
 This file is the whole contract. No client loads it on its own, so every session that edits
 the repository reads it first, and every agent file in [`.claude/agents/`](.claude/agents/)
-tells its agent to. [`example/`](example/README.md) is one complete search, worth reading
-once alongside it; [`templates/`](templates/) holds an empty copy of each file genre.
+and [`.codex/agents/`](.codex/agents/) tells its agent to. The two directories define the
+same three roles, for Claude Code and for Codex: a change to a role is made in both.
+[`example/`](example/README.md) is one complete search, worth reading once alongside it;
+[`templates/`](templates/) holds an empty copy of each file genre.
 
 ## Scope
 

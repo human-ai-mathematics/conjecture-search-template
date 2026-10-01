@@ -22,7 +22,7 @@ repository by reading it.
 | [`research/reviews/`](research/reviews/) | independent proof reviews |
 | [`research/runs/`](research/runs/) | computation scripts and their output |
 | [`solutions/`](solutions/) | standalone proof and refutation dossiers |
-| [`.claude/agents/`](.claude/agents/) | the three roles: `researcher`, `reviewer` and `writer` |
+| [`.claude/agents/`](.claude/agents/), [`.codex/agents/`](.codex/agents/) | the three roles: `researcher`, `reviewer` and `writer`, for Claude Code and for Codex |
 | [`templates/`](templates/) | an empty copy of each file genre |
 | [`example/`](example/README.md) | one complete worked search, a fixture to copy from |
 

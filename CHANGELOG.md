@@ -6,6 +6,11 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ## [Unreleased]
 
+### Added
+
+- `.codex/agents/` defines the three roles for Codex, mirroring `.claude/agents/`; the
+  README and `SPECIFICATION.md` name both directories.
+
 ## [0.4.0] - 2026-09-30
 
 Each statement names itself and invites a contribution, and `goal.md` says what the
