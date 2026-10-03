@@ -36,6 +36,7 @@ npm ci
 ./scripts/check.sh               # the checker, the worked example, the unit tests
 uv run scripts/check.py         # full check; 0 errors required before any status change
 uv run scripts/check.py --fast  # research state only, no MyST build
+uv run scripts/check.py --impact # compact scope for grouped re-reviews; same validation
 uv run scripts/check.py --statements   # before and after a writer's pass: must not change
 uv run scripts/check.py --drafts       # the draft dossiers, never published
 npx myst start                   # read the manuscript and the proofs in a browser
@@ -45,14 +46,33 @@ Agents run the checker and MyST many times per session. Approve those commands o
 for good (`uv run scripts/check.py` and `node_modules/.bin/myst`): in Claude Code, as
 `allow` rules in `.claude/settings.json`; in Codex, by accepting the prefix rule offered
 on the first escalation. Each approval asked again costs a turn, and in Codex a call to
-its reviewing model. How agents are launched and awaited is *Orchestration* in
-`SPECIFICATION.md`.
+its reviewing model. See *Running agents* below for practical guidance; the independence
+requirement is in *Review* in `SPECIFICATION.md`.
 
 The first check in a fresh clone downloads MyST's site theme into `_build/`. A green check
 establishes structure only. Each statement shows its status, read from the ledger by
 [`scripts/status.mjs`](scripts/status.mjs). The `pages` workflow publishes the manuscript
 and the certified dossiers to GitHub Pages when dispatched by hand, after a person has
 read them.
+
+## Running agents
+
+Prefer the client's agent tools so assignments, results and progress remain visible.
+Load the corresponding instructions from `.claude/agents/` or `.codex/agents/` for each
+role. In Claude Code, use the Agent tool's role selection when available. In Codex,
+use `spawn_agent` with `fork_turns: "none"` for an independent reviewer and ensure its
+assignment loads the reviewer instructions; use the role-selection mechanism your client
+actually exposes rather than assuming an `agent_type` argument exists.
+
+A reviewer must not inherit the conversation that authored or directed the proof. Check
+that the chosen launch mechanism supplies that fresh context. Other agents can receive
+context useful to their tasks. Prefer these managed tools over background shell sessions.
+
+Use completion notifications or blocking waits (such as `wait_agent`) rather than repeated
+status polling. Choose a timeout within the client's limits that still allows progress
+updates and responses to the user; no fixed wait duration is part of the repository
+contract. Start a new session when it helps keep context focused, not automatically after
+each task. The recommended scientific workflow is in *Workflow* in `SPECIFICATION.md`.
 
 ---
 

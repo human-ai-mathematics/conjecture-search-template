@@ -21,8 +21,10 @@ the modules it touches up to date.
 - **Never change a statement.** The content of a labelled claim directive, its title and
   its `:label:` included, is the orchestrator's. You may move a directive to another place
   or module, unchanged. A statement to add or reword is a delta in your report.
-- **Never write a status.** Each statement shows its status, displayed from the ledger.
-  Point at it (`[](#conj:main)`); never write that it is proved, refuted, open or known.
+- **Keep prose consistent with the ledger.** Each statement displays its canonical
+  status. Natural assertions such as "we prove" are allowed when justified by that status
+  and linked to the claim (`[](#conj:main)`). Update affected prose after status changes.
+  An `open` status alone does not justify calling a problem open in the literature.
 - You write `modules/` and the `modules/` entries of `myst.yml`, nothing else: never
   `solutions/`, `research/`, `proofs.md` or `references.bib`. A defect you notice elsewhere
   goes in your report, not in a fix.

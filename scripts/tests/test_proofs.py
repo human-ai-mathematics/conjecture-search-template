@@ -19,6 +19,41 @@ class ProofTests(CheckerFixture):
         self.ledger([node(nid, proofs=[])], certify=False)
         self.ledger([node(nid, proofs=[self.agent_proof(nid, **review)])])
 
+    def test_impact_groups_shared_changes_and_keeps_certification_sources(self):
+        self.ledger([node("def:common", kind="definition", status="defined"),
+                     node("thm:a", proofs=[]), node("thm:b", proofs=[])], certify=False)
+        a, b = self.solution("a", "thm:a"), self.solution("b", "thm:b")
+        review = self.review("a", solutions=[a], statements=["thm:a", "def:common"])
+        self.ledger([
+            node("def:common", kind="definition", status="defined"),
+            node("thm:a", depends_on=["def:common"], proofs=[{"artifact": a, "review": review}]),
+            node("thm:b", assumes=["def:common"], proofs=[{
+                "artifact": b, "accepted_by": HUMAN,
+                "fingerprints": self.fingerprints([b], ["thm:b", "def:common"])}]),
+        ])
+        self.assertEqual(self.check()["impact"], {})
+        self.edit_statement("def:common")
+        with (self.root / a).open("a") as stream:
+            stream.write("An edit.\n")
+        report = self.check()
+        self.assertEqual(set(report["impact"]), {"def:common", a})
+        affected = report["impact"]["def:common"]
+        self.assertEqual({(e["node"], e["artifact"], e["source"]) for e in affected},
+                         {("thm:a", a, review), ("thm:b", b, f"the acceptance by {HUMAN}")})
+        self.assertEqual([e["node"] for e in report["impact"][a]], ["thm:a"])
+        self.assertTrue(all(e["error"] in report["errors"] for e in affected))
+        from checks import analyze
+        fast = analyze(self.root, fast=True)
+        self.assertEqual(set(fast["impact"]), {a})
+        self.assertTrue(fast["fast"])
+
+    def test_impact_does_not_call_missing_fingerprints_a_change(self):
+        self.certify(statements=[])
+        self.edit_statement("thm:a")
+        report = self.check()
+        self.assertEqual(report["impact"], {})
+        self.assertIn("does not fingerprint the statement", "\n".join(report["errors"]))
+
     def test_a_passing_independent_review_certifies(self):
         self.certify()
         self.assertClean()

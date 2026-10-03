@@ -16,10 +16,12 @@ ROOT = Path(__file__).resolve().parents[2]
 def analyze(root: Path | None = None, labels: dict[str, dict] | None = None, *,
             fast: bool = False) -> dict:
     """Validate ``root`` and return ``{"errors", "nodes", "drafts", "target",
-    "approaches", "candidates", "mentions", "latest", "fast"}``.
+    "approaches", "candidates", "mentions", "latest", "fast", "impact"}``.
 
     ``drafts`` are the dossiers no proof record names; they are left out of the published
-    site.
+    site. ``impact`` groups fingerprint mismatches by changed dossier or statement,
+    recording affected nodes, dossiers, certification sources and their validation errors.
+    Missing fingerprints remain ordinary errors, not claims that a version changed.
 
     ``fast`` skips the manuscript: no MyST build, so the anchors and the statement
     fingerprints go unchecked. ``labels`` is the manuscript as
@@ -31,10 +33,11 @@ def analyze(root: Path | None = None, labels: dict[str, dict] | None = None, *,
     if labels is None and not fast:
         labels = manuscript.manuscript_labels(root, errors)
     nodes = ledger.check(root, labels, errors)
-    drafts = proofs.check(root, nodes, labels, errors)
+    impact: dict[str, list[dict]] = {}
+    drafts = proofs.check(root, nodes, labels, errors, impact)
     state = search.check(root, nodes, errors)
     return {"errors": errors, "nodes": nodes, "drafts": drafts, "fast": labels is None,
-            **state}
+            "impact": impact, **state}
 
 
 def fingerprint(root: Path | None, dossiers: list[str]) -> tuple[dict[str, str], list[str]]:

@@ -8,6 +8,12 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ### Added
 
+- `check.py --impact` groups stale certifications by changed statement or dossier, listing
+  affected nodes, dossiers and review paths or human acceptances. It reuses the normal
+  comparisons and exit code, keeps other errors visible, and avoids repeated mismatch
+  diagnostics. `--fast` explicitly limits the report to dossier comparisons. No Git
+  lookup, new stored format or fingerprint change.
+
 - `.codex/agents/` defines the three roles for Codex, mirroring `.claude/agents/`; the
   README and `SPECIFICATION.md` name both directories.
 - Each proved statement shows who certified it: *agent review (model, date)* or *reviewed
@@ -22,20 +28,36 @@ version may require forks to migrate, and a patch version is a backward-compatib
 - The writer gives a manuscript whose overview outgrows a first reading a short welcome
   page, `modules/index.md`: the question, the main results, the parts and reading paths.
   How the modules are organised and how results are checked move there from the overview.
-- `SPECIFICATION.md` gains *Orchestration*: agents are launched through the client
-  (Claude Code's Agent tool, Codex's `spawn_agent` with `fork_turns: "none"`), never
-  through `claude -p` or `codex exec` in the background; they are awaited by one blocking
-  call (in Codex, `wait_agent` with a half-hour timeout), never by polling; the
-  orchestrator reads handoffs rather than the work, passes paths rather than contents, and
-  runs one task per session. The README says which commands to approve once and for good.
-  In a measured Codex session, polling alone was 45 % of the orchestrator's input tokens.
-- A **re-review** restores a lapsed certification from the last `pass` report and the
-  diff of what the checker reports changed, instead of a review in full: the reviewer
-  checks what changed and what it bears on. The earlier report sets the scope, never the
-  evidence. The orchestrator always asks for a re-review; the reviewer decides on a review
-  in full, and owes one after two re-reviews in a row.
+- Orchestration guidance encourages managed agent tools, selective reading and fewer
+  polling calls. The README describes practical launch and wait choices; independent
+  certification still requires a fresh reviewer context.
+- A **re-review** restores a lapsed certification from the last `pass` report and a
+  verified diff; its scope and the triggers for a full review are described under
+  *Changed* below.
 
 ### Changed
+
+- Human contributors may propose, prove and explicitly accept their own results through
+  `accepted_by`, without a separate reviewer. Agent reviews remain independent. Dossiers
+  and fingerprints still identify the accepted versions; formats and checker are unchanged.
+
+- The contract separates guarantees, formats and checks, and recommended workflow.
+  Write responsibility is per content, statements have one canonical version, and the
+  limits of automated checks (including reviewer independence and append-only history) are
+  explicit. A stale certification causes validation errors, not an automatic ledger edit.
+- Re-reviews retain certified conclusions for unchanged, unaffected work and examine the
+  changes and their consequences. There is no count-based limit; uncertain impact,
+  structural changes, doubtful prior certification or an unverifiable baseline require
+  a full review. Grouped reviews use the existing multi-dossier format, with separate
+  reports for passing and failing scopes. Fingerprints and YAML formats are unchanged;
+  existing certifications need no migration. `SPECIFICATION.md` states the rule; how a
+  reviewer verifies the baseline, examines the change and reports it is in `reviewer.md`.
+- Orchestrators may read the passages a route decision needs, never to check a proof or
+  the agreement of files, which stays a reviewer's mission, and adapt handoffs while retaining
+  every reported repair defect. Session and wait choices are recommendations; client
+  recipes move to the README. Prose may describe statuses consistently with the ledger,
+  and `sync` checks contradictions and unsupported assertions. Claude and Codex role
+  instructions and the worked example's guidance follow the same rules.
 
 - `reviewer`, every `authors` entry and `accepted_by` are identities
   `<who>, <model or human>, <YYYY-MM-DD>`, which the checker validates; `accepted_by` must

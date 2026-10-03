@@ -19,20 +19,25 @@ that volume works against the research:
 - a mathematician facing the output cannot tell what is proved, what is open, and where
   they could help.
 
-## Three aims
+## Four aims
 
 1. **Organize the search.** One target statement, a portfolio of routes, missions with an
    expected result, and dated checkpoints — so that several agents over many sessions work
    as one search, and an obstacle found once, or a route set aside, is never rediscovered.
 2. **Make every status trustworthy.** A claim is `proved` or `refuted` only through a
-   certification that someone other than its author has made — an independent review or a
-   named human — and that certification is tied to the exact text it saw. Evidence guides
-   the search; it never moves a status.
+   certification tied to the exact text examined: an independent review of an agent's work,
+   or the explicit acceptance of a named human. A human may propose, prove and accept their
+   own result; the site says who certified each one. Evidence guides the search; it never
+   moves a status.
 3. **Open the research to mathematicians.** The manuscript reads like a paper written for
    someone who has never seen the repository: the question, worked examples, what is
    settled and what is not, the idea of each proof, where to start. A mathematician
    contributes through a plain issue — a counterexample, an idea, a correction — and their
    acceptance of a proof counts as a certification.
+4. **Spend sparingly.** Agent calls and tokens are the search's budget. Each agent is
+   launched for a result that needs it, reads what its task requires and no more, and
+   replies as briefly as its result allows; the orchestrator keeps its own context small.
+   A guarantee that forces repeated agent calls must be worth what it costs.
 
 ## What success looks like
 
@@ -44,6 +49,8 @@ that volume works against the research:
 - A new session or agent can resume the search from the checker's summary and the latest
   checkpoints, without re-reading the whole history.
 - A failed route leaves behind the obstacle that stopped it; a negative result is a result.
+- A session's cost is dominated by the agents doing mathematics, not by orchestration,
+  waiting, re-reading or re-reviews that a stable statement would have avoided.
 - A new program is instantiated from the template in an hour, and a fresh clone passes the
   check.
 
@@ -59,7 +66,8 @@ that volume works against the research:
 ## Judging a change to the template
 
 A change should make the search more reliable, the record more trustworthy, or
-participation easier — without costing the other two. Simplicity is part of the goal:
+participation easier — without costing the other two, and without adding agent calls or
+tokens it does not pay for. Simplicity is part of the goal:
 every file, field and rule must earn its place, and a rule that can be removed without
 losing a guarantee should be. When the needs of an agent and of a human reader conflict
 over the manuscript, the reader wins.
@@ -72,8 +80,8 @@ and rules specific to its field in the brief, the kinds of computation it runs, 
 manuscript is organized, even a genre of file the template does not have.
 
 What a program should keep are the guarantees that make its results readable and
-trustworthy to someone outside it: a status earned only through independent certification,
-one home for each statement, a record that is not rewritten, and a manuscript written for
+trustworthy to someone outside it: a status earned through independent review, explicit
+human acceptance or established literature, one home for each statement, a record that is not rewritten, and a manuscript written for
 a mathematician. A program that departs from one of them says so, and why, in its brief.
 An adaptation that proves useful beyond one program is worth bringing back to the template.
 

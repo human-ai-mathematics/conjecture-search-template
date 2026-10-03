@@ -125,29 +125,37 @@ def _dossier(root: Path, nid: str, reference: object, context: str,
 
 def _current(root: Path, nid: str, artifact: object, dossier: Path | None,
              recorded: dict[str, str], source: str, redo: str, nodes: dict[str, dict],
-             labels: dict[str, dict] | None, context: str, errors: list[str]) -> None:
+             labels: dict[str, dict] | None, context: str, errors: list[str],
+             impact: dict[str, list[dict]]) -> None:
     """Report every version ``source`` did not see: an unrecorded or edited dossier or
     statement. ``redo`` names what restores the certification."""
+    def changed(item: str, message: str) -> None:
+        errors.append(message)
+        if isinstance(artifact, str):
+            impact.setdefault(item, []).append({
+                "node": nid, "artifact": artifact, "source": source, "error": message,
+            })
+
     if dossier is not None:
         digest = recorded.get(artifact)
         if digest is None:
             errors.append(f"{context}: {source} does not fingerprint '{artifact}'")
         elif sha256(dossier) != digest:
-            errors.append(f"{context}: {artifact} changed since {source} fingerprinted it; "
-                          f"it needs {redo}")
+            changed(artifact, f"{context}: {artifact} changed since {source} fingerprinted it; "
+                    f"it needs {redo}")
     for ref in relied_on(nid, nodes):
         digest = recorded.get(ref)
         current = (labels or {}).get(ref, {}).get("fingerprint")
         if digest is None:
             errors.append(f"{context}: {source} does not fingerprint the statement of '{ref}'")
         elif current is not None and current != digest:
-            errors.append(f"{context}: the statement of '{ref}' changed since {source} "
-                          f"fingerprinted it; it needs {redo}")
+            changed(ref, f"{context}: the statement of '{ref}' changed since {source} "
+                    f"fingerprinted it; it needs {redo}")
 
 
 def _proof(root: Path, nid: str, proof: object, context: str, reviews: dict[str, dict],
            nodes: dict[str, dict], labels: dict[str, dict] | None,
-           errors: list[str]) -> str | None:
+           errors: list[str], impact: dict[str, list[dict]]) -> str | None:
     """Validate one proof record; return its dossier's repo-relative path."""
     if not isinstance(proof, dict):
         errors.append(f"{context}: must be a mapping")
@@ -173,7 +181,7 @@ def _proof(root: Path, nid: str, proof: object, context: str, reviews: dict[str,
                                 f"{context}.fingerprints", errors)
         if recorded:
             _current(root, nid, artifact, dossier, recorded, f"the acceptance by {accepted_by}",
-                     "a new acceptance", nodes, labels, context, errors)
+                     "a new acceptance", nodes, labels, context, errors, impact)
         return named
     if "fingerprints" in proof:
         errors.append(f"{context}.fingerprints: a reviewed proof's fingerprints are its "
@@ -188,12 +196,12 @@ def _proof(root: Path, nid: str, proof: object, context: str, reviews: dict[str,
         errors.append(f"{context}.review: verdict '{report['verdict']}' cannot certify a proof")
     if report["fingerprints"]:
         _current(root, nid, artifact, dossier, report["fingerprints"], review,
-                 "a new review", nodes, labels, context, errors)
+                 "a new review", nodes, labels, context, errors, impact)
     return named
 
 
 def check(root: Path, nodes: dict[str, dict], labels: dict[str, dict] | None,
-          errors: list[str]) -> list[str]:
+          errors: list[str], impact: dict[str, list[dict]]) -> list[str]:
     """Validate certification; return the draft dossiers, those no proof record names."""
     reviews = read_reviews(root, nodes, errors)
     named: set[str] = set()
@@ -205,7 +213,7 @@ def check(root: Path, nodes: dict[str, dict], labels: dict[str, dict] | None,
             errors.append(f"{nid}.proofs: only for status proved")
         for index, proof in enumerate(as_list(proofs)):
             dossier = _proof(root, nid, proof, f"{nid}.proofs[{index}]", reviews, nodes,
-                             labels, errors)
+                             labels, errors, impact)
             if dossier is not None:
                 named.add(dossier)
 

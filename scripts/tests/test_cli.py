@@ -44,6 +44,12 @@ class CommandLineTests(CheckerFixture):
         result = self.cli()
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn("the statement of 'thm:a' changed since", result.stdout)
+        impact = self.cli("--impact")
+        self.assertEqual(impact.returncode, 1, impact.stdout + impact.stderr)
+        self.assertIn("changed: thm:a", impact.stdout)
+        self.assertIn(f"  thm:a | {artifact} | {review}", impact.stdout)
+        self.assertNotIn("changed since", impact.stdout)
+        self.assertNotIn("nodes:", impact.stdout)
 
     def test_statements_are_listed_and_an_edit_changes_the_list(self):
         self.ledger([node("conj:b", kind="conjecture", status="open"),
@@ -64,6 +70,21 @@ class CommandLineTests(CheckerFixture):
         self.assertIn("fast: manuscript not read", result.stdout)
         self.assertFalse((self.root / "_build/site").exists())
         self.assertEqual(self.cli().returncode, 1)
+
+    def test_impact_keeps_other_errors_and_marks_fast_checks(self):
+        self.ledger([node("thm:a")], certify=False)
+        result = self.cli("--impact", "--fast")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("FAIL thm:a: a proved node without references needs a proof record",
+                      result.stdout)
+        self.assertIn("impact: 0 changed item(s) detected", result.stdout)
+        self.assertIn("fast: manuscript not read", result.stdout)
+        self.assertFalse((self.root / "_build/site").exists())
+        for option in ("--drafts", "--statements", "--fingerprint"):
+            args = ["--impact", option]
+            if option == "--fingerprint":
+                args.append("solutions/a.md")
+            self.assertEqual(self.cli(*args).returncode, 2)
 
     def test_drafts_lists_the_dossiers_no_proof_record_names(self):
         self.ledger([node("thm:a")])
