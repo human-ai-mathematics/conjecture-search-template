@@ -594,5 +594,5 @@ how other work is organized. Client-specific launch and wait guidance is in the 
 *Running agents* section.
 
 **Harness changes.** Keep this file, the checker, its tests, the templates and the example
-in agreement, and add a line under `Unreleased` in [`CHANGELOG.md`](CHANGELOG.md). Harness
-work changes no mathematical status.
+in agreement. Harness work changes no mathematical status. In a program instantiated from
+the template, a harness change is proposed to the template.
