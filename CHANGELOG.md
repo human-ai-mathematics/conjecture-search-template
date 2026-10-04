@@ -52,6 +52,8 @@ version may require forks to migrate, and a patch version is a backward-compatib
   fingerprint recorded as the SHA-256 of the file's bytes is still accepted, so no review
   needs redoing.
 - `SPECIFICATION.md` links render as links, not code.
+- `templates/solution.md` asks a dossier to point at the manuscript by label, never by a
+  module's file name: modules are renumbered.
 - Human contributors may propose, prove and explicitly accept their own results through
   `accepted_by`, without a separate reviewer. Agent reviews remain independent. Dossiers
   and fingerprints still identify the accepted versions; formats and checker are unchanged.
