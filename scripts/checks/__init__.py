@@ -8,7 +8,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from . import ledger, manuscript, proofs, search
-from .common import as_list, contained_path, read_front_matter, repo_relative, sha256
+from .common import (as_list, contained_path, read_front_matter, repo_relative,
+                     text_digest)
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -20,7 +21,8 @@ def analyze(root: Path | None = None, labels: dict[str, dict] | None = None, *,
 
     ``drafts`` are the dossiers no proof record names; they are left out of the published
     site. ``impact`` groups fingerprint mismatches by changed dossier or statement,
-    recording affected nodes, dossiers, certification sources and their validation errors.
+    recording affected nodes, dossiers, certification sources, the fingerprint each source
+    recorded and their validation errors.
     Missing fingerprints remain ordinary errors, not claims that a version changed.
 
     ``fast`` skips the manuscript: no MyST build, so the anchors and the statement
@@ -41,9 +43,10 @@ def analyze(root: Path | None = None, labels: dict[str, dict] | None = None, *,
 
 
 def fingerprint(root: Path | None, dossiers: list[str]) -> tuple[dict[str, str], list[str]]:
-    """The ``fingerprints`` a certification of ``dossiers`` records: each dossier's SHA-256
-    and the fingerprint of every statement its proof is checked against. Returns the
-    mapping and the reasons it is incomplete; manuscript errors elsewhere do not count."""
+    """The ``fingerprints`` a certification of ``dossiers`` records: each dossier's
+    fingerprint (``common.text_digest``) and the fingerprint of every statement its proof
+    is checked against. Returns the mapping and the reasons it is incomplete; manuscript
+    errors elsewhere do not count."""
     root = Path(root) if root is not None else ROOT
     errors: list[str] = []
     labels = manuscript.manuscript_labels(root, errors)
@@ -57,7 +60,7 @@ def fingerprint(root: Path | None, dossiers: list[str]) -> tuple[dict[str, str],
         header = read_front_matter(path, "dossier", errors) if path is not None else None
         if header is None:
             continue
-        result[repo_relative(root, path)] = sha256(path)
+        result[repo_relative(root, path)] = text_digest(path.read_text(encoding="utf-8"))
         for nid in as_list(header.get("ledger-node")):
             if not isinstance(nid, str) or nid not in nodes:
                 errors.append(f"{reference}: ledger-node '{nid}' is not a ledger node")

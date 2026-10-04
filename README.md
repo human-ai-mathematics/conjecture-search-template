@@ -37,6 +37,7 @@ npm ci
 uv run scripts/check.py         # full check; 0 errors required before any status change
 uv run scripts/check.py --fast  # research state only, no MyST build
 uv run scripts/check.py --impact # compact scope for grouped re-reviews; same validation
+uv run scripts/check.py --diff   # the same, with each change's diff for an editorial note
 uv run scripts/check.py --statements   # before and after a writer's pass: must not change
 uv run scripts/check.py --drafts       # the draft dossiers, never published
 npx myst start                   # read the manuscript and the proofs in a browser

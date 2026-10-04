@@ -1,11 +1,11 @@
 # SPECIFICATION.md — repository contract
 
 This file is the whole contract. No client loads it on its own, so every session that edits
-the repository reads it first, and every agent file in `[.claude/agents/](.claude/agents/)`
-and `[.codex/agents/](.codex/agents/)` tells its agent to. The two directories define the
+the repository reads it first, and every agent file in [`.claude/agents/`](.claude/agents/)
+and [`.codex/agents/`](.codex/agents/) tells its agent to. The two directories define the
 same three roles, for Claude Code and for Codex: a change to a role is made in both.
-`[example/](example/README.md)` is one complete search, worth reading once alongside it;
-`[templates/](templates/)` holds an empty copy of each file genre.
+[`example/`](example/README.md) is one complete search, worth reading once alongside it;
+[`templates/`](templates/) holds an empty copy of each file genre.
 
 ## Scope
 
@@ -33,7 +33,8 @@ Numerical output, a green check or a count of failed attempts moves nothing.
 - **Certification is independent or human.** A proof is certified by an independent review or
 by the explicit acceptance of a named human, who may also have proposed and proved the result;
 an agent never certifies its own work. A certification covers only the versions examined:
-fingerprints detect changes, and a re-review examines their impact (*Review*).
+fingerprints detect changes; an editorial note carries the certification over an edit that
+leaves the mathematics unchanged, and a re-review examines any other (*Review*).
 - **Each part has a responsible writer.** The *Layout* table assigns shared content to
 its writer. Roles write their own records and propose changes outside their write surface
 as exact edits for the responsible writer. Statements and surrounding prose have different
@@ -54,11 +55,10 @@ green check establishes. The checker validates identities and rejects a review n
 as an author; it does not establish actual independence, nor compare archives with earlier commits
 to enforce append-only.
 
-Human contributors may propose, write, check and accept their own results, through
-`accepted_by` rather than a review. The role assignments below organize agents, not human
-participation. Human acceptance must be explicit and attributed; an agent must not infer it
-from authorship or a proposed theorem.
-The dossier, canonical statement and fingerprints still record exactly what was accepted.
+Human contributors may propose, write, check and accept their own results, through `accepted_by`
+rather than a review. The role assignments below organize agents, not human participation. Human
+acceptance must be explicit and attributed; an agent must not infer it from authorship or a proposed
+theorem. The dossier, canonical statement and fingerprints still record exactly what was accepted.
 
 ## Layout
 
@@ -75,7 +75,7 @@ The dossier, canonical statement and fingerprints still record exactly what was 
 | computation scripts and their output                                   | `research/runs/`                                 | any role     |
 | shared computation code                                                | `research/lib/` (optional)                       | any role     |
 | proof and refutation dossiers                                          | `solutions/*.md`                                 | `researcher` |
-| independent reviews                                                    | `research/reviews/*.md` (append-only)            | `reviewer`   |
+| independent reviews and editorial notes                                | `research/reviews/*.md` (append-only)            | `reviewer`   |
 | the introduction to the full proofs                                    | `proofs.md`                                      | orchestrator |
 
 
@@ -86,11 +86,10 @@ all: something is recorded when it must survive the session or coordinate someon
 
 ## Formats
 
-Write mathematics in LaTeX `$...$`. The manuscript and the dossiers are MyST Markdown: a
-claim is a `prf:<kind>` directive carrying a `:label:`, and a cross-reference is
-`[](#<label>)`. Dated records — checkpoints and reviews — are named
-`<YYYY-MM-DD>-<slug>.md`, and the filename orders them. The identities inside a review carry
-their own dates (*Review*).
+Write mathematics in LaTeX `$...$`. The manuscript and the dossiers are MyST Markdown: a claim is a
+`prf:<kind>` directive carrying a `:label:`, and a cross-reference is `[](#<label>)`. Dated records
+— checkpoints and reviews — are named `<YYYY-MM-DD>-<slug>.md`, and the filename orders them. The
+identities inside a review carry their own dates (*Review*).
 
 ### Ledger — `research/program/ledger.yaml`
 
@@ -136,7 +135,7 @@ kind, the title — changes it.
 
 ### Brief — `research/program/brief.md`
 
-Front matter `target: <node id>`. The body, copied from `[templates/brief.md](templates/brief.md)`,
+Front matter `target: <node id>`. The body, copied from [`templates/brief.md`](templates/brief.md),
 gives what an agent needs before attacking the target honestly: where the statement is vulnerable,
 its exact negation, what counts as a complete proof and refutation, edge cases, traps and circular
 reductions, the neighbouring statements worth examining (by id), and a budget policy that permits an
@@ -169,7 +168,7 @@ is in a checkpoint that names it.
 A checkpoint is the memory of what was learned. Write one when something must outlive the session: a
 candidate born or ended, an observation worth keeping, a dead end the next agent would repeat, a
 route changing state, a run someone may reuse. One checkpoint may cover several small explorations.
-The body, copied from `[templates/checkpoint.md](templates/checkpoint.md)`, names nodes, routes and
+The body, copied from [`templates/checkpoint.md`](templates/checkpoint.md), names nodes, routes and
 blockers by id under four headings:
 
 - **Question examined** — what the work tried to understand.
@@ -207,7 +206,7 @@ by hand — skips the candidate stage and is proposed directly as a manuscript c
 Exploratory computation is free: a `python -c`, a scratch script, a notebook, kept nowhere.
 A computation becomes a **run** once something that must survive rests on it — a checkpoint
 cites it, a route is chosen or closed because of it. A run is a committed, seeded script, run
-with `uv run`, copied from `[templates/run.py](templates/run.py)`. Its output lands next to it
+with `uv run`, copied from [`templates/run.py`](templates/run.py). Its output lands next to it
 as `<date>-<slug>.jsonl`, whose first line — written by the template's `provenance()` — holds the
 seed, the parameters, the git commit, flagged `dirty` if the tree had uncommitted changes, and
 the library versions; a checkpoint cites it under `artifacts:`. A run guides the choice of route
@@ -227,7 +226,7 @@ Let the tooling grow only as the search needs it:
 ### Proof records and dossiers
 
 A **dossier** is a standalone MyST page `solutions/<ledger-id>.md` (`:` replaced by `-`), copied
-from `[templates/solution.md](templates/solution.md)`. Its front matter carries `ledger-node:` — the
+from [`templates/solution.md`](templates/solution.md). Its front matter carries `ledger-node:` — the
 node id, or a list of ids — a `title`, and a `numbering` prefix so that its statements read Theorem
 3.1, Lemma 3.2, … (set it before the first review: any later edit lifts the certification); never
 its own certification. It opens with an **Overview**, the steps and what each contributes, and may
@@ -308,11 +307,42 @@ independence, they never create it. The site shows the reviewer next to each pro
 that a reader tells an agent's review from a human's.
 
 Only `pass` certifies, and only the versions it read: once a fingerprint no longer matches, the
-checker reports a stale certification and fails validation until a new review passes it. It does not
-remove the proof record or change the ledger status automatically. The body states **Findings**,
+checker reports a stale certification and fails validation until a new review passes it or an
+editorial note carries it over. It does not remove the proof record or change the ledger status automatically. The body states **Findings**,
 **Corrections** (or "None") and **Exclusions** — nearby claims not certified. A repaired proof gets
 a new report; if a later review invalidates a passing one, the orchestrator removes the
 certification and both reports stay.
+
+A dossier's fingerprint is the SHA-256 of its text without `%` comment lines, blind to
+spacing and line wrapping; a fingerprint recorded as the SHA-256 of the file's bytes, before
+this rule, is still accepted.
+
+**An editorial note** carries a certification over an edit that leaves the mathematics
+unchanged — a renamed term, a typo, a stale path or cross-reference, a sentence reworded.
+It is a new file in `research/reviews/`, copied from
+[`templates/editorial.md`](templates/editorial.md):
+
+```yaml
+---
+verdict: editorial
+amends: [research/reviews/2026-09-03-thm-main.md]   # the pass reports it carries over
+authors:                                             # who made the edit
+  - orchestrator, claude-opus-5-5, 2026-09-20
+reviewer: reviewer, claude-sonnet-5-5, 2026-09-20
+changes:                 # each edited item, from the certified version to the new one
+  thm:main: {from: <sha256>, to: <sha256>}
+---
+```
+
+A fresh `reviewer` reads only the diff, `check.py --diff`, and answers one question: does any
+statement, formula, hypothesis, quantifier, constant or step of proof change? If none does, it
+writes the note, whose body gives each item's diff and why the mathematics is unchanged; if
+one does, or if it cannot tell, there is no note and the change takes a re-review. Editing an
+earlier report's fingerprints is never an alternative. One note may amend several reports
+(*Grouped reviews*); the proof records keep naming the `pass` reports, so the site still
+shows who checked the mathematics. The checker applies the notes oldest first, and a `from`
+that is not what the amended report certifies is an error. A human acceptance is carried
+over by its acceptor, who records the new fingerprints in the ledger.
 
 **A re-review** restores a lapsed certification without starting over. It retains the earlier
 certification's conclusions for unchanged, unaffected parts and checks the changes and their
@@ -344,7 +374,7 @@ proposes a new or reworded statement as a delta, never edits one.
 
 Four rules keep the two apart:
 
-1. **The ledger is authoritative for status.** `[scripts/status.mjs](scripts/status.mjs)`, a MyST
+1. **The ledger is authoritative for status.** [`scripts/status.mjs`](scripts/status.mjs), a MyST
   plugin, reads the ledger at build time and shows each statement's status next to its title: *Not
    settled here* (the ledger's `open`: not established in this project, which says nothing of the
    literature), *Preprint, not yet checked here* (an open theorem, lemma, proposition or corollary
@@ -366,7 +396,7 @@ Four rules keep the two apart:
    render.
 4. **Computations are evidence, and say so.** A reported computation never reads as proof.
 
-How the prose is written is in `[writer.md](.claude/agents/writer.md)`.
+How the prose is written is in [`writer.md`](.claude/agents/writer.md).
 
 **Full proofs.** The table of contents lists the manuscript, then `proofs.md` and the dossiers under
 *Full proofs*; a proved statement links to its dossier. Only certified dossiers are published: the
@@ -375,10 +405,10 @@ locally, the table of contents shows the drafts too.
 
 **Contributions.** A reader names a statement by the label displayed next to it. Once
 `project.github` in `myst.yml` names the repository, the plugin adds links that open an issue form
-of `[.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/)` with that label in its `statement` field:
+of [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/) with that label in its `statement` field:
 *Idea* and *Counterexample* on an open statement, *Correction* on any other. Conversation goes to
 GitHub Discussions, if the repository uses them: the forms of
-`[.github/DISCUSSION_TEMPLATE/](.github/DISCUSSION_TEMPLATE/)` serve the categories *Q&A*, *Ideas*
+[`.github/DISCUSSION_TEMPLATE/`](.github/DISCUSSION_TEMPLATE/) serve the categories *Q&A*, *Ideas*
 and *Literature*, which are created by hand in the repository settings, as is *Announcements*. An
 issue or a discussion moves nothing: the orchestrator turns what it brings into a mission, a delta
 or a correction, and a named human's acceptance of a proof is recorded as `accepted_by`.
@@ -394,6 +424,7 @@ that the prose is well written or faithful.
 uv run scripts/check.py                   # full: manuscript included; before any status change
 uv run scripts/check.py --fast            # research state only, no MyST build; seconds
 uv run scripts/check.py --impact          # affected certifications grouped by changed item
+uv run scripts/check.py --diff            # the same, each with its diff since certified
 uv run scripts/check.py --root example    # the worked example, kept green as a fixture
 uv run scripts/check.py --fingerprint solutions/thm-main.md   # a certification's fingerprints
 uv run scripts/check.py --drafts          # the draft dossiers, left out of the published site
@@ -415,7 +446,11 @@ remain visible and the exit code is unchanged (1 if validation fails). Missing f
 remain ordinary errors; they do not establish that text changed. Only certifications
 currently named in proof records are compared. `--impact --fast` checks dossiers only and
 labels the report as incomplete for statements; do not use it to clear a manuscript edit.
-No report is saved and no Git history is searched.
+No report is saved and no Git history is searched. `--diff` adds, under each changed item,
+its diff from Git: for a dossier, since the latest commit whose version has the recorded
+fingerprint (a verified baseline); for a statement, the text of its labelled directive since
+the commit that first recorded the fingerprint (a baseline not re-fingerprinted, enough for
+an editorial note; a re-review verifies its own).
 
 `--fast` skips the MyST build, and with it the manuscript anchors and the
 statement fingerprints; dossier fingerprints are still compared. The full check writes
@@ -546,15 +581,18 @@ Keep context and agent calls proportionate to the work:
   compatible with the client's limits and the need to communicate progress.
 - **Prefer a focused session.** Start a fresh session when context becomes distracting or
   expensive; neither a task boundary nor compaction requires one automatically.
-- **Ask for a re-review when certification lapses.** Supply the previous `pass` report,
-  a candidate historical revision and the checker's lines naming what changed. The reviewer
-  verifies the historical baseline and decides whether a full review is needed (*Review*).
-  Use `check.py --impact` to group dossiers affected by the same change into one mission.
+- **When certification lapses, ask for an editorial examination first.** Give a fresh
+  reviewer the output of `check.py --diff` and the reports it names; a note carries them
+  over if the mathematics is unchanged. Otherwise ask for a re-review: supply the previous
+  `pass` report, a candidate historical revision and the checker's lines naming what
+  changed; the reviewer verifies the historical baseline and decides whether a full review
+  is needed (*Review*). Use `check.py --impact` to group dossiers affected by the same
+  change into one mission.
 
 An independent reviewer must have a fresh context as defined in *Review*, regardless of
 how other work is organized. Client-specific launch and wait guidance is in the README's
 *Running agents* section.
 
 **Harness changes.** Keep this file, the checker, its tests, the templates and the example
-in agreement, and add a line under `Unreleased` in `[CHANGELOG.md](CHANGELOG.md)`. Harness
+in agreement, and add a line under `Unreleased` in [`CHANGELOG.md`](CHANGELOG.md). Harness
 work changes no mathematical status.

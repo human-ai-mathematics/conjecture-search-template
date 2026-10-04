@@ -8,6 +8,17 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ### Added
 
+- An *editorial note* (`verdict: editorial` in `research/reviews/`) carries a
+  certification over an edit that leaves the mathematics unchanged: a fresh reviewer reads
+  only the diff, and the note `amends` the `pass` reports, moving each changed item `from`
+  the certified fingerprint `to` the new one. The proof records and the site keep naming the
+  original review; any mathematical change still takes a re-review. Template:
+  `templates/editorial.md`. Forks that edited earlier reports' fingerprints by hand should
+  use a note instead.
+- `check.py --diff` prints `--impact` with each changed item's diff since the certified
+  version, read from Git: verified by fingerprint for a dossier, the labelled directive's
+  text for a statement.
+
 - `check.py --impact` groups stale certifications by changed statement or dossier, listing
   affected nodes, dossiers and review paths or human acceptances. It reuses the normal
   comparisons and exit code, keeps other errors visible, and avoids repeated mismatch
@@ -37,6 +48,10 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ### Changed
 
+- A dossier's fingerprint ignores `%` comment lines, spacing and line wrapping. A
+  fingerprint recorded as the SHA-256 of the file's bytes is still accepted, so no review
+  needs redoing.
+- `SPECIFICATION.md` links render as links, not code.
 - Human contributors may propose, prove and explicitly accept their own results through
   `accepted_by`, without a separate reviewer. Agent reviews remain independent. Dossiers
   and fingerprints still identify the accepted versions; formats and checker are unchanged.

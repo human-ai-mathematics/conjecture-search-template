@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import unittest
 
-from fixtures import AUTHOR, HUMAN, CheckerFixture, node
+from fixtures import AUTHOR, HUMAN, CheckerFixture, front_matter, node, statement
+
+from checks.common import text_digest  # noqa: E402  (fixtures puts checks on the path)
 
 
 class ProofTests(CheckerFixture):
@@ -121,7 +123,7 @@ class ProofTests(CheckerFixture):
         self.review("keys", fingerprints={"notes/a.md": "0" * 64, "thm:ghost": "0" * 64,
                                           "solutions/a.md": "ABC"})
         errors = self.errors()
-        self.assertIn(".verdict: want one of ['pass', 'revise']", errors)
+        self.assertIn(".verdict: want one of ['editorial', 'pass', 'revise']", errors)
         self.assertIn(".authors: must be a non-empty list", errors)
         self.assertIn("unknown field 'extra_field'", errors)
         self.assertIn("list.md.fingerprints: want a mapping", errors)
@@ -261,6 +263,104 @@ class ProofTests(CheckerFixture):
         self.assertIn("conj:bare: a refuted node needs refuted_by", errors)
         self.assertIn("conj:weak.refuted_by: 'conj:open' is not proved", errors)
         self.assertIn("conj:open.refuted_by: only for status refuted", errors)
+
+
+class EditorialNoteTests(CheckerFixture):
+    agent_proof, certify = ProofTests.agent_proof, ProofTests.certify
+    EDITOR = "orchestrator, claude-opus-5-5, 2026-09-01"
+    EXAMINER = "reviewer, claude-sonnet-5-5, 2026-09-01"
+
+    def note(self, name: str, changes: dict, amends=("research/reviews/2026-08-25-a.md",),
+             reviewer: str = EXAMINER) -> str:
+        return self.write(f"research/reviews/2026-09-01-{name}.md", front_matter({
+            "verdict": "editorial", "amends": list(amends), "authors": [self.EDITOR],
+            "reviewer": reviewer, "changes": changes}))
+
+    def edit_dossier(self, text: str = "An edit after the review.\n") -> tuple[str, str]:
+        before = self.digest("solutions/a.md")
+        with (self.root / "solutions/a.md").open("a") as stream:
+            stream.write(text)
+        return before, text_digest((self.root / "solutions/a.md").read_text())
+
+    def test_a_note_carries_a_certification_over_an_edited_statement_and_dossier(self):
+        self.certify()
+        self.edit_statement("thm:a")
+        before, after = self.edit_dossier()
+        self.assertIn("needs a new review", self.errors())
+        self.note("wording", {
+            "thm:a": {"from": statement("thm:a"), "to": statement("thm:a", "edited")},
+            "solutions/a.md": {"from": before, "to": after}})
+        self.assertClean()
+
+    def test_notes_chain_oldest_first(self):
+        self.certify()
+        first, second = statement("thm:a"), statement("thm:a", "edited")
+        self.edit_statement("thm:a")
+        self.note("one", {"thm:a": {"from": first, "to": second}})
+        self.anchors["thm:a"]["fingerprint"] = third = statement("thm:a", "again")
+        self.assertIn("the statement of 'thm:a' changed", self.errors())
+        self.write("research/reviews/2026-09-02-two.md", front_matter({
+            "verdict": "editorial", "amends": ["research/reviews/2026-08-25-a.md"],
+            "authors": [self.EDITOR], "reviewer": self.EXAMINER,
+            "changes": {"thm:a": {"from": second, "to": third}}}))
+        self.assertClean()
+
+    def test_a_note_must_start_from_the_certified_version(self):
+        self.certify()
+        self.edit_statement("thm:a")
+        self.note("wording", {"thm:a": {"from": "1" * 64,
+                                        "to": statement("thm:a", "edited")}})
+        errors = self.errors()
+        self.assertIn("'thm:a' from does not match what research/reviews/2026-08-25-a.md "
+                      "certifies", errors)
+        self.assertIn("the statement of 'thm:a' changed", errors)
+
+    def test_a_note_amends_only_passing_reviews_that_fingerprint_the_item(self):
+        self.certify(verdict="revise")
+        self.note("wording", {"thm:a": {"from": statement("thm:a"), "to": "2" * 64}})
+        self.note("ghost", {"solutions/other.md": {"from": "1" * 64, "to": "2" * 64}},
+                  amends=("research/reviews/2026-09-01-wording.md",))
+        errors = self.errors()
+        self.assertIn("'research/reviews/2026-08-25-a.md' is not a passing review", errors)
+        self.assertIn("'research/reviews/2026-09-01-wording.md' is not a passing review",
+                      errors)
+
+    def test_a_note_names_an_item_its_reviews_fingerprint(self):
+        self.certify()
+        self.note("ghost", {"solutions/other.md": {"from": "1" * 64, "to": "2" * 64}})
+        self.assertIn("no review it amends fingerprints 'solutions/other.md'", self.errors())
+
+    def test_a_note_is_examined_by_someone_other_than_the_editor(self):
+        self.certify()
+        self.note("self", {"thm:a": {"from": statement("thm:a"), "to": "2" * 64}},
+                  reviewer=self.EDITOR)
+        self.assertIn("2026-09-01-self.md.reviewer: must not be one of the authors",
+                      self.errors())
+
+    def test_a_proof_record_names_the_review_not_the_note(self):
+        self.certify()
+        note = self.note("wording", {"thm:a": {"from": statement("thm:a"), "to": "2" * 64}})
+        self.ledger([node("thm:a", proofs=[{"artifact": "solutions/a.md", "review": note}])])
+        self.assertIn("an editorial note certifies nothing; name the review it amends",
+                      self.errors())
+
+    def test_layout_and_comments_leave_a_dossier_fingerprint_alone(self):
+        self.ledger([node("thm:a", proofs=[])], certify=False)
+        artifact = self.solution("a", "thm:a")
+        text = (self.root / artifact).read_text()
+        self.review("a", fingerprints={artifact: text_digest(text),
+                                       "thm:a": statement("thm:a")})
+        self.ledger([node("thm:a", proofs=[{"artifact": artifact,
+                                            "review": "research/reviews/2026-08-25-a.md"}])])
+        (self.root / artifact).write_text(text.replace("fixture", "fixture\n\n   ")
+                                          + "% a note for agents\n")
+        self.assertClean()
+        (self.root / artifact).write_text(text.replace("fixture", "fixtures"))
+        self.assertIn("solutions/a.md changed since", self.errors())
+
+    def test_a_review_recording_the_raw_sha256_still_certifies(self):
+        self.certify()  # the fixture records the SHA-256 of the dossier's bytes
+        self.assertClean()
 
 
 if __name__ == "__main__":

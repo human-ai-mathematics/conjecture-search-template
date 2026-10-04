@@ -31,7 +31,8 @@ Read only your lens's section below.
   step; a re-review checks changes and their consequences while retaining certified,
   unaffected conclusions as described below. Partial, held or failed work is `revise`.
 - Numerical agreement is not evidence. A step that leans on a run artifact is unproved.
-- `research/reviews/` is append-only: a repaired proof gets a new report.
+- `research/reviews/` is append-only: a repaired proof gets a new report, an editorial
+  edit a new note. Never edit an earlier report's fingerprints.
 
 ## Write surface
 
@@ -62,6 +63,16 @@ the handoff's `deltas` and writes no file.
 6. **The steps.** Line by line. Constants, quantifier order, domains, boundary conventions
    and limit interchanges are where these proofs fail.
 7. **Build.** `uv run scripts/check.py` reports no MyST error for the dossier.
+
+**An editorial examination** (*Review* in `SPECIFICATION.md`) is given the output of
+`uv run scripts/check.py --diff` and the `pass` reports it names. Read the diffs, not the
+proofs, and answer one question: does any statement, formula, hypothesis, quantifier,
+constant or step of proof change — including a title or a word that adds a claim? If none
+does, write a note from `templates/editorial.md`: `amends` the reports, `authors` the editor
+the assignment names, `changes` each item `from` the recorded fingerprint `to` the current
+one (`--fingerprint`), and in the body each diff with one line saying why the mathematics is
+unchanged. If one does, or you cannot tell, write no note and report that a re-review is
+needed, naming the change. The default is no note.
 
 **A re-review** (*Review* in `SPECIFICATION.md`) is given the previous `pass` report, a
 candidate historical revision and the checker's lines naming what changed.

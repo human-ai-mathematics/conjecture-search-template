@@ -1,11 +1,14 @@
 """The command line, run for real: MyST build, exit codes, summary, fingerprints."""
 from __future__ import annotations
 
+import subprocess
 import unittest
 
 import yaml
 
 from fixtures import CheckerFixture, node
+
+from checks.history import directive  # noqa: E402
 
 
 class CommandLineTests(CheckerFixture):
@@ -92,6 +95,41 @@ class CommandLineTests(CheckerFixture):
         result = self.cli("--drafts")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(result.stdout, "solutions/draft.md\n")
+
+    def commit(self) -> None:
+        for command in (["init", "-q"], ["add", "-A"],
+                        ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "c"]):
+            subprocess.run(["git", "-C", str(self.root), *command], check=True,
+                           capture_output=True)
+
+    def test_diff_shows_each_change_since_the_certified_version(self):
+        self.ledger([node("thm:a", proofs=[])], certify=False)
+        artifact = self.solution("a", "thm:a")
+        recorded = yaml.safe_load(self.cli("--fingerprint", artifact).stdout)["fingerprints"]
+        review = self.review("a", fingerprints=recorded)
+        self.ledger([node("thm:a", proofs=[{"artifact": artifact, "review": review}])])
+        self.commit()
+        self.module.write_text(self.module.read_text().replace("fixture\n:::", "edited\n:::"))
+        with (self.root / artifact).open("a") as stream:
+            stream.write("A new sentence.\n")
+        result = self.cli("--diff")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("changed: solutions/a.md", result.stdout)
+        self.assertIn("(fingerprint verified)", result.stdout)
+        self.assertIn("+A new sentence.", result.stdout)
+        self.assertIn("changed: thm:a", result.stdout)
+        self.assertIn("not re-fingerprinted", result.stdout)
+        self.assertIn("-fixture", result.stdout)
+        self.assertIn("+edited", result.stdout)
+        self.assertEqual(self.cli("--diff", "--statements").returncode, 2)
+
+    def test_a_directive_is_found_by_its_label(self):
+        text = ("Prose.\n\n::::{prf:theorem} Title\n:label: thm:a\n:::{note}\nx\n:::\n"
+                "Body.\n::::\n\nAfter.\n")
+        self.assertEqual(directive(text, "thm:a"),
+                         "::::{prf:theorem} Title\n:label: thm:a\n:::{note}\nx\n:::\n"
+                         "Body.\n::::\n")
+        self.assertIsNone(directive(text, "thm:b"))
 
 
 if __name__ == "__main__":
