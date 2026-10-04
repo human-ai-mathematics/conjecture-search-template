@@ -90,6 +90,10 @@ Write mathematics in LaTeX `$...$`. The manuscript and the dossiers are MyST Mar
 `prf:<kind>` directive carrying a `:label:`, and a cross-reference is `[](#<label>)`. Dated records
 — checkpoints and reviews — are named `<YYYY-MM-DD>-<slug>.md`, and the filename orders them. The
 identities inside a review carry their own dates (*Review*).
+Every record — a dossier, a checkpoint, a review, the brief, the portfolio, a docstring in
+`research/lib/` — points at the manuscript by label (`[](#thm:x)`, `[](#sec:x)`, or the bare id
+outside MyST), never by a module's file name: modules are renumbered, and a dated record keeps
+its stale path for good.
 
 ### Ledger — `research/program/ledger.yaml`
 
@@ -308,10 +312,10 @@ that a reader tells an agent's review from a human's.
 
 Only `pass` certifies, and only the versions it read: once a fingerprint no longer matches, the
 checker reports a stale certification and fails validation until a new review passes it or an
-editorial note carries it over. It does not remove the proof record or change the ledger status automatically. The body states **Findings**,
-**Corrections** (or "None") and **Exclusions** — nearby claims not certified. A repaired proof gets
-a new report; if a later review invalidates a passing one, the orchestrator removes the
-certification and both reports stay.
+editorial note carries it over. It does not remove the proof record or change the ledger status
+automatically. The body states **Findings**, **Corrections** (or "None") and **Exclusions** — nearby
+claims not certified. A repaired proof gets a new report; if a later review invalidates a passing
+one, the orchestrator removes the certification and both reports stay.
 
 A dossier's fingerprint is the SHA-256 of its text without `%` comment lines, blind to
 spacing and line wrapping; a fingerprint recorded as the SHA-256 of the file's bytes, before

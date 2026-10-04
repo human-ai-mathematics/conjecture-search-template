@@ -12,7 +12,8 @@
 # Title
 
 <!-- Copy to research/explorations/YYYY-MM-DD-<slug>.md; the filename is its date.
-     Format and triggers: SPECIFICATION.md, Formats → Checkpoint. -->
+     Format and triggers: SPECIFICATION.md, Formats → Checkpoint. Name statements and
+     sections by id (conj:x, sec:x), never by a module's file name: modules are renumbered. -->
 
 ## Question examined
 
