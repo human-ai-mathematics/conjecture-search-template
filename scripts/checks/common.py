@@ -119,3 +119,17 @@ def markdown_records(root: Path, directory: str, errors: list[str]) -> list[Path
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def text_digest(text: str) -> str:
+    """A dossier's fingerprint: the SHA-256 of its text without MyST comment lines (``%``),
+    every run of whitespace a single space. Rewrapping a paragraph or editing a note for
+    agents changes nothing; a word or a symbol does."""
+    lines = (line for line in text.splitlines() if not line.lstrip().startswith("%"))
+    return hashlib.sha256(" ".join(" ".join(lines).split()).encode()).hexdigest()
+
+
+def dossier_digests(path: Path) -> set[str]:
+    """What a certification may have recorded for the dossier at ``path``: its fingerprint,
+    or the SHA-256 of its bytes that reports written before ``text_digest`` record."""
+    return {text_digest(path.read_text(encoding="utf-8")), sha256(path)}

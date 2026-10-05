@@ -5,8 +5,9 @@
 % The content of a labelled directive, its title included, is the statement: only the
 % orchestrator writes it. Everything else — headings, prose, examples, remarks, the order
 % of sections — is the writer's, for a mathematician who has never seen this repository.
-% The status next to each statement is displayed from the ledger; the prose never states
-% one, it points at the statement ([](#conj:main)). Notes for agents go in % comments.
+% The displayed status comes from the ledger. Prose may describe it when consistent and
+% linked to the claim ([](#conj:main)); open here need not mean open in the literature.
+% Notes for agents go in % comments.
 
 (sec:slug)=
 # Title

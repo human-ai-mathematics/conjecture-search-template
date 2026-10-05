@@ -32,3 +32,43 @@ refuted by $a = (1,1)$. In order:
 
 It is its own MyST project ([`myst.yml`](myst.yml)) and must stay a top-level sibling of
 `research/` and `modules/`, or its ledger would count as a second one.
+
+
+## Re-review scenarios
+
+These scenarios illustrate the contract; they are not additional certifications of this
+fixture and do not change its dossiers, statements or existing reports.
+
+**A title correction.** Suppose only the title of `prop:example` changes. Its fingerprint
+changes, so the current certification fails validation. A fresh reviewer compares the
+current statement with a historical version verified against the previous passing report's
+fingerprints. It checks that the new title is faithful and the body and proof are unchanged.
+A short new report can retain the unaffected proof conclusions and record the current
+fingerprints. This remains valid after a third or later harmless edit; a count does not
+trigger a full review. If the baseline cannot be verified, a full review is required.
+
+Illustrative Findings (placeholders must be filled from the actual comparison):
+
+> Re-review of `<previous-report>`. Compared `<verified-revision>` with the current tree
+> whose fingerprints are recorded above. Only the title of `prop:example` changed from
+> `<old-title>` to `<new-title>`. The body, dependencies and dossier are unchanged. The
+> new title expresses the same identity, so no proof step is affected; the earlier
+> certification's proof conclusions are retained.
+
+The report still includes Corrections and Exclusions. The title is not exempt from review;
+its limited impact justifies the short examination.
+
+**A shared definition changes.** Suppose several certified dossiers use one normalization.
+Run `uv run scripts/check.py --root example --impact` to list affected certifications
+by changed item (the unchanged fixture has none). One reviewer can compare the definition
+once, then check its use in each dossier. If all
+pass, one new report may cover them, with a conclusion for each and fingerprints produced
+by `check.py --fingerprint <dossier-1> <dossier-2> ...`. Each relevant proof record points
+to that report. If one dossier needs repair, put it in a separate `revise` report; the
+`pass` report and its fingerprints cover only the passing dossiers and their required
+statements. A structural change to an argument requires a full review of that argument.
+
+**Prose after a status change.** A sentence saying "we prove" may introduce a certified
+claim by link. If that claim is no longer established, the sentence must be revised too.
+The `sync` lens reports this contradiction. Conversely, a ledger status of `open` does not
+justify saying that the problem is open in the literature.

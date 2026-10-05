@@ -21,8 +21,10 @@ the modules it touches up to date.
 - **Never change a statement.** The content of a labelled claim directive, its title and
   its `:label:` included, is the orchestrator's. You may move a directive to another place
   or module, unchanged. A statement to add or reword is a delta in your report.
-- **Never write a status.** Each statement shows its status, displayed from the ledger.
-  Point at it (`[](#conj:main)`); never write that it is proved, refuted, open or known.
+- **Keep prose consistent with the ledger.** Each statement displays its canonical
+  status. Natural assertions such as "we prove" are allowed when justified by that status
+  and linked to the claim (`[](#conj:main)`). Update affected prose after status changes.
+  An `open` status alone does not justify calling a problem open in the literature.
 - You write `modules/` and the `modules/` entries of `myst.yml`, nothing else: never
   `solutions/`, `research/`, `proofs.md` or `references.bib`. A defect you notice elsewhere
   goes in your report, not in a fix.
@@ -62,7 +64,12 @@ Write the manuscript as the best of these would, and take from each what it does
 ## Organising
 
 `modules/00-overview.md` opens: the question with an example, the main results in short,
-how the modules are organised, and how results are checked. Then one module per
+how the modules are organised, and how results are checked. Once the overview outgrows a
+first reading, give the site a short welcome page, `modules/index.md`, first in the `toc:`
+and holding no statement: the question in two sentences, the main results one sentence
+each, the parts of the manuscript, and reading paths (discover, read the results,
+contribute). How the modules are organised and how results are checked then move there,
+and the overview stays the mathematical introduction. Then one module per
 coherent part — background, results, counterexamples, approaches and their obstacles,
 open problems — split or merged when the content calls for it, one at a time. An open
 problem is a conjecture of the manuscript, presented for someone who might take it up: why
@@ -71,7 +78,8 @@ it matters, what is known, where to start. Its label is its stable name.
 A displayed *Not settled here* means only that this project has not settled the
 statement. Such a statement may be a research problem or simply not done yet: say which,
 from the brief and the literature, before the statement and not after. Never let a
-classical fact read as a research problem.
+classical fact read as a research problem. A displayed *Preprint, not yet checked here*
+is a source's announced result: present it as that source's theorem, not as a problem.
 
 When you rename, split or reorder modules, keep `myst.yml`'s `toc:` in step. Labels and
 statements move with their directives, so no certification lifts.

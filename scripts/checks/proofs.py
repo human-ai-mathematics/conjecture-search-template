@@ -1,30 +1,65 @@
 """Certification: proof records, dossiers under ``solutions/``, reviews, refutations.
 
-A proof record is a dossier plus exactly one of ``review`` (an agent's independent review)
-or ``accepted_by`` (a human's attestation). The review is checked hardest: it must exist
-under ``research/reviews/``, pass, and name a reviewer who is not an author.
+A proof record is a dossier plus exactly one of ``review`` (an independent review) or
+``accepted_by`` (a human's attestation). The review is checked hardest: it must exist under
+``research/reviews/``, pass, and name a reviewer who is not an author. Every reviewer,
+author and acceptor is an identity ``<who>, <model or human>, <YYYY-MM-DD>``, which the
+site shows next to the statement.
 
 Either way, a certification holds only for the versions it saw. Its ``fingerprints`` map
-the dossier's path to its SHA-256, and each statement the proof is checked against — the
-node's own, those it depends on or assumes, the target it refutes — to the fingerprint
-``manuscript.py`` computes. A dossier or a statement edited since is no longer certified.
-A fast check reads no manuscript, so it compares only the dossiers.
+the dossier's path to its fingerprint (``common.text_digest``), and each statement the
+proof is checked against — the node's own, those it depends on or assumes, the target it
+refutes — to the fingerprint ``manuscript.py`` computes. A dossier or a statement edited
+since is no longer certified, unless an *editorial note* — a review with ``verdict:
+editorial`` — found the edit leaves the mathematics unchanged: its ``changes`` carry each
+edited item ``from`` the version a ``pass`` report it ``amends`` certifies ``to`` the new
+one. A fast check reads no manuscript, so it compares only the dossiers.
 """
 from __future__ import annotations
 
 import re
+from datetime import date
 from pathlib import Path
 
 from .common import (as_list, contained_path, markdown_records, one_of,
-                     read_front_matter, repo_relative, sha256, string_list)
+                     dossier_digests, read_front_matter, repo_relative, string_list)
 
 REVIEWS = "research/reviews"
 SOLUTIONS = "solutions"
 
 PROOF_FIELDS = {"artifact", "review", "accepted_by", "fingerprints"}
-REVIEW_VERDICTS = {"pass", "revise"}
+REVIEW_VERDICTS = {"pass", "revise", "editorial"}
 REVIEW_FIELDS = {"verdict", "authors", "reviewer", "fingerprints"}
+NOTE_FIELDS = {"verdict", "authors", "reviewer", "amends", "changes"}
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+IDENTITY_RE = re.compile(
+    r"^\s*([^,]*[^,\s])\s*,\s*([A-Za-z0-9._-]+)\s*,\s*(\d{4}-\d{2}-\d{2})\s*$")
+IDENTITY_FORM = "'<who>, <model or human>, <YYYY-MM-DD>'"
+
+
+def parse_identity(value: object) -> dict[str, str] | None:
+    """An identity ``<who>, <model or human>, <YYYY-MM-DD>``: an agent's role, model and
+    date (``unknown`` when the model was not recorded), or a human's name, ``human`` and
+    date. None when it is malformed."""
+    match = IDENTITY_RE.match(value) if isinstance(value, str) else None
+    if match is None:
+        return None
+    who, what, when = match.groups()
+    try:
+        date.fromisoformat(when)
+    except ValueError:
+        return None
+    kind = "human" if what == "human" else "agent"
+    return {"who": who, "kind": kind, "model": None if kind == "human" else what,
+            "date": when}
+
+
+def identity(value: object, context: str, errors: list[str]) -> dict[str, str] | None:
+    """``parse_identity``, reporting a malformed value."""
+    parsed = parse_identity(value)
+    if parsed is None:
+        errors.append(f"{context}: want {IDENTITY_FORM}, got {value!r}")
+    return parsed
 
 
 def relied_on(nid: str, nodes: dict[str, dict]) -> list[str]:
@@ -55,29 +90,94 @@ def fingerprints(raw: object, nodes: dict[str, dict], context: str,
 
 
 def read_reviews(root: Path, nodes: dict[str, dict], errors: list[str]) -> dict[str, dict]:
-    """Every review's validated front matter, keyed by repo-relative path."""
+    """Every review's validated front matter, keyed by repo-relative path. A ``pass``
+    report's ``fingerprints`` are what it certifies now: its own, carried forward by the
+    editorial notes that amend it, oldest first."""
     reviews: dict[str, dict] = {}
+    notes: list[tuple[str, dict]] = []
     for path in markdown_records(root, REVIEWS, errors):
         raw = read_front_matter(path, "review", errors)
         if raw is None:
             continue
         context = str(path)
-        for field in sorted(set(raw) - REVIEW_FIELDS):
+        editorial = raw.get("verdict") == "editorial"
+        for field in sorted(set(raw) - (NOTE_FIELDS if editorial else REVIEW_FIELDS)):
             errors.append(f"{context}: unknown field '{field}'")
         if not one_of(raw.get("verdict"), REVIEW_VERDICTS):
             errors.append(f"{context}.verdict: want one of {sorted(REVIEW_VERDICTS)}")
-        reviewer = raw.get("reviewer")
-        authors = string_list(raw, "authors", context, errors, required=True)
-        if not isinstance(reviewer, str) or not reviewer.strip():
-            errors.append(f"{context}.reviewer: must be a non-empty string")
-        elif reviewer in authors:
+        authors = [identity(author, f"{context}.authors", errors)
+                   for author in string_list(raw, "authors", context, errors, required=True)]
+        reviewer = identity(raw.get("reviewer"), f"{context}.reviewer", errors)
+        if reviewer and reviewer["who"].casefold() in {
+                author["who"].casefold() for author in authors if author}:
             errors.append(f"{context}.reviewer: must not be one of the authors")
-        reviews[repo_relative(root, path)] = {
-            "verdict": raw.get("verdict"),
-            "fingerprints": fingerprints(raw.get("fingerprints"), nodes,
-                                         f"{context}.fingerprints", errors),
-        }
+        name = repo_relative(root, path)
+        if editorial:
+            reviews[name] = {"verdict": "editorial", "fingerprints": {}}
+            notes.append((name, _note(root, raw, nodes, context, errors)))
+        else:
+            reviews[name] = {
+                "verdict": raw.get("verdict"),
+                "fingerprints": fingerprints(raw.get("fingerprints"), nodes,
+                                             f"{context}.fingerprints", errors),
+            }
+    for name, note in notes:
+        _amend(name, note, reviews, errors)
     return reviews
+
+
+def _note(root: Path, raw: dict, nodes: dict[str, dict], context: str,
+          errors: list[str]) -> dict:
+    """An editorial note's ``amends`` (repo-relative report paths) and ``changes``."""
+    amends = []
+    for reference in string_list(raw, "amends", context, errors, required=True):
+        path = contained_path(root, reference, REVIEWS, f"{context}.amends", errors,
+                              suffix=".md")
+        if path is not None:
+            amends.append(repo_relative(root, path))
+    changes: dict[str, tuple[str, str]] = {}
+    raw_changes = raw.get("changes")
+    if not isinstance(raw_changes, dict) or not raw_changes:
+        errors.append(f"{context}.changes: want a mapping of dossiers and node ids to "
+                      "{from: <sha256>, to: <sha256>}")
+        raw_changes = {}
+    for key, change in raw_changes.items():
+        pair = (change.get("from"), change.get("to")) if isinstance(change, dict) else None
+        if not isinstance(key, str) or not (key.startswith(f"{SOLUTIONS}/") or key in nodes):
+            errors.append(f"{context}.changes: '{key}' is neither a dossier under "
+                          f"{SOLUTIONS}/ nor a ledger node")
+        elif (pair is None or set(change) != {"from", "to"} or not all(
+                isinstance(digest, str) and SHA256_RE.match(digest) for digest in pair)):
+            errors.append(f"{context}.changes: '{key}' needs exactly 'from' and 'to', each "
+                          "a lowercase hex SHA-256")
+        else:
+            changes[key] = pair
+    return {"amends": amends, "changes": changes}
+
+
+def _amend(name: str, note: dict, reviews: dict[str, dict], errors: list[str]) -> None:
+    """Carry the ``pass`` reports ``note`` amends forward to the versions it examined."""
+    reports = []
+    for path in note["amends"]:
+        report = reviews.get(path)
+        if report is None:
+            errors.append(f"{name}.amends: '{path}' is not a review")
+        elif report["verdict"] != "pass":
+            errors.append(f"{name}.amends: '{path}' is not a passing review; an editorial "
+                          "note only carries a certification forward")
+        else:
+            reports.append((path, report))
+    for item, (before, after) in note["changes"].items():
+        concerned = [(path, report) for path, report in reports
+                     if item in report["fingerprints"]]
+        if reports and not concerned:
+            errors.append(f"{name}.changes: no review it amends fingerprints '{item}'")
+        for path, report in concerned:
+            if report["fingerprints"][item] != before:
+                errors.append(f"{name}.changes: '{item}' from does not match what {path} "
+                              "certifies; the note did not examine the certified version")
+            else:
+                report["fingerprints"][item] = after
 
 
 def _dossier(root: Path, nid: str, reference: object, context: str,
@@ -94,29 +194,38 @@ def _dossier(root: Path, nid: str, reference: object, context: str,
 
 def _current(root: Path, nid: str, artifact: object, dossier: Path | None,
              recorded: dict[str, str], source: str, redo: str, nodes: dict[str, dict],
-             labels: dict[str, dict] | None, context: str, errors: list[str]) -> None:
+             labels: dict[str, dict] | None, context: str, errors: list[str],
+             impact: dict[str, list[dict]]) -> None:
     """Report every version ``source`` did not see: an unrecorded or edited dossier or
     statement. ``redo`` names what restores the certification."""
+    def changed(item: str, message: str) -> None:
+        errors.append(message)
+        if isinstance(artifact, str):
+            impact.setdefault(item, []).append({
+                "node": nid, "artifact": artifact, "source": source,
+                "recorded": recorded[item], "error": message,
+            })
+
     if dossier is not None:
         digest = recorded.get(artifact)
         if digest is None:
             errors.append(f"{context}: {source} does not fingerprint '{artifact}'")
-        elif sha256(dossier) != digest:
-            errors.append(f"{context}: {artifact} changed since {source} fingerprinted it; "
-                          f"it needs {redo}")
+        elif digest not in dossier_digests(dossier):
+            changed(artifact, f"{context}: {artifact} changed since {source} fingerprinted it; "
+                    f"it needs {redo}")
     for ref in relied_on(nid, nodes):
         digest = recorded.get(ref)
         current = (labels or {}).get(ref, {}).get("fingerprint")
         if digest is None:
             errors.append(f"{context}: {source} does not fingerprint the statement of '{ref}'")
         elif current is not None and current != digest:
-            errors.append(f"{context}: the statement of '{ref}' changed since {source} "
-                          f"fingerprinted it; it needs {redo}")
+            changed(ref, f"{context}: the statement of '{ref}' changed since {source} "
+                    f"fingerprinted it; it needs {redo}")
 
 
 def _proof(root: Path, nid: str, proof: object, context: str, reviews: dict[str, dict],
            nodes: dict[str, dict], labels: dict[str, dict] | None,
-           errors: list[str]) -> str | None:
+           errors: list[str], impact: dict[str, list[dict]]) -> str | None:
     """Validate one proof record; return its dossier's repo-relative path."""
     if not isinstance(proof, dict):
         errors.append(f"{context}: must be a mapping")
@@ -131,14 +240,18 @@ def _proof(root: Path, nid: str, proof: object, context: str, reviews: dict[str,
         errors.append(f"{context}: needs exactly one of review (agent) or accepted_by (human)")
         return named
     if accepted_by is not None:
-        if not isinstance(accepted_by, str) or not accepted_by.strip():
-            errors.append(f"{context}.accepted_by: must name who accepted the proof")
+        acceptor = identity(accepted_by, f"{context}.accepted_by", errors)
+        if acceptor is None:
+            return named
+        if acceptor["kind"] != "human":
+            errors.append(f"{context}.accepted_by: an acceptance is a human's; an agent "
+                          "certifies through a review")
             return named
         recorded = fingerprints(proof.get("fingerprints"), nodes,
                                 f"{context}.fingerprints", errors)
         if recorded:
             _current(root, nid, artifact, dossier, recorded, f"the acceptance by {accepted_by}",
-                     "a new acceptance", nodes, labels, context, errors)
+                     "a new acceptance", nodes, labels, context, errors, impact)
         return named
     if "fingerprints" in proof:
         errors.append(f"{context}.fingerprints: a reviewed proof's fingerprints are its "
@@ -149,16 +262,19 @@ def _proof(root: Path, nid: str, proof: object, context: str, reviews: dict[str,
     report = reviews.get(repo_relative(root, path))
     if report is None:
         return named  # its front matter is already reported as broken
-    if report["verdict"] != "pass":
+    if report["verdict"] == "editorial":
+        errors.append(f"{context}.review: an editorial note certifies nothing; name the "
+                      "review it amends")
+    elif report["verdict"] != "pass":
         errors.append(f"{context}.review: verdict '{report['verdict']}' cannot certify a proof")
     if report["fingerprints"]:
         _current(root, nid, artifact, dossier, report["fingerprints"], review,
-                 "a new review", nodes, labels, context, errors)
+                 "a new review", nodes, labels, context, errors, impact)
     return named
 
 
 def check(root: Path, nodes: dict[str, dict], labels: dict[str, dict] | None,
-          errors: list[str]) -> list[str]:
+          errors: list[str], impact: dict[str, list[dict]]) -> list[str]:
     """Validate certification; return the draft dossiers, those no proof record names."""
     reviews = read_reviews(root, nodes, errors)
     named: set[str] = set()
@@ -170,7 +286,7 @@ def check(root: Path, nodes: dict[str, dict], labels: dict[str, dict] | None,
             errors.append(f"{nid}.proofs: only for status proved")
         for index, proof in enumerate(as_list(proofs)):
             dossier = _proof(root, nid, proof, f"{nid}.proofs[{index}]", reviews, nodes,
-                             labels, errors)
+                             labels, errors, impact)
             if dossier is not None:
                 named.add(dossier)
 

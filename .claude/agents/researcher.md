@@ -34,8 +34,9 @@ be a different agent.
 - Check every claim you propose against its `bounded_by` fences, and keep
   `depends_on` and `assumes` apart.
 - `research/explorations/` is append-only: add a new dated file, never rewrite one.
-- On a repair round, the reviewer's verbatim `next` is the complete correction
-  contract. Address every listed defect, or state exactly why it remains open.
+- On a repair round, the orchestrator may adapt the reviewer's `next` to current
+  evidence and priorities, but the mission retains every reported defect. Address each
+  defect, or state exactly why it remains unresolved; adaptation cannot erase a defect.
 
 ## Write surface
 

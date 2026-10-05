@@ -2,6 +2,8 @@
 """Validate this repository's research state and print a one-screen summary.
 
     uv run scripts/check.py                  # this repository, manuscript included
+    uv run scripts/check.py --impact         # group stale certifications by changed item
+    uv run scripts/check.py --diff           # the same, each with its diff since certified
     uv run scripts/check.py --fast           # research state only: no MyST build
     uv run scripts/check.py --root example   # another tree, e.g. the worked example
     uv run scripts/check.py --fingerprint solutions/thm-main.md   # for a review or acceptance
@@ -24,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import yaml  # noqa: E402
 
-from checks import analyze, fingerprint, statements  # noqa: E402
+from checks import ROOT, analyze, fingerprint, history, statements  # noqa: E402
 
 
 def summary(report: dict) -> None:
@@ -52,10 +54,33 @@ def summary(report: dict) -> None:
         print("fast: manuscript not read; anchors and statement fingerprints unchecked")
 
 
+def print_impact(report: dict, root: Path | None = None, *, diff: bool = False) -> None:
+    """Compact mission scope, without repeating mismatch diagnostics or hashes; with
+    ``diff``, each changed item's diff since every version a certification recorded."""
+    impact = report["impact"]
+    print(f"impact: {len(impact)} changed item(s) detected")
+    for item, affected in sorted(impact.items()):
+        print(f"changed: {item}")
+        for node, artifact, source in sorted({
+                (entry["node"], entry["artifact"], entry["source"]) for entry in affected}):
+            print(f"  {node} | {artifact} | {source}")
+        for recorded in diff and sorted({entry["recorded"] for entry in affected}) or ():
+            for line in history.diff(root or ROOT, item, recorded):
+                print(f"  {line}")
+    if report["fast"]:
+        print("fast: manuscript not read; anchors and statement fingerprints unchecked")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--root", type=Path, default=None,
                         help="repository root to validate (default: this one)")
+    parser.add_argument("--impact", action="store_true",
+                        help="group stale certifications by changed item; keep other errors "
+                             "and the normal validation exit code")
+    parser.add_argument("--diff", action="store_true",
+                        help="--impact, with each changed item's diff since the certified "
+                             "version, read from Git")
     parser.add_argument("--fast", action="store_true",
                         help="skip the MyST build: research state only")
     parser.add_argument("--fingerprint", nargs="+", metavar="DOSSIER",
@@ -69,6 +94,10 @@ def main(argv: list[str] | None = None) -> int:
                              "and check nothing else: the output must not change across a "
                              "writer's pass")
     args = parser.parse_args(argv)
+    args.impact = args.impact or args.diff
+    if args.impact and (args.statements or args.drafts or args.fingerprint):
+        parser.error("--impact and --diff cannot be combined with --statements, --drafts or "
+                     "--fingerprint")
     if args.statements:
         digests, errors = statements(args.root)
         for error in errors:
@@ -89,9 +118,15 @@ def main(argv: list[str] | None = None) -> int:
         print(yaml.safe_dump({"fingerprints": recorded}, sort_keys=False), end="")
         return 0
     report = analyze(args.root, fast=args.fast)
+    grouped = {entry["error"] for affected in report["impact"].values()
+               for entry in affected} if args.impact else set()
     for error in report["errors"]:
-        print("FAIL", error)
-    summary(report)
+        if error not in grouped:
+            print("FAIL", error)
+    if args.impact:
+        print_impact(report, args.root, diff=args.diff)
+    else:
+        summary(report)
     if report["errors"]:
         print(f"{len(report['errors'])} error(s)")
         return 1

@@ -6,6 +6,104 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-05
+
+Each proved statement shows who certified it, a preprint's result shows that it is one, and
+a lapsed certification can be restored by a re-review or an editorial note instead of a full
+review. Forks migrate: rewrite each review's `reviewer` and `authors` as identities
+`<who>, <model or human>, <YYYY-MM-DD>`, and point every record at the manuscript by label,
+not by a module's file name. No fingerprint changes, so no certification lapses.
+
+### Added
+
+- The template is under the MIT licence (`LICENSE`).
+
+- The README's instantiation steps create the labels the issue forms apply
+  (`contribution`, `open-problem`, `counterexample`, `correction`): GitHub drops a form's
+  missing labels without a warning. Forks create them once with `gh label create`.
+- The LaTeX hints of the issue and discussion forms say that the site's macros do not
+  render on GitHub.
+
+- An *editorial note* (`verdict: editorial` in `research/reviews/`) carries a
+  certification over an edit that leaves the mathematics unchanged: a fresh reviewer reads
+  only the diff, and the note `amends` the `pass` reports, moving each changed item `from`
+  the certified fingerprint `to` the new one. The proof records and the site keep naming the
+  original review; any mathematical change still takes a re-review. Template:
+  `templates/editorial.md`. Forks that edited earlier reports' fingerprints by hand should
+  use a note instead.
+- `check.py --diff` prints `--impact` with each changed item's diff since the certified
+  version, read from Git: verified by fingerprint for a dossier, the labelled directive's
+  text for a statement.
+
+- `check.py --impact` groups stale certifications by changed statement or dossier, listing
+  affected nodes, dossiers and review paths or human acceptances. It reuses the normal
+  comparisons and exit code, keeps other errors visible, and avoids repeated mismatch
+  diagnostics. `--fast` explicitly limits the report to dossier comparisons. No Git
+  lookup, new stored format or fingerprint change.
+
+- `.codex/agents/` defines the three roles for Codex, mirroring `.claude/agents/`; the
+  README and `SPECIFICATION.md` name both directories.
+- Each proved statement shows who certified it: *agent review (model, date)* or *reviewed
+  by* a human, linked to the review report on GitHub, or *accepted by* a human. A proved
+  node on `references` alone shows *Established in the literature* instead of *Proved*.
+  `proofs.md` explains the three kinds of certification to the reader.
+- An open theorem, lemma, proposition or corollary resting on `references` shows
+  *Preprint, not yet checked here* instead of *Not settled here*: a source announces it,
+  and neither the field nor the project has checked it yet. An open conjecture keeps
+  *Not settled here*. Once certified with the project's own dossier, such a result shows
+  *Proved (from a preprint)*, followed by who checked it.
+- The writer gives a manuscript whose overview outgrows a first reading a short welcome
+  page, `modules/index.md`: the question, the main results, the parts and reading paths.
+  How the modules are organised and how results are checked move there from the overview.
+- Orchestration guidance encourages managed agent tools, selective reading and fewer
+  polling calls. The README describes practical launch and wait choices; independent
+  certification still requires a fresh reviewer context.
+- A **re-review** restores a lapsed certification from the last `pass` report and a
+  verified diff; its scope and the triggers for a full review are described under
+  *Changed* below.
+
+### Changed
+
+- `goal.md` is renamed `PURPOSE.md`, in capitals like the repository's other top-level
+  documents.
+
+- A dossier's fingerprint ignores `%` comment lines, spacing and line wrapping. A
+  fingerprint recorded as the SHA-256 of the file's bytes is still accepted, so no review
+  needs redoing.
+- `SPECIFICATION.md` links render as links, not code.
+- Every record — dossier, checkpoint, review, brief, portfolio, `research/lib/` docstring —
+  points at the manuscript by label, never by a module's file name: modules are
+  renumbered, and an append-only record cannot be repaired. `templates/solution.md` and
+  `templates/checkpoint.md` repeat the rule.
+- Human contributors may propose, prove and explicitly accept their own results through
+  `accepted_by`, without a separate reviewer. Agent reviews remain independent. Dossiers
+  and fingerprints still identify the accepted versions; formats and checker are unchanged.
+
+- The contract separates guarantees, formats and checks, and recommended workflow.
+  Write responsibility is per content, statements have one canonical version, and the
+  limits of automated checks (including reviewer independence and append-only history) are
+  explicit. A stale certification causes validation errors, not an automatic ledger edit.
+- Re-reviews retain certified conclusions for unchanged, unaffected work and examine the
+  changes and their consequences. There is no count-based limit; uncertain impact,
+  structural changes, doubtful prior certification or an unverifiable baseline require
+  a full review. Grouped reviews use the existing multi-dossier format, with separate
+  reports for passing and failing scopes. Fingerprints and YAML formats are unchanged;
+  existing certifications need no migration. `SPECIFICATION.md` states the rule; how a
+  reviewer verifies the baseline, examines the change and reports it is in `reviewer.md`.
+- Orchestrators may read the passages a route decision needs, never to check a proof or
+  the agreement of files, which stays a reviewer's mission, and adapt handoffs while retaining
+  every reported repair defect. Session and wait choices are recommendations; client
+  recipes move to the README. Prose may describe statuses consistently with the ledger,
+  and `sync` checks contradictions and unsupported assertions. Claude and Codex role
+  instructions and the worked example's guidance follow the same rules.
+
+- `reviewer`, every `authors` entry and `accepted_by` are identities
+  `<who>, <model or human>, <YYYY-MM-DD>`, which the checker validates; `accepted_by` must
+  be a human's, and the reviewer's `<who>` must be no author's. Forks migrate: rewrite
+  each review's `reviewer` and `authors` in that form (`unknown` for an unrecorded model,
+  the filename's date when no other is known). The review fields are not fingerprinted,
+  so no certification lapses.
+
 ## [0.4.0] - 2026-09-30
 
 Each statement names itself and invites a contribution, and `goal.md` says what the
@@ -166,7 +264,8 @@ items below are breaking.
 - Remove the synthesizer's stale reference to the retired decisions archive.
 - Verify the byte-preserved source and checksum declared by migrated numerical artifacts.
 
-[Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.1.0...v0.2.0

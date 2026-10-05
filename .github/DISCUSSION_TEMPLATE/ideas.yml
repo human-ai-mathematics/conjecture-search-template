@@ -10,6 +10,6 @@ body:
     id: idea
     attributes:
       label: The idea
-      description: Half-formed is fine. LaTeX between $…$ renders.
+      description: Half-formed is fine. LaTeX between $…$ renders, without the site's macros (write \mathbb{E}, not \E).
     validations:
       required: true

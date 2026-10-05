@@ -3,7 +3,20 @@
 //
 //   Not settled here   the ledger says open: not established in this project, which
 //                      says nothing of the literature
-//   Proved             links to the first dossier a proof record names (none: a literature proof)
+//   Preprint, not yet checked here
+//                      an open theorem, lemma, proposition or corollary with references:
+//                      a result a source announces, not yet established in the field
+//                      nor checked by this project's own review
+//   Proved             links to the first dossier a proof record names, followed by who
+//                      certified each proof: "agent review (model, date)" or
+//                      "reviewed by <name> (date)", linked to the review report on GitHub,
+//                      or "accepted by <name> (date)" for a human's attestation
+//   Proved (from a preprint)
+//                      a proved node with references and a proof record: a source's
+//                      result, not established in the field, that this project checked
+//                      with its own dossier; the provenance follows as for Proved
+//   Established in the literature
+//                      a proved node with references and no proof record
 //   Refuted            links to the first refuter in refuted_by
 //
 // A definition shows no status: its kind says enough. After the status comes the
@@ -44,13 +57,67 @@ function readRepository() {
 
 const text = (value) => ({ type: 'text', value });
 
-function status(node, file) {
-  if (node.status === 'open') return [text('Not settled here')];
+// An identity `<who>, <model or human>, <YYYY-MM-DD>`, as scripts/checks/proofs.py
+// validates it; null when malformed.
+function identity(value) {
+  const match = typeof value === 'string'
+    && value.match(/^\s*([^,]*[^,\s])\s*,\s*([A-Za-z0-9._-]+)\s*,\s*(\d{4}-\d{2}-\d{2})\s*$/);
+  if (!match) return null;
+  const [, who, what, date] = match;
+  return { who, human: what === 'human', model: what === 'unknown' ? null : what, date };
+}
+
+// A review report's front matter, or null.
+function readReview(file) {
+  try {
+    const head = fs.readFileSync(file, 'utf8').match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    return head ? load(head[1]) ?? {} : null;
+  } catch {
+    return null;
+  }
+}
+
+// Who certified one proof record, and when.
+function provenance(record, repository) {
+  if (record?.accepted_by) {
+    const human = identity(record.accepted_by);
+    return [text(human ? `accepted by ${human.who} (${human.date})` : 'accepted by a human')];
+  }
+  if (!record?.review) return [];
+  const reviewer = identity(readReview(record.review)?.reviewer);
+  let label = 'independent review';
+  if (reviewer?.human) label = `reviewed by ${reviewer.who} (${reviewer.date})`;
+  else if (reviewer) {
+    label = `agent review (${[reviewer.model, reviewer.date].filter(Boolean).join(', ')})`;
+  }
+  if (!repository) return [text(label)];
+  const report = record.review.split('/').map(encodeURIComponent).join('/');
+  const url = `${repository}/blob/HEAD/${report}`;
+  return [{ type: 'link', url, children: [text(label)] }];
+}
+
+// The kinds that assert a result; an open one with references is a source's claim.
+const RESULTS = new Set(['theorem', 'lemma', 'proposition', 'corollary']);
+
+function status(node, kind, file, repository) {
+  if (node.status === 'open') {
+    const imported = RESULTS.has(kind) && node.references?.length;
+    return [text(imported ? 'Preprint, not yet checked here' : 'Not settled here')];
+  }
   if (node.status === 'proved') {
-    const artifact = (node.proofs ?? []).find((record) => record?.artifact)?.artifact;
-    if (!artifact) return [text('Proved')];
-    const url = path.relative(path.dirname(file), path.resolve(artifact));
-    return [{ type: 'link', url, children: [text('Proved')] }];
+    const records = (node.proofs ?? []).filter((record) => record?.artifact);
+    if (!records.length) {
+      return [text(node.references ? 'Established in the literature' : 'Proved')];
+    }
+    const url = path.relative(path.dirname(file), path.resolve(records[0].artifact));
+    const certified = records.map((record) => provenance(record, repository))
+      .filter((part) => part.length)
+      .flatMap((part, i) => (i ? [text('; '), ...part] : part));
+    const label = node.references?.length ? 'Proved (from a preprint)' : 'Proved';
+    return [
+      { type: 'link', url, children: [text(label)] },
+      ...(certified.length ? [text(' · '), ...certified] : []),
+    ];
   }
   if (node.status === 'refuted') {
     const refuter = (node.refuted_by ?? [])[0];
@@ -90,7 +157,7 @@ const statusTransform = {
       const node = ledger.get(statement.label);
       if (!node) continue;
       const parts = [
-        status(node, file.path ?? '.'),
+        status(node, statement.kind, file.path ?? '.', repository),
         [{ type: 'inlineCode', value: node.id }],
         ...forms(node, repository).map((link) => [link]),
       ].filter((part) => part.length);

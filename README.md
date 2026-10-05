@@ -8,7 +8,7 @@ A MyST Markdown manuscript together with a harness for **sustained conjecture se
 proving or refuting one hard statement over many sessions and several agents, while keeping
 track of what is claimed, what the search is doing, and why.
 
-Why the template exists, and how to judge a change to it, is in [`goal.md`](goal.md). The
+Why the template exists, and how to judge a change to it, is in [`PURPOSE.md`](PURPOSE.md). The
 rules are in [`SPECIFICATION.md`](SPECIFICATION.md). Start every session that edits the
 repository by reading it.
 
@@ -22,7 +22,7 @@ repository by reading it.
 | [`research/reviews/`](research/reviews/) | independent proof reviews |
 | [`research/runs/`](research/runs/) | computation scripts and their output |
 | [`solutions/`](solutions/) | standalone proof and refutation dossiers |
-| [`.claude/agents/`](.claude/agents/) | the three roles: `researcher`, `reviewer` and `writer` |
+| [`.claude/agents/`](.claude/agents/), [`.codex/agents/`](.codex/agents/) | the three roles: `researcher`, `reviewer` and `writer`, for Claude Code and for Codex |
 | [`templates/`](templates/) | an empty copy of each file genre |
 | [`example/`](example/README.md) | one complete worked search, a fixture to copy from |
 
@@ -36,16 +36,44 @@ npm ci
 ./scripts/check.sh               # the checker, the worked example, the unit tests
 uv run scripts/check.py         # full check; 0 errors required before any status change
 uv run scripts/check.py --fast  # research state only, no MyST build
+uv run scripts/check.py --impact # compact scope for grouped re-reviews; same validation
+uv run scripts/check.py --diff   # the same, with each change's diff for an editorial note
 uv run scripts/check.py --statements   # before and after a writer's pass: must not change
 uv run scripts/check.py --drafts       # the draft dossiers, never published
 npx myst start                   # read the manuscript and the proofs in a browser
 ```
+
+Agents run the checker and MyST many times per session. Approve those commands once and
+for good (`uv run scripts/check.py` and `node_modules/.bin/myst`): in Claude Code, as
+`allow` rules in `.claude/settings.json`; in Codex, by accepting the prefix rule offered
+on the first escalation. Each approval asked again costs a turn, and in Codex a call to
+its reviewing model. See *Running agents* below for practical guidance; the independence
+requirement is in *Review* in `SPECIFICATION.md`.
 
 The first check in a fresh clone downloads MyST's site theme into `_build/`. A green check
 establishes structure only. Each statement shows its status, read from the ledger by
 [`scripts/status.mjs`](scripts/status.mjs). The `pages` workflow publishes the manuscript
 and the certified dossiers to GitHub Pages when dispatched by hand, after a person has
 read them.
+
+## Running agents
+
+Prefer the client's agent tools so assignments, results and progress remain visible.
+Load the corresponding instructions from `.claude/agents/` or `.codex/agents/` for each
+role. In Claude Code, use the Agent tool's role selection when available. In Codex,
+use `spawn_agent` with `fork_turns: "none"` for an independent reviewer and ensure its
+assignment loads the reviewer instructions; use the role-selection mechanism your client
+actually exposes rather than assuming an `agent_type` argument exists.
+
+A reviewer must not inherit the conversation that authored or directed the proof. Check
+that the chosen launch mechanism supplies that fresh context. Other agents can receive
+context useful to their tasks. Prefer these managed tools over background shell sessions.
+
+Use completion notifications or blocking waits (such as `wait_agent`) rather than repeated
+status polling. Choose a timeout within the client's limits that still allows progress
+updates and responses to the user; no fixed wait duration is part of the repository
+contract. Start a new session when it helps keep context focused, not automatically after
+each task. The recommended scientific workflow is in *Workflow* in `SPECIFICATION.md`.
 
 ---
 
@@ -70,7 +98,10 @@ read them.
    this section.
 6. **Open it to contributions.** Set `github:` in [`myst.yml`](myst.yml) to the
    repository URL, so that each statement links to the issue forms, and replace
-   `<repository URL>` in `config.yml`. To use Discussions, enable them and create the
+   `<repository URL>` in `config.yml`. Create the labels the issue forms apply, or GitHub
+   drops them silently:
+   `for l in contribution open-problem counterexample correction; do gh label create $l; done`.
+   To use Discussions, enable them and create the
    categories *Announcements*, *Q&A* (answerable), *Ideas* and *Literature* in the
    repository settings; the forms in `.github/DISCUSSION_TEMPLATE/` match the last three.
    Otherwise delete that directory and the Discussions link of `config.yml`.
@@ -79,3 +110,8 @@ Create `research/program/portfolio.yaml` from
 [`templates/portfolio.yaml`](templates/portfolio.yaml) with the first route. Add
 macros to `myst.yml` under `math:`, and BibTeX entries to `references.bib` before any
 node cites them in `references:`.
+
+## Licence
+
+The template is under the MIT licence: see [`LICENSE`](LICENSE). A program instantiated
+from it chooses its own; text under CC BY 4.0 and code under MIT is a common pairing.

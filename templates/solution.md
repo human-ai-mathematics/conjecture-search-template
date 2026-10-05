@@ -9,8 +9,11 @@ numbering:
 % certification: the ledger's proofs[] record does. See SPECIFICATION.md, Formats → Proof
 % records and dossiers. Set the enumerator prefix to this dossier's place under *Full
 % proofs*, so that its statements read Theorem 3.1, Lemma 3.2, … and never collide with
-% another page's; fix it before the first review, since any edit afterwards lifts the
-% certification.
+% another page's; fix it before the first review, since an edit afterwards lifts the
+% certification until at least an editorial note carries it over.
+% Point at the manuscript by label (`[](#thm:x)`) or section anchor (`[](#sec:x)`), never
+% by a module's file name or a line number: modules are renumbered, and repairing a stale
+% path takes at least an editorial note.
 
 **Overview.** What is proved, and how, before any detail: the steps in order and what each
 one contributes.
