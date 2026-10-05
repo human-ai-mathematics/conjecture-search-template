@@ -24,6 +24,6 @@ body:
     id: content
     attributes:
       label: The idea
-      description: The argument, or where to find it. LaTeX between $…$ renders.
+      description: The argument, or where to find it. LaTeX between $…$ renders, without the site's macros (write \mathbb{E}, not \E).
     validations:
       required: true

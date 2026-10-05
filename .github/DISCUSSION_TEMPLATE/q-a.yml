@@ -9,6 +9,6 @@ body:
     id: question
     attributes:
       label: Question
-      description: LaTeX between $…$ renders.
+      description: LaTeX between $…$ renders, without the site's macros (write \mathbb{E}, not \E).
     validations:
       required: true

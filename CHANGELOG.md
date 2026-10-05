@@ -16,6 +16,12 @@ not by a module's file name. No fingerprint changes, so no certification lapses.
 
 ### Added
 
+- The README's instantiation steps create the labels the issue forms apply
+  (`contribution`, `open-problem`, `counterexample`, `correction`): GitHub drops a form's
+  missing labels without a warning. Forks create them once with `gh label create`.
+- The LaTeX hints of the issue and discussion forms say that the site's macros do not
+  render on GitHub.
+
 - An *editorial note* (`verdict: editorial` in `research/reviews/`) carries a
   certification over an edit that leaves the mathematics unchanged: a fresh reviewer reads
   only the diff, and the note `amends` the `pass` reports, moving each changed item `from`

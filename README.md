@@ -98,7 +98,10 @@ each task. The recommended scientific workflow is in *Workflow* in `SPECIFICATIO
    this section.
 6. **Open it to contributions.** Set `github:` in [`myst.yml`](myst.yml) to the
    repository URL, so that each statement links to the issue forms, and replace
-   `<repository URL>` in `config.yml`. To use Discussions, enable them and create the
+   `<repository URL>` in `config.yml`. Create the labels the issue forms apply, or GitHub
+   drops them silently:
+   `for l in contribution open-problem counterexample correction; do gh label create $l; done`.
+   To use Discussions, enable them and create the
    categories *Announcements*, *Q&A* (answerable), *Ideas* and *Literature* in the
    repository settings; the forms in `.github/DISCUSSION_TEMPLATE/` match the last three.
    Otherwise delete that directory and the Discussions link of `config.yml`.
