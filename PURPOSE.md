@@ -1,4 +1,4 @@
-# Goal
+# Purpose
 
 **A template that gives AI-driven research on a mathematical conjecture a simple, clear
 structure — so that what the search establishes can be trusted, and mathematicians can

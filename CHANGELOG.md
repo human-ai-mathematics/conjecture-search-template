@@ -62,6 +62,9 @@ not by a module's file name. No fingerprint changes, so no certification lapses.
 
 ### Changed
 
+- `goal.md` is renamed `PURPOSE.md`, in capitals like the repository's other top-level
+  documents.
+
 - A dossier's fingerprint ignores `%` comment lines, spacing and line wrapping. A
   fingerprint recorded as the SHA-256 of the file's bytes is still accepted, so no review
   needs redoing.

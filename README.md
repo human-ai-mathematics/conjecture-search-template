@@ -8,7 +8,7 @@ A MyST Markdown manuscript together with a harness for **sustained conjecture se
 proving or refuting one hard statement over many sessions and several agents, while keeping
 track of what is claimed, what the search is doing, and why.
 
-Why the template exists, and how to judge a change to it, is in [`goal.md`](goal.md). The
+Why the template exists, and how to judge a change to it, is in [`PURPOSE.md`](PURPOSE.md). The
 rules are in [`SPECIFICATION.md`](SPECIFICATION.md). Start every session that edits the
 repository by reading it.
 
