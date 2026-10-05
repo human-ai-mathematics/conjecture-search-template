@@ -110,3 +110,8 @@ Create `research/program/portfolio.yaml` from
 [`templates/portfolio.yaml`](templates/portfolio.yaml) with the first route. Add
 macros to `myst.yml` under `math:`, and BibTeX entries to `references.bib` before any
 node cites them in `references:`.
+
+## Licence
+
+The template is under the MIT licence: see [`LICENSE`](LICENSE). A program instantiated
+from it chooses its own; text under CC BY 4.0 and code under MIT is a common pairing.

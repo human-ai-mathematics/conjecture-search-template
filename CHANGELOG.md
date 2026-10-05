@@ -16,6 +16,8 @@ not by a module's file name. No fingerprint changes, so no certification lapses.
 
 ### Added
 
+- The template is under the MIT licence (`LICENSE`).
+
 - The README's instantiation steps create the labels the issue forms apply
   (`contribution`, `open-problem`, `counterexample`, `correction`): GitHub drops a form's
   missing labels without a warning. Forks create them once with `gh label create`.
