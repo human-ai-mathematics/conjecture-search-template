@@ -6,6 +6,14 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-05
+
+Each proved statement shows who certified it, a preprint's result shows that it is one, and
+a lapsed certification can be restored by a re-review or an editorial note instead of a full
+review. Forks migrate: rewrite each review's `reviewer` and `authors` as identities
+`<who>, <model or human>, <YYYY-MM-DD>`, and point every record at the manuscript by label,
+not by a module's file name. No fingerprint changes, so no certification lapses.
+
 ### Added
 
 - An *editorial note* (`verdict: editorial` in `research/reviews/`) carries a
@@ -245,7 +253,8 @@ items below are breaking.
 - Remove the synthesizer's stale reference to the retired decisions archive.
 - Verify the byte-preserved source and checksum declared by migrated numerical artifacts.
 
-[Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.1.0...v0.2.0
