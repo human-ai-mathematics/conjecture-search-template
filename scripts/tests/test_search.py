@@ -131,7 +131,37 @@ class PortfolioTests(CheckerFixture):
         self.assertIn("ap:free.blocker: only for a blocked route", errors)
         self.assertIn("ap:free.reopen_if: only for a blocked route", errors)
 
-    def test_a_settled_target_leaves_no_active_route(self):
+    def test_a_proved_target_allows_active_alternative_proof_routes(self):
+        self.ledger([node("conj:main", kind="conjecture")])
+        self.brief("conj:main")
+        self.portfolio({"id": "ap:a", "state": "active",
+                        "objective": "Find an alternative proof without localization.",
+                        "next": "Test the deterministic comparison in dimension two."})
+        self.assertClean()
+
+    def test_a_proved_target_does_not_relax_blocker_validation(self):
+        self.ledger([node("conj:main", kind="conjecture"),
+                     node("lem:done", kind="lemma"),
+                     node("conj:false", kind="conjecture", status="refuted",
+                          refuted_by=["prop:cx"]), node("prop:cx", kind="proposition")])
+        self.brief("conj:main")
+        self.checkpoint("propose", candidates=[{"id": "cand:dead", "statement": "D."}])
+        self.checkpoint("close", date="2026-08-27", closes=["cand:dead"])
+        self.portfolio(
+            {"id": "ap:alternative", "state": "active"},
+            {"id": "ap:done", "state": "blocked", "blocker": "lem:done"},
+            {"id": "ap:false", "state": "blocked", "blocker": "conj:false"},
+            {"id": "ap:missing", "state": "blocked", "blocker": "lem:missing"},
+            {"id": "ap:dead", "state": "blocked", "blocker": "cand:dead"},
+        )
+        errors = self.errors()
+        self.assertNotIn("the target 'conj:main'", errors)
+        self.assertIn("ap:done.blocker: 'lem:done' is now proved; reopen or close", errors)
+        self.assertIn("ap:false.blocker: 'conj:false' is now refuted; reopen or close", errors)
+        self.assertIn("ap:missing.blocker: 'lem:missing' is neither a ledger node nor a live", errors)
+        self.assertIn("ap:dead.blocker: 'cand:dead' is neither a ledger node nor a live", errors)
+
+    def test_a_refuted_target_leaves_no_active_route(self):
         self.ledger([node("conj:main", kind="conjecture", status="refuted",
                           refuted_by=["prop:cx"]), node("prop:cx", kind="proposition")])
         self.brief("conj:main")

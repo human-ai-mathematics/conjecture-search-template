@@ -166,7 +166,9 @@ def check(root: Path, nodes: dict[str, dict], errors: list[str]) -> dict:
             errors.append(f"{PORTFOLIO} {aid}.blocker: '{blocker}' is now "
                           f"{nodes[blocker]['status']}; reopen or close the route")
     status = nodes.get(target, {}).get("status")
-    if one_of(status, SETTLED):
+    # A proved target can still motivate alternative proofs or stronger results.
+    # A refuted target cannot have an active search for a proof of that same claim.
+    if status == "refuted":
         active = sorted(a for a, r in (approaches or {}).items() if r.get("state") == "active")
         if active:
             errors.append(f"{PORTFOLIO}: the target '{target}' is {status}; close "

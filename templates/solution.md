@@ -18,6 +18,10 @@ numbering:
 **Overview.** What is proved, and how, before any detail: the steps in order and what each
 one contributes.
 
+**Dependencies.** Name the results actually used in this proof. If claiming independence
+from another proof, specify which inputs are excluded and justify that exclusion; the
+statement-level ledger DAG alone does not establish it.
+
 1. First step: what it establishes.
 2. Second step: what it adds, and which earlier step it uses.
 

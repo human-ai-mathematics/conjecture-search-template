@@ -3,7 +3,7 @@
 
   - id: conj:main
     status: open              # open | proved | refuted | defined (prf:definition only)
-    # depends_on: []          # claims a proof used — the acyclic proof DAG
+    # depends_on: []          # statement-level proof DAG; not proof-independence evidence
     # assumes: []             # antecedents a proved implication may leave open
     # bounded_by: []          # fences: binding if proved, a guide if open
     # references: []          # BibTeX keys; established results need no proofs

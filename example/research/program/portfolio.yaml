@@ -1,6 +1,8 @@
 # The worked example's portfolio: what the search is doing, not what is claimed
 # The search is finished — conj:example is refuted —
 # so no route is left active.
+# A proved target, unlike this refuted one, could retain active routes towards an
+# alternative proof or a stronger result, with the remaining objective made explicit.
 
 approaches:
   - id: ap:example-finite-battery

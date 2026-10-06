@@ -6,6 +6,17 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ## [Unreleased]
 
+### Changed
+
+- A proved target no longer forces every route closed: a route may stay `active` towards an
+  alternative proof or a stronger statement, its `objective` and `next` saying what remains.
+  A refuted target still leaves no route `active`, and a settled blocker is still flagged.
+  After a proof, the orchestrator reassesses the remaining objectives in a checkpoint.
+- Dependencies belong to statements, not proofs: the ledger DAG is no evidence that two
+  proofs are independent. A dossier names the results it actually uses (new
+  **Dependencies** paragraph in `templates/solution.md`) and justifies any claimed
+  exclusion.
+
 ## [0.5.0] - 2026-10-05
 
 Each proved statement shows who certified it, a preprint's result shows that it is one, and
