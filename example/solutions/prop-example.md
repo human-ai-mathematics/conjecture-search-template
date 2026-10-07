@@ -1,5 +1,5 @@
 ---
-title: "Solution: the centred sum of squares"
+title: "The centred sum of squares"
 ledger-node: prop:example
 ---
 

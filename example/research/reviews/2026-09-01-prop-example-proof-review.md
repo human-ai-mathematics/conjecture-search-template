@@ -4,7 +4,7 @@ authors:
   - researcher, claude-opus-5-5, 2026-09-01
 reviewer: reviewer, claude-opus-5-5, 2026-09-01
 fingerprints:
-  solutions/prop-example.md: 95d2f14dfbc948198be2a2c02dcd209aa920d6c100e98fdc6f7e0dd056ca7e26
+  solutions/prop-example.md: 06fba361ea7b5930216abb73c031ee4759cb8ce75ed3793cdd991a28ba2c5d78
   prop:example: ea79eae68f7d2f1c5075b59892ece18383fc7cfbc4e38f1004beb0134c785e9a
 ---
 

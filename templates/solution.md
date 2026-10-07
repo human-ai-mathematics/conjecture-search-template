@@ -1,11 +1,13 @@
 ---
-title: "Solution: short target name"
+title: "Short target name"
 ledger-node: conj:main
 numbering:
   enumerator: "1.%s"
 ---
 
-% Copy to solutions/<ledger-id>.md (":" replaced by "-"). The header records no
+% Copy to solutions/<ledger-id>.md (":" replaced by "-"). The title names the result as
+% proofs.md lists it, with no "Solution:" prefix: the page already sits under *Full
+% proofs*. The header records no
 % certification: the ledger's proofs[] record does. See SPECIFICATION.md, Formats → Proof
 % records and dossiers. Set the enumerator prefix to this dossier's place under *Full
 % proofs*, so that its statements read Theorem 3.1, Lemma 3.2, … and never collide with

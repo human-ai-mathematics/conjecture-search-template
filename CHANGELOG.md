@@ -6,6 +6,12 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-07
+
+Routes may outlive a proved target, a dossier names the results it uses, and dossier titles
+lose their "Solution:" prefix. Nothing to migrate: the templates only shape new records, and
+existing dossiers keep their titles and certifications.
+
 ### Changed
 
 - A proved target no longer forces every route closed: a route may stay `active` towards an
@@ -16,6 +22,9 @@ version may require forks to migrate, and a patch version is a backward-compatib
   proofs are independent. A dossier names the results it actually uses (new
   **Dependencies** paragraph in `templates/solution.md`) and justifies any claimed
   exclusion.
+- A dossier's title names the result as `proofs.md` lists it, with no "Solution:" prefix:
+  the page already sits under *Full proofs*. `templates/solution.md` and the worked
+  example's dossiers follow.
 
 ## [0.5.0] - 2026-10-05
 
@@ -275,7 +284,8 @@ items below are breaking.
 - Remove the synthesizer's stale reference to the retired decisions archive.
 - Verify the byte-preserved source and checksum declared by migrated numerical artifacts.
 
-[Unreleased]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.2.0...v0.3.0

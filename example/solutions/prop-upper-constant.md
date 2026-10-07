@@ -1,5 +1,5 @@
 ---
-title: "Solution: centring never increases the sum of squares"
+title: "Centring never increases the sum of squares"
 ledger-node: prop:upper-constant
 ---
 
