@@ -264,9 +264,9 @@ items below are breaking.
 - Remove the synthesizer's stale reference to the retired decisions archive.
 - Verify the byte-preserved source and checksum declared by migrated numerical artifacts.
 
-[Unreleased]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.5.0...HEAD
-[0.5.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.4.0...v0.5.0
-[0.4.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/numina-functional-inequalities/conjecture-search-template/releases/tag/v0.1.0
+[Unreleased]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/human-ai-mathematics/conjecture-search-template/releases/tag/v0.1.0
