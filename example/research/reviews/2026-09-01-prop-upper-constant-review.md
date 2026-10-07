@@ -4,7 +4,7 @@ authors:
   - researcher, claude-opus-5-5, 2026-09-01
 reviewer: reviewer, claude-opus-5-5, 2026-09-01
 fingerprints:
-  solutions/prop-upper-constant.md: f7920a658a1f4d81895651679f365bfdaca8ddc5bb6866b2a2e0f74061ffbf16
+  solutions/prop-upper-constant.md: fbada5c888afc6b739452fbe95d343660379fdde9d78a2da4bf82d01bea8b1bc
   prop:upper-constant: bf6de1113cb252456f59daaca4010bc0569f5496cda9b8aa92eddb84d66dc04b
   prop:example: ea79eae68f7d2f1c5075b59892ece18383fc7cfbc4e38f1004beb0134c785e9a
 ---

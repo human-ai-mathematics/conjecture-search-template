@@ -125,6 +125,13 @@ constant absorbs what — is a `prf:definition` that every claim resting on it n
 `depends_on`; there is no separate notation file. The ledger holds no attempt history,
 numerical output or search state.
 
+Dependencies belong to statements, not to individual proof records. The shared DAG does
+not certify that two proofs are mathematically independent. Each dossier and its review
+must identify the results actually used and any claimed exclusions. In particular, a
+lemma derived from the target cannot supply an independent proof of that target. Never
+delete a genuine dependency to bypass a cycle; a proof needing a different representation
+requires a separate framework change.
+
 **The anchor invariant.** Every labelled claim directive in `modules/` — `prf:theorem`,
 `proposition`, `lemma`, `corollary`, `conjecture`, `assumption`, `definition` or `example` — is
 exactly one ledger node. A label on a heading (`(sec:x)=`), an equation or a `prf:remark` is
@@ -164,8 +171,12 @@ node is `proved` or `refuted`, or whose candidate is closed. Add `reopen_if` onl
 else would reopen it. `next`, optional, is the discriminating test the route would run next — what a
 resumed session starts from; the summary prints it with the latest checkpoint that names the route.
 `closed` means the objective is finished or abandoned; it says nothing about the target, and a route
-never becomes a node. Once the target is settled, no route stays `active`. Why a route changed state
-is in a checkpoint that names it.
+never becomes a node. A proved target may retain active routes towards alternative proofs
+or stronger statements: their objectives and next tests must say what remains to obtain.
+A refuted target leaves no route `active` in its proof search; a corrected formulation must
+become a different target. A checkpoint records why a route changed state, distinguishing
+an accomplished objective from an abandoned one or a proved impossibility. A proof of the
+target alone neither refutes another route's premises nor closes that route.
 
 ### Checkpoint — `research/explorations/<date>-<slug>.md`
 
@@ -540,7 +551,10 @@ A certification the full check reports as lifted — a dossier or a statement ed
 was fingerprinted — goes back through step 5: a new review, or a new human acceptance.
 Recomputing the fingerprints without reading again forges a review.
 
-Stop when the target is settled, or when no route is left worth running.
+Stop the proof search for a refuted target, or when no route is left worth running.
+After a proof of the target, reassess the remaining objectives: alternative proofs and
+stronger statements may justify continued work. Record that reassessment in a checkpoint
+and update each continuing route's objective and next test.
 
 
 | you want                                          | role                          | starting lens      |
