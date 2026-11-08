@@ -19,8 +19,8 @@ exists. Nothing to migrate: the new files only concern programs instantiated fro
   list in an open issue; the public history and dated checkpoints establish priority within
   the record. `PURPOSE.md` (aim 3) links to it.
 - `templates/CITATION.cff` for a program, so that a search can be cited, with a Zenodo DOI
-  per release, before any paper exists. The
-  instantiation checklist gains a step 7, *Make it citable*.
+  per release, before any paper exists. The instantiation checklist gains a step 7, *Make it
+  citable*.
 
 ## [0.6.0] - 2026-10-07
 
