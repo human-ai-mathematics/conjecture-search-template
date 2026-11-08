@@ -6,6 +6,11 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-08
+
+A program says who signs what comes out of its search, and can be cited before any paper
+exists. Nothing to migrate: the new files only concern programs instantiated from now on.
+
 ### Added
 
 - `AUTHORSHIP.md`: a default authorship and credit policy for a program. Everyone who
@@ -295,7 +300,8 @@ items below are breaking.
 - Remove the synthesizer's stale reference to the retired decisions archive.
 - Verify the byte-preserved source and checksum declared by migrated numerical artifacts.
 
-[Unreleased]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/human-ai-mathematics/conjecture-search-template/compare/v0.3.0...v0.4.0
