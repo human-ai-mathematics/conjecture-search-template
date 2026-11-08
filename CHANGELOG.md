@@ -13,8 +13,8 @@ version may require forks to migrate, and a patch version is a backward-compatib
   their share is stated in the text; the maintainers named in the brief propose the author
   list in an open issue; the public history and dated checkpoints establish priority within
   the record. `PURPOSE.md` (aim 3) links to it.
-- `CITATION.cff` for the template itself, and `templates/CITATION.cff` for a program, so that
-  a search can be cited, with a Zenodo DOI per release, before any paper exists. The
+- `templates/CITATION.cff` for a program, so that a search can be cited, with a Zenodo DOI
+  per release, before any paper exists. The
   instantiation checklist gains a step 7, *Make it citable*.
 
 ## [0.6.0] - 2026-10-07

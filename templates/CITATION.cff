@@ -1,5 +1,5 @@
-# How to cite this search before any paper exists. Copy to the repository root, replacing
-# the template's own CITATION.cff, and replace every <placeholder>. List every person who
+# How to cite this search before any paper exists. Copy to the repository root and replace
+# every <placeholder>. List every person who
 # contributed substantively (AUTHORSHIP.md), in alphabetical order; AI agents are not
 # authors. Zenodo reads this file when it archives a release.
 cff-version: 1.2.0
