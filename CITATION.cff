@@ -1,0 +1,23 @@
+# How to cite the conjecture-search template itself. A program instantiated from it
+# replaces this file with templates/CITATION.cff, filled in for its search.
+cff-version: 1.2.0
+message: "If you use this template, please cite it as below."
+type: software
+title: "Conjecture search template"
+abstract: >-
+  A MyST manuscript together with a harness for sustained conjecture search: proving or
+  refuting one hard statement over many sessions and several AI agents, with every status
+  certified by an independent review or a named human.
+authors:
+  - family-names: Brosse
+    given-names: Nicolas
+    affiliation: "CREST, ENSAE Paris, Institut Polytechnique de Paris"
+repository-code: "https://github.com/human-ai-mathematics/conjecture-search-template"
+url: "https://human-ai-mathematics.github.io/conjecture-search/proposal.html"
+license: MIT
+keywords:
+  - mathematics
+  - conjecture
+  - AI agents
+  - certified proofs
+  - MyST

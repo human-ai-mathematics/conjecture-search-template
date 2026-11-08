@@ -33,7 +33,8 @@ that volume works against the research:
    someone who has never seen the repository: the question, worked examples, what is
    settled and what is not, the idea of each proof, where to start. A mathematician
    contributes through a plain issue — a counterexample, an idea, a correction — and their
-   acceptance of a proof counts as a certification.
+   acceptance of a proof counts as a certification. [`AUTHORSHIP.md`](AUTHORSHIP.md) says
+   how a contribution is credited: who signs a paper, and how the record is cited before one.
 4. **Spend sparingly.** Agent calls and tokens are the search's budget. Each agent is
    launched for a result that needs it, reads what its task requires and no more, and
    replies as briefly as its result allows; the orchestrator keeps its own context small.

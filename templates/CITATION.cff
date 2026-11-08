@@ -1,0 +1,17 @@
+# How to cite this search before any paper exists. Copy to the repository root, replacing
+# the template's own CITATION.cff, and replace every <placeholder>. List every person who
+# contributed substantively (AUTHORSHIP.md), in alphabetical order; AI agents are not
+# authors. Zenodo reads this file when it archives a release.
+cff-version: 1.2.0
+message: "If you use results from this search, please cite it as below."
+type: dataset
+title: "<Document title>"
+abstract: "<one-line subtitle naming the object and the question>"
+authors:
+  - family-names: "<family name>"
+    given-names: "<given names>"
+    affiliation: "<affiliation>"
+    # orcid: "https://orcid.org/0000-0000-0000-0000"
+repository-code: "<repository URL>"
+url: "<site URL>"
+license: "<licence, e.g. CC-BY-4.0>"
