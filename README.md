@@ -25,6 +25,7 @@ repository by reading it.
 | [`.claude/agents/`](.claude/agents/), [`.codex/agents/`](.codex/agents/) | the three roles: `researcher`, `reviewer` and `writer`, for Claude Code and for Codex |
 | [`templates/`](templates/) | an empty copy of each file genre |
 | [`example/`](example/README.md) | one complete worked search, a fixture to copy from |
+| [`AUTHORSHIP.md`](AUTHORSHIP.md) | who signs a paper from the search, and how the record is cited before one |
 
 ## Setup and verify
 
@@ -105,6 +106,12 @@ each task. The recommended scientific workflow is in *Workflow* in `SPECIFICATIO
    categories *Announcements*, *Q&A* (answerable), *Ideas* and *Literature* in the
    repository settings; the forms in `.github/DISCUSSION_TEMPLATE/` match the last three.
    Otherwise delete that directory and the Discussions link of `config.yml`.
+7. **Make it citable.** Copy [`templates/CITATION.cff`](templates/CITATION.cff) to the
+   repository root and fill it in. Read [`AUTHORSHIP.md`](AUTHORSHIP.md), name the
+   maintainers who propose author lists in the brief, and record any change to the policy
+   there. To get a DOI for each release, enable the repository in
+   [Zenodo's GitHub integration](https://zenodo.org/account/settings/github/) before the
+   first release.
 
 Create `research/program/portfolio.yaml` from
 [`templates/portfolio.yaml`](templates/portfolio.yaml) with the first route. Add
