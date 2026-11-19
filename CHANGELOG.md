@@ -6,6 +6,22 @@ version may require forks to migrate, and a patch version is a backward-compatib
 
 ## [Unreleased]
 
+The orchestrator records a reassessment of the portfolio in a synthesis checkpoint, so a
+fresh session recovers what remains to prove and why the next mission is worth making.
+Nothing to migrate: no format or check changes.
+
+### Added
+
+- *Synthesis checkpoint* (SPECIFICATION.md, *Formats → Checkpoint*): under the usual four
+  headings, the results that removed or weakened a route's obligations and those that left
+  its gap open; each open obligation, as a `cand:` once precise, with the routes resting on
+  it; the mission chosen and what each plausible outcome would teach; the routes set aside
+  with their obstacles; and a reading path. "No change to the plan" is a valid conclusion.
+  The *Workflow* and *Orchestration* sections say when to write one and that a fresh
+  session reads it after the checker's summary. `templates/checkpoint.md` points to it, and
+  the worked example gains one, `2026-09-02-example-synthesis.md`. Prompted by feedback from
+  a long unresolved search (#13).
+
 ## [0.6.1] - 2026-11-08
 
 A program says who signs what comes out of its search, and can be cited before any paper

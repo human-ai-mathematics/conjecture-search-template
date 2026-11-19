@@ -36,3 +36,12 @@ has one, never a restated claim. A dead end earns its file by saying *why* it di
 ## Proposed next step
 
 The next action, and what it would decide.
+
+<!-- A synthesis checkpoint (SPECIFICATION.md, Formats → Checkpoint) is the orchestrator's
+     reassessment of the portfolio. Under the same headings it says: which results removed
+     or weakened a route's obligations and which left its gap open; each open obligation, as
+     a cand: once precise, with the routes resting on it; the mission chosen and what each
+     plausible outcome would teach; each route set aside with its obstacle; a reading path
+     of a few files. "No change to the plan" is a valid conclusion if it says what was
+     learned. A filled-in one is example/research/explorations/2026-09-02-example-synthesis.md. -->
+

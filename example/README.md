@@ -20,11 +20,14 @@ refuted by $a = (1,1)$. In order:
 3. the [portfolio](research/program/portfolio.yaml) lists two routes;
 4. a numerical run tests nothing about the target and yields candidates
    ([`research/explorations/`](research/explorations/), [`research/runs/`](research/runs/));
-5. the witness candidate is promoted to the refuter node `prop:example-refuter`;
-6. the refuter gets an ordinary dossier ([`solutions/`](solutions/)) and an independent
+5. a synthesis checkpoint reassesses the routes while the target is still open: which
+   obligation the witness removed, which route is set aside, the next mission and what its
+   outcomes would teach, and a reading path for a fresh session;
+6. the witness candidate is promoted to the refuter node `prop:example-refuter`;
+7. the refuter gets an ordinary dossier ([`solutions/`](solutions/)) and an independent
    review ([`research/reviews/`](research/reviews/));
-7. only then does the target become `refuted`, through `refuted_by`;
-8. the manuscript, [`modules/`](modules/), tells it all to a mathematician: the question,
+8. only then does the target become `refuted`, through `refuted_by`;
+9. the manuscript, [`modules/`](modules/), tells it all to a mathematician: the question,
    the three results with the idea of each proof, and one question left unsettled. That
    question is a classical identity, and says so up front: it shows the form, not a
    research question. Each
