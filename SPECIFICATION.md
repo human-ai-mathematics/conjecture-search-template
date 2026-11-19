@@ -192,6 +192,24 @@ certified), *observed* (computation or examples) or *intuition*.
 - **What resists** — the precise obstacle, or the limit of the method.
 - **Proposed next step** — the next action, and what it would decide.
 
+**A synthesis checkpoint** is the orchestrator's record of a reassessment of the portfolio
+(*Workflow*). It uses the same four headings for the state of the search, not for one
+exploration, so that a fresh session recovers the remaining obligations and the reason for
+the next mission without reading the whole log:
+
+- *What we learned* — which results removed or weakened an obligation of a route, and which
+  useful results left its main gap open, by id.
+- *What resists* — each obligation still open, as a `cand:` once it is precise enough, with
+  the routes that rest on it: two formulations waiting on the same estimate are one
+  obstacle, not two.
+- *Proposed next step* — the mission chosen, what each of its plausible outcomes would
+  teach, each route set aside with the obstacle that stopped it, and a reading path: the few
+  files a fresh session should open first.
+
+"No change to the plan" is a valid conclusion, provided the checkpoint says what was learned
+— a computation, a failed attempt or a clarified limit — and why continuing is still worth
+an agent call.
+
 An *established* result is not a certified one: no ledger node inherits it through `depends_on`, and
 a dossier reproves it rather than citing it, until it becomes a node with its own certified dossier.
 An observation — *this relaxation destroys the information about the equality cases* — is kept as it
@@ -494,8 +512,11 @@ decides which route to pursue and why, which to set aside and on what known obst
 whether to reformulate the target or examine a neighbouring statement. It evaluates each
 reply's route deltas, removes duplicate routes, and closes a route whose objective is
 finished or abandoned — a judgment recorded in a checkpoint, never inferred from attempt
-counts or elapsed time. One checkpoint may synthesize several small explorations; it keeps,
-for each route set aside, the obstacle that stopped it, so the next agent does not rerun it.
+counts or elapsed time. When it reassesses the portfolio — routes reweighed, an obligation
+removed, one mission chosen among several — it records the reassessment in a synthesis
+checkpoint (*Checkpoint*): for each route set aside, the obstacle that stopped it, so the
+next agent does not rerun it, and why the next mission is worth making. It writes one when
+the plan is reassessed, not after every reply.
 
 **A mission** is a question and the result expected from it, not a node and a lens:
 
@@ -540,7 +561,7 @@ still apply when the work calls for a different sequence:
 7. Decide what the replies teach: which route to pursue, which to set aside and why,
   whether to reformulate. When a route changed state or a candidate was born or ended,
    make sure a checkpoint says why, and that the route's `next` names the test that would
-   move it now.
+   move it now. When the plan itself was reassessed, write a synthesis checkpoint.
 8. If a milestone was reached — a status changed, a route closed, a statement was added —
   launch a `writer` to bring the manuscript's prose up to date (*Manuscript*): name the
    milestone and the ids it concerns. Not every session: the prose follows milestones.
@@ -598,7 +619,9 @@ Keep context and agent calls proportionate to the work:
 - **Prefer completion notifications or blocking waits to repeated polling.** Choose waits
   compatible with the client's limits and the need to communicate progress.
 - **Prefer a focused session.** Start a fresh session when context becomes distracting or
-  expensive; neither a task boundary nor compaction requires one automatically.
+  expensive; neither a task boundary nor compaction requires one automatically. A fresh
+  session reads the checker's summary, then the latest synthesis checkpoint and its
+  reading path.
 - **When certification lapses, ask for an editorial examination first.** Give a fresh
   reviewer the output of `check.py --diff` and the reports it names; a note carries them
   over if the mathematics is unchanged. Otherwise ask for a re-review: supply the previous
